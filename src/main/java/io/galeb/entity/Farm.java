@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.LastModifiedDate;
@@ -33,6 +34,9 @@ public class Farm {
 
     @Column(nullable = false)
     private String api;
+
+    @ManyToOne
+    private Environment environment;
 
     public Farm(String name,String domain, String api) {
         Assert.hasText(name);
