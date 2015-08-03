@@ -10,10 +10,11 @@ Feature: Project Support
         And property <property> contains <value>
 
     Examples:
-    | method | path       | body              | status | property | value     |
-    | POST   | /project   | { "name": "one" } | 201    | name     | one       |
-    | POST   | /project   | { "name": "one" } | 409    |          |           |
-    | GET    | /project/1 |                   | 200    | name     | one       |
-    | GET    | /project/2 |                   | 404    |          |           |
-    | PUT    | /project/1 | { "name": "two" } | 200    | name     | two       |
-    | DELETE | /project/1 |                   | 204    |          |           |
+    | method | path       | body              | status | property | value |
+    | POST   | /project   | { "name": "one" } | 201    | name     | one   |
+    | POST   | /project   | { "name": "one" } | 409    |          |       |
+    | GET    | /project/1 |                   | 200    | name     | one   |
+    | GET    | /project/2 |                   | 404    |          |       |
+    | PUT    | /project/1 | { "name": "two" } | 200    | name     | two   |
+    | DELETE | /project/1 |                   | 204    |          |       |
+
