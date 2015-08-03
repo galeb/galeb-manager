@@ -167,9 +167,9 @@
                     <argument>-Xmx4096m</argument>
                     <argument>-Dlog4j.configurationFile=log4j.xml</argument>
                     <argument>-cp</argument>
-                    <argument>target/manager-${project.version}-uber.jar</argument>
+                    <argument>target/galeb-manager-${project.version}-uber.jar</argument>
                     <argument>-jar</argument>
-                    <argument>target/manager-${project.version}.jar</argument>
+                    <argument>target/galeb-manager-${project.version}.jar</argument>
                   </arguments>
                 </configuration>
               </plugin>
