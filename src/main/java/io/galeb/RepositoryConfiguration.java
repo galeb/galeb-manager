@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.galeb.handler.EnvironmentHandler;
+import io.galeb.handler.FarmHandler;
 import io.galeb.handler.ProjectHandler;
 import io.galeb.handler.RuleTypeHandler;
 import io.galeb.handler.TargetTypeHandler;
@@ -29,6 +30,11 @@ public class RepositoryConfiguration {
     @Bean
     public TargetTypeHandler targetTypeHandler() {
         return new TargetTypeHandler();
+    }
+
+    @Bean
+    public FarmHandler farmHandler() {
+        return new FarmHandler();
     }
 
 }
