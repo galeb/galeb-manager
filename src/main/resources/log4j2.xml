@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Properties>
+    <Property name="LOGLEVEL">INFO</Property>
+  </Properties>
+  <Appenders>
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout>
+        <Pattern>%d %p %c{1.} [%t] %m %ex%n</Pattern>
+      </PatternLayout>
+    </Console>
+    <Async name="AsyncSystem">
+      <AppenderRef ref="STDOUT"/>
+    </Async>
+  </Appenders>
+  <Loggers>
+    <Root level="trace">
+      <AppenderRef ref="AsyncSystem" level="${env:LOGLEVEL}"/>
+    </Root>
+  </Loggers>
+</Configuration>
