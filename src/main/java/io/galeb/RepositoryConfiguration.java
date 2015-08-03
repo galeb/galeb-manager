@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 import io.galeb.handler.EnvironmentHandler;
 import io.galeb.handler.ProjectHandler;
+import io.galeb.handler.RuleTypeHandler;
 
 @Configuration
 public class RepositoryConfiguration {
@@ -17,6 +18,11 @@ public class RepositoryConfiguration {
     @Bean
     public EnvironmentHandler environmentHandler() {
         return new EnvironmentHandler();
+    }
+
+    @Bean
+    public RuleTypeHandler ruleTypeHandler() {
+        return new RuleTypeHandler();
     }
 
 }
