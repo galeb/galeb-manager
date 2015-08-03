@@ -10,7 +10,7 @@ Feature: Project Support
         And property <property> contains <value>
 
     Examples:
-    | method | path        | body              | status | property | value     |
+    | method | path       | body              | status | property | value     |
     | POST   | /project   | { "name": "one" } | 201    | name     | one       |
     | POST   | /project   | { "name": "one" } | 409    |          |           |
     | GET    | /project/1 |                   | 200    | name     | one       |
