@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.galeb</groupId>
-    <artifactId>manager</artifactId>
+    <artifactId>galeb-manager</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <parent>
