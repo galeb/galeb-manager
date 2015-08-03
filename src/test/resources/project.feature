@@ -11,9 +11,9 @@ Feature: Project Support
 
     Examples:
     | method | path        | body              | status | property | value     |
-    | POST   | /projects   | { "name": "one" } | 201    | name     | one       |
-    | POST   | /projects   | { "name": "one" } | 409    |          |           |
-    | GET    | /projects/1 |                   | 200    | name     | one       |
-    | GET    | /projects/2 |                   | 404    |          |           |
-    | PUT    | /projects/1 | { "name": "two" } | 200    | name     | two       |
-    | DELETE | /projects/1 |                   | 204    |          |           |
+    | POST   | /project   | { "name": "one" } | 201    | name     | one       |
+    | POST   | /project   | { "name": "one" } | 409    |          |           |
+    | GET    | /project/1 |                   | 200    | name     | one       |
+    | GET    | /project/2 |                   | 404    |          |           |
+    | PUT    | /project/1 | { "name": "two" } | 200    | name     | two       |
+    | DELETE | /project/1 |                   | 204    |          |           |
