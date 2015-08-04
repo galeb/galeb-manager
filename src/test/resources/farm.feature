@@ -10,12 +10,12 @@ Feature: Farm Support
         And property <property> contains <value>
 
     Examples:
-    | method | path         | body                                                                                                                    | status | property | value |
-    | POST   | /environment | { "name": "one" }                                                                                                       | 201    | name     | one   |
-    | POST   | /farm        | { "name": "one", "available": true, "domain": "domain", "api": "api", "environment": "http://localhost/environment/3" } | 201    | name     | one   |
-    | POST   | /farm        | { "name": "one", "available": true, "domain": "domain", "api": "api" }                                                  | 409    |          |       |
-    | GET    | /farm/1      |                                                                                                                         | 200    | name     | one   |
-    | GET    | /farm/2      |                                                                                                                         | 404    |          |       |
-    | PUT    | /farm/1      | { "name": "two", "available":  true, "domain": "domain", "api": "api" }                                                 | 200    | name     | two   |
-    | PATCH  | /farm/1      | { "name": "tree" }                                                                                                      | 200    | name     | tree  |
-    | DELETE | /farm/1      |                                                                                                                         | 204    |          |       |
+    | method | path         | body                                                                                                                      | status | property | value    |
+    | POST   | /environment | { "name": "env_farm" }                                                                                                    | 201    | name     | env_farm |
+    | POST   | /farm        | { "name": "farm1", "available": true, "domain": "domain", "api": "api", "environment": "http://localhost/environment/3" } | 201    | name     | farm1    |
+    | POST   | /farm        | { "name": "farm1", "available": true, "domain": "domain", "api": "api" }                                                  | 409    |          |          |
+    | GET    | /farm/1      |                                                                                                                           | 200    | name     | farm1    |
+    | GET    | /farm/2      |                                                                                                                           | 404    |          |          |
+    | PUT    | /farm/1      | { "name": "farm2", "available":  true, "domain": "domain", "api": "api" }                                                 | 200    | name     | farm2    |
+    | PATCH  | /farm/1      | { "name": "farm3" }                                                                                                       | 200    | name     | farm3    |
+    | DELETE | /farm/1      |                                                                                                                           | 204    |          |          |
