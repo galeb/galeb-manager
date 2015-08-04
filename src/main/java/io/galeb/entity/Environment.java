@@ -37,6 +37,10 @@ public class Environment {
     @OneToMany(mappedBy = "environment")
     private final Set<Farm> farms = new HashSet<>();
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "environment")
+    private final Set<VirtualHost> virtualhosts = new HashSet<>();
+
     public Environment(String name) {
         Assert.hasText(name);
         this.name = name;
