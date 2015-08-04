@@ -10,11 +10,12 @@ Feature: TargetType Support
         And property <property> contains <value>
 
     Examples:
-    | method | path          | body              | status | property | value |
-    | POST   | /targettype   | { "name": "one" } | 201    | name     | one   |
-    | POST   | /targettype   | { "name": "one" } | 409    |          |       |
-    | GET    | /targettype/1 |                   | 200    | name     | one   |
-    | GET    | /targettype/2 |                   | 404    |          |       |
-    | PUT    | /targettype/1 | { "name": "two" } | 200    | name     | two   |
-    | DELETE | /targettype/1 |                   | 204    |          |       |
+    | method | path          | body               | status | property | value |
+    | POST   | /targettype   | { "name": "one" }  | 201    | name     | one   |
+    | POST   | /targettype   | { "name": "one" }  | 409    |          |       |
+    | GET    | /targettype/1 |                    | 200    | name     | one   |
+    | GET    | /targettype/2 |                    | 404    |          |       |
+    | PUT    | /targettype/1 | { "name": "two" }  | 200    | name     | two   |
+    | PATCH  | /targettype/1 | { "name": "tree" } | 200    | name     | tree  |
+    | DELETE | /targettype/1 |                    | 204    |          |       |
 

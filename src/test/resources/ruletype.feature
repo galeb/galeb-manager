@@ -10,11 +10,12 @@ Feature: RuleType Support
         And property <property> contains <value>
 
     Examples:
-    | method | path        | body              | status | property | value |
-    | POST   | /ruletype   | { "name": "one" } | 201    | name     | one   |
-    | POST   | /ruletype   | { "name": "one" } | 409    |          |       |
-    | GET    | /ruletype/1 |                   | 200    | name     | one   |
-    | GET    | /ruletype/2 |                   | 404    |          |       |
-    | PUT    | /ruletype/1 | { "name": "two" } | 200    | name     | two   |
-    | DELETE | /ruletype/1 |                   | 204    |          |       |
+    | method | path        | body               | status | property | value |
+    | POST   | /ruletype   | { "name": "one" }  | 201    | name     | one   |
+    | POST   | /ruletype   | { "name": "one" }  | 409    |          |       |
+    | GET    | /ruletype/1 |                    | 200    | name     | one   |
+    | GET    | /ruletype/2 |                    | 404    |          |       |
+    | PUT    | /ruletype/1 | { "name": "two" }  | 200    | name     | two   |
+    | PATCH  | /ruletype/1 | { "name": "tree" } | 200    | name     | tree  |
+    | DELETE | /ruletype/1 |                    | 204    |          |       |
 
