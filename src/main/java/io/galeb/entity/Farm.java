@@ -7,6 +7,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Version;
 
@@ -35,16 +36,19 @@ public class Farm {
     @Column(nullable = false)
     private String api;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(nullable = false)
     private Environment environment;
 
-    public Farm(String name,String domain, String api) {
+    public Farm(String name,String domain, String api, Environment environment) {
         Assert.hasText(name);
         Assert.hasText(domain);
         Assert.hasText(api);
+        Assert.notNull(environment);
         this.name = name;
         this.domain = domain;
         this.api = api;
+        this.environment = environment;
     }
 
     protected Farm() {
@@ -59,17 +63,13 @@ public class Farm {
         return name;
     }
 
-    public String getDomain() {
-        return domain;
-    }
-
-    public String getApi() {
-        return api;
-    }
-
     public Farm setName(String name) {
         this.name = name;
         return this;
+    }
+
+    public String getDomain() {
+        return domain;
     }
 
     public Farm setDomain(String domain) {
@@ -77,8 +77,21 @@ public class Farm {
         return this;
     }
 
+    public String getApi() {
+        return api;
+    }
+
     public Farm setApi(String api) {
         this.api = api;
+        return this;
+    }
+
+    public Environment getEnvironment() {
+        return environment;
+    }
+
+    public Farm setEnvironment(Environment environment) {
+        this.environment = environment;
         return this;
     }
 }
