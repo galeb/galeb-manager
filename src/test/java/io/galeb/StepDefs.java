@@ -1,7 +1,7 @@
 package io.galeb;
 
-import static com.jayway.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
+import static com.jayway.restassured.RestAssured.with;
+import static org.hamcrest.Matchers.hasToString;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,7 +23,6 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.galeb.Application;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(
