@@ -14,6 +14,7 @@
     </Async>
   </Appenders>
   <Loggers>
+    <Logger name="org.springframework.data.rest.webmvc.AbstractRepositoryRestController" level="OFF" additivity="false"/>
     <Root level="trace">
       <AppenderRef ref="AsyncSystem" level="${env:LOGLEVEL}"/>
     </Root>
