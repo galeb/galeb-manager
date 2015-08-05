@@ -1,34 +1,13 @@
 package io.galeb.entity;
 
-import java.util.Date;
-
-import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
-import javax.persistence.Version;
 
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
 @Entity
-public class Rule {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
-
-    @Version
-    public Long version;
-
-    @LastModifiedDate
-    public Date lastModifiedDate;
-
-    @Column(unique = true, nullable = false)
-    private String name;
+public class Rule extends AbstractEntity<Rule> {
 
     @OneToOne
     @JoinColumn(nullable = false)
@@ -43,27 +22,13 @@ public class Rule {
     private Target target;
 
     public Rule(String name, RuleType ruleType) {
-        Assert.hasText(name);
         Assert.notNull(ruleType);
-        this.name = name;
+        setName(name);
         this.ruleType = ruleType;
     }
 
     protected Rule() {
         //
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Rule setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public RuleType getRuleType() {

@@ -1,34 +1,13 @@
 package io.galeb.entity;
 
-import java.util.Date;
-
-import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Version;
 
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
 @Entity
-public class VirtualHost {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
-
-    @Version
-    public Long version;
-
-    @LastModifiedDate
-    public Date lastModifiedDate;
-
-    @Column(unique = true, nullable = false)
-    private String name;
+public class VirtualHost extends AbstractEntity<VirtualHost> {
 
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false)
@@ -39,29 +18,15 @@ public class VirtualHost {
     private Project project;
 
     public VirtualHost(String name, Environment environment, Project project) {
-        Assert.hasText(name);
         Assert.notNull(environment);
         Assert.notNull(project);
-        this.name = name;
+        setName(name);
         this.environment = environment;
         this.project = project;
     }
 
     protected VirtualHost() {
         //
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public VirtualHost setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public Environment getEnvironment() {
