@@ -34,11 +34,17 @@ public class VirtualHost {
     @JoinColumn(nullable = false)
     private Environment environment;
 
-    public VirtualHost(String name, Environment environment) {
+    @ManyToOne(optional = false)
+    @JoinColumn(nullable = false)
+    private Project project;
+
+    public VirtualHost(String name, Environment environment, Project project) {
         Assert.hasText(name);
         Assert.notNull(environment);
+        Assert.notNull(project);
         this.name = name;
         this.environment = environment;
+        this.project = project;
     }
 
     protected VirtualHost() {
@@ -64,6 +70,15 @@ public class VirtualHost {
 
     public VirtualHost setEnvironment(Environment environment) {
         this.environment = environment;
+        return this;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public VirtualHost setProject(Project project) {
+        this.project = project;
         return this;
     }
 }
