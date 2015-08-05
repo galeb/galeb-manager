@@ -1,21 +1,21 @@
 package io.galeb.entity;
 
 import java.util.Date;
-import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
 @Entity
-public class TargetType {
+public class Target {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -30,15 +30,22 @@ public class TargetType {
     @Column(unique = true, nullable = false)
     private String name;
 
-    @OneToMany()
-    private Set<Target> targets;
+    @OneToOne
+    @JoinColumn(nullable = false)
+    private TargetType targetType;
 
-    public TargetType(String name) {
+    @OneToOne
+    @JoinColumn(nullable = true)
+    private Target nextTarget;
+
+    public Target(String name, TargetType targetType) {
         Assert.hasText(name);
+        Assert.notNull(targetType);
         this.name = name;
+        this.targetType = targetType;
     }
 
-    protected TargetType() {
+    protected Target() {
         //
     }
 
@@ -50,12 +57,26 @@ public class TargetType {
         return name;
     }
 
-    public TargetType setName(String name) {
+    public Target setName(String name) {
         this.name = name;
         return this;
     }
 
-    public Set<Target> getTargets() {
-        return targets;
+    public TargetType getTargetType() {
+        return targetType;
+    }
+
+    public Target setTargetType(TargetType targetType) {
+        this.targetType = targetType;
+        return this;
+    }
+
+    public Target getNextTarget() {
+        return nextTarget;
+    }
+
+    public Target setNextTarget(Target nextTarget) {
+        this.nextTarget = nextTarget;
+        return this;
     }
 }
