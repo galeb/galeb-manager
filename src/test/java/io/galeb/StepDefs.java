@@ -3,6 +3,8 @@ package io.galeb;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.Matchers.hasToString;
 
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Ignore;
@@ -23,6 +25,8 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import gherkin.deps.com.google.gson.Gson;
+import gherkin.deps.com.google.gson.GsonBuilder;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(
@@ -36,6 +40,8 @@ public class StepDefs {
 
     private static Log LOGGER = LogFactory.getLog(StepDefs.class);
     private static Object[] PARAMS = new Object[0];
+    private static final Gson jsonParser    = new GsonBuilder().setPrettyPrinting()
+                                                               .create();
 
     @Value("${local.server.port}")
     private int port;
@@ -53,6 +59,13 @@ public class StepDefs {
     public void givenRestClient() throws Throwable {
         request = with().contentType("application/json");
         LOGGER.info("Using "+RestAssured.class.getName());
+    }
+
+    @When("^request json body has:$")
+    public void requestJsonBodyHas(Map<String, String> jsonComponents) throws Throwable {
+        if (!jsonComponents.isEmpty() && !jsonComponents.keySet().contains("")) {
+            request.body(jsonParser.toJson(jsonComponents));
+        }
     }
 
     @When("^request body is (.*)")
