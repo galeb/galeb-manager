@@ -2,20 +2,51 @@ Feature: RuleType Support
     The manager have than
     to support REST standard
 
-    Scenario Outline: API action
+    Background:
         Given a REST client
-        When request body is <body>
-        And send <method> <path>
-        Then the response status is <status>
-        And property <property> contains <value>
+        When request json body has:
+            | name | one |
+        And send POST /ruletype
 
-    Examples:
-    | method | path        | body               | status | property | value |
-    | POST   | /ruletype   | { "name": "one" }  | 201    | name     | one   |
-    | POST   | /ruletype   | { "name": "one" }  | 409    |          |       |
-    | GET    | /ruletype/1 |                    | 200    | name     | one   |
-    | GET    | /ruletype/2 |                    | 404    |          |       |
-    | PUT    | /ruletype/1 | { "name": "two" }  | 200    | name     | two   |
-    | PATCH  | /ruletype/1 | { "name": "tree" } | 200    | name     | tree  |
-    | DELETE | /ruletype/1 |                    | 204    |          |       |
+    Scenario: Create RuleType
+        Then the response status is 201
+        And property name contains one
 
+    Scenario: Create duplicated RuleType
+        Given a REST client
+        When request json body has:
+            | name | one |
+        And send POST /ruletype
+        Then the response status is 409
+
+    Scenario: Get RuleType
+        Given a REST client
+        When send GET /ruletype/1
+        Then the response status is 200
+        And property name contains one
+
+    Scenario: Get null RuleType
+        Given a REST client
+        When send GET /ruletype/2
+        Then the response status is 404
+
+    Scenario: Update RuleType
+        Given a REST client
+        When request json body has:
+            | name | two |
+        And send PUT /ruletype/1
+        Then the response status is 200
+        And property name contains two
+
+    Scenario: Update one field of RuleType
+        Given a REST client
+        When request json body has:
+            | name | two |
+        And send PATCH /ruletype/1
+        Then the response status is 200
+        And property name contains two
+
+    Scenario: Delete RuleType
+        Given a REST client
+        When send DELETE /ruletype/1
+        Then the response status is 204

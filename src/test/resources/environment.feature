@@ -2,19 +2,51 @@ Feature: Environment Support
     The manager have than
     to support REST standard
 
-    Scenario Outline: API action
+    Background:
         Given a REST client
-        When request body is <body>
-        And send <method> <path>
-        Then the response status is <status>
-        And property <property> contains <value>
+        When request json body has:
+            | name | one |
+        And send POST /environment
 
-    Examples:
-    | method | path           | body               | status | property | value |
-    | POST   | /environment   | { "name": "one" }  | 201    | name     | one   |
-    | POST   | /environment   | { "name": "one" }  | 409    |          |       |
-    | GET    | /environment/1 |                    | 200    | name     | one   |
-    | GET    | /environment/2 |                    | 404    |          |       |
-    | PUT    | /environment/1 | { "name": "two" }  | 200    | name     | two   |
-    | PATCH  | /environment/1 | { "name": "tree" } | 200    | name     | tree  |
-    | DELETE | /environment/1 |                    | 204    |          |       |
+    Scenario: Create Environment
+        Then the response status is 201
+        And property name contains one
+
+    Scenario: Create duplicated Environment
+        Given a REST client
+        When request json body has:
+            | name | one |
+        And send POST /environment
+        Then the response status is 409
+
+    Scenario: Get Environment
+        Given a REST client
+        When send GET /environment/1
+        Then the response status is 200
+        And property name contains one
+
+    Scenario: Get null Environment
+        Given a REST client
+        When send GET /environment/2
+        Then the response status is 404
+
+    Scenario: Update Environment
+        Given a REST client
+        When request json body has:
+            | name | two |
+        And send PUT /environment/1
+        Then the response status is 200
+        And property name contains two
+
+    Scenario: Update one field of Environment
+        Given a REST client
+        When request json body has:
+            | name | two |
+        And send PATCH /environment/1
+        Then the response status is 200
+        And property name contains two
+
+    Scenario: Delete Environment
+        Given a REST client
+        When send DELETE /environment/1
+        Then the response status is 204

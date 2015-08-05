@@ -2,11 +2,13 @@ Feature: TargetType Support
     The manager have than
     to support REST standard
 
-    Scenario: Create TargetType
+    Background:
         Given a REST client
         When request json body has:
             | name | one |
         And send POST /targettype
+
+    Scenario: Create TargetType
         Then the response status is 201
         And property name contains one
 
@@ -15,20 +17,10 @@ Feature: TargetType Support
         When request json body has:
             | name | one |
         And send POST /targettype
-        Then the response status is 201
-        And a REST client
-        When request json body has:
-            | name | one |
-        And send POST /targettype
         Then the response status is 409
 
     Scenario: Get TargetType
         Given a REST client
-        When request json body has:
-            | name | one |
-        And send POST /targettype
-        Then the response status is 201
-        And a REST client
         When send GET /targettype/1
         Then the response status is 200
         And property name contains one
@@ -41,12 +33,6 @@ Feature: TargetType Support
     Scenario: Update TargetType
         Given a REST client
         When request json body has:
-            | name | one |
-        And send POST /targettype
-        Then the response status is 201
-        And property name contains one
-        And a REST client
-        When request json body has:
             | name | two |
         And send PUT /targettype/1
         Then the response status is 200
@@ -55,12 +41,6 @@ Feature: TargetType Support
     Scenario: Update one field of TargetType
         Given a REST client
         When request json body has:
-            | name | one |
-        And send POST /targettype
-        Then the response status is 201
-        And property name contains one
-        And a REST client
-        When request json body has:
             | name | two |
         And send PATCH /targettype/1
         Then the response status is 200
@@ -68,11 +48,5 @@ Feature: TargetType Support
 
     Scenario: Delete TargetType
         Given a REST client
-        When request json body has:
-            | name | one |
-        And send POST /targettype
-        Then the response status is 201
-        And property name contains one
-        And a REST client
         When send DELETE /targettype/1
         Then the response status is 204
