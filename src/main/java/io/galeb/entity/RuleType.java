@@ -1,12 +1,14 @@
 package io.galeb.entity;
 
 import java.util.Date;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.LastModifiedDate;
@@ -28,6 +30,9 @@ public class RuleType {
     @Column(unique = true, nullable = false)
     private String name;
 
+    @OneToMany
+    private Set<Rule> rules;
+
     public RuleType(String name) {
         Assert.hasText(name);
         this.name = name;
@@ -48,5 +53,9 @@ public class RuleType {
     public RuleType setName(String name) {
         this.name = name;
         return this;
+    }
+
+    public Set<Rule> getRules() {
+        return rules;
     }
 }
