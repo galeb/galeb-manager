@@ -12,6 +12,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationContextLoader;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -33,6 +35,7 @@ import gherkin.deps.com.google.gson.GsonBuilder;
         classes = { Application.class },
         loader = SpringApplicationContextLoader.class
 )
+@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 @WebAppConfiguration
 @IntegrationTest({"server.port=0"})
 @Ignore
@@ -40,11 +43,13 @@ public class StepDefs {
 
     private static Log LOGGER = LogFactory.getLog(StepDefs.class);
     private static Object[] PARAMS = new Object[0];
-    private static final Gson jsonParser    = new GsonBuilder().setPrettyPrinting()
-                                                               .create();
+    private static final Gson jsonParser = new GsonBuilder().setPrettyPrinting()
+                                                            .create();
 
     @Value("${local.server.port}")
     private int port;
+
+
 
     private RequestSpecification request;
     private ValidatableResponse response;
