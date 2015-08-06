@@ -9,6 +9,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
 
+import io.galeb.entity.Environment;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Project;
+import io.galeb.entity.Rule;
+import io.galeb.entity.RuleType;
+import io.galeb.entity.Target;
+import io.galeb.entity.TargetType;
+import io.galeb.entity.VirtualHost;
+
 @SpringBootApplication
 @Import(RepositoryRestMvcConfiguration.class)
 public class Application {
@@ -26,7 +35,16 @@ public class Application {
 
     @PostConstruct
     public void postConstruct() {
-        repositoryRestConfiguration.setReturnBodyOnCreate(true).setReturnBodyOnUpdate(true);
+        repositoryRestConfiguration.setReturnBodyOnCreate(true)
+                                   .setReturnBodyOnUpdate(true)
+                                   .exposeIdsFor(Environment.class,
+                                                 Farm.class,
+                                                 Project.class,
+                                                 Rule.class,
+                                                 RuleType.class,
+                                                 Target.class,
+                                                 TargetType.class,
+                                                 VirtualHost.class);
     }
 
 }
