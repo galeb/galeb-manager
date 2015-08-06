@@ -12,6 +12,7 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Version;
 
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
@@ -32,6 +33,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
     @Version
     public Long version;
 
+    @CreatedDate
+    public Date createdDate;
+
     @LastModifiedDate
     public Date lastModifiedDate;
 
@@ -41,7 +45,12 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
     @ElementCollection
     private final Map<String, String> properties = new HashMap<>();
 
-    private EntityStatus status = EntityStatus.UNKNOWN;
+    @Column
+    private EntityStatus status;
+
+    public AbstractEntity() {
+        this.status = EntityStatus.UNKNOWN;
+    }
 
     public long getId() {
         return id;
@@ -66,8 +75,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
         return status;
     }
 
-    public void setStatus(EntityStatus status) {
+    @SuppressWarnings("unchecked")
+    public T setStatus(EntityStatus status) {
         this.status = status;
+        return (T) this;
     }
 
 }
