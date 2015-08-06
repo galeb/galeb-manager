@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import io.galeb.handler.EnvironmentHandler;
 import io.galeb.handler.FarmHandler;
 import io.galeb.handler.ProjectHandler;
+import io.galeb.handler.ProviderHandler;
 import io.galeb.handler.RuleHandler;
 import io.galeb.handler.RuleTypeHandler;
 import io.galeb.handler.TargetHandler;
@@ -53,6 +54,11 @@ public class RepositoryConfiguration {
     @Bean
     public RuleHandler ruleHandler() {
         return new RuleHandler();
+    }
+
+    @Bean
+    public ProviderHandler providerHandler() {
+        return new ProviderHandler();
     }
 
 }

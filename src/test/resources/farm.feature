@@ -5,8 +5,12 @@ Feature: Farm Support
     Background:
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | EnvOne |
         And send POST /environment
+        And a REST client
+        When request json body has:
+            | name | providerOne |
+        And send POST /provider
         And a REST client
         When request json body has:
             | name        | one                            |
@@ -14,6 +18,7 @@ Feature: Farm Support
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
+            | provider    | http://localhost/provider/1    |
         And send POST /farm
 
     Scenario: Create Farm
@@ -28,6 +33,7 @@ Feature: Farm Support
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
+            | provider    | http://localhost/provider/1    |
         And send POST /farm
         Then the response status is 409
 
@@ -50,6 +56,7 @@ Feature: Farm Support
             | domain      | domain2                        |
             | api         | api2                           |
             | environment | http://localhost/environment/1 |
+            | provider    | http://localhost/provider/1    |
         And send PUT /farm/1
         Then the response status is 200
         And property name contains two
