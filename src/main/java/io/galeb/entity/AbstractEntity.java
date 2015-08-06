@@ -1,8 +1,11 @@
 package io.galeb.entity;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -28,6 +31,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
     @Column(unique = true, nullable = false)
     private String name;
 
+    @ElementCollection
+    private final Map<String, String> properties = new HashMap<>();
+
     public long getId() {
         return id;
     }
@@ -41,6 +47,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
         Assert.hasText(name);
         this.name = name;
         return (T) this;
+    }
+
+    public Map<String, String> getProperties() {
+        return properties;
     }
 
 }
