@@ -8,6 +8,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 
+import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Project;
 
 @RepositoryEventHandler(Project.class)
@@ -18,6 +19,7 @@ public class ProjectHandler {
     @HandleBeforeCreate
     public void beforeCreate(Project project) {
         LOGGER.info("Project: HandleBeforeCreate");
+        project.setStatus(EntityStatus.OK);
     }
 
     @HandleAfterCreate

@@ -18,6 +18,13 @@ import org.springframework.util.Assert;
 @MappedSuperclass
 public abstract class AbstractEntity<T extends AbstractEntity<?>> {
 
+    public enum EntityStatus {
+        PENDING,
+        OK,
+        ERROR,
+        UNKNOWN
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
@@ -33,6 +40,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
 
     @ElementCollection
     private final Map<String, String> properties = new HashMap<>();
+
+    private EntityStatus status = EntityStatus.UNKNOWN;
 
     public long getId() {
         return id;
@@ -51,6 +60,14 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> {
 
     public Map<String, String> getProperties() {
         return properties;
+    }
+
+    public EntityStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EntityStatus status) {
+        this.status = status;
     }
 
 }

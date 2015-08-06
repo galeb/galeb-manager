@@ -8,6 +8,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 
+import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.TargetType;
 
 @RepositoryEventHandler(TargetType.class)
@@ -18,6 +19,7 @@ public class TargetTypeHandler {
     @HandleBeforeCreate
     public void beforeCreate(TargetType targetType) {
         LOGGER.info("TargetType: HandleBeforeCreate");
+        targetType.setStatus(EntityStatus.OK);
     }
 
     @HandleAfterCreate

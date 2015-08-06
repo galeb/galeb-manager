@@ -1,7 +1,5 @@
 package io.galeb.handler;
 
-import io.galeb.entity.Farm;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -9,6 +7,9 @@ import org.springframework.data.rest.core.annotation.HandleAfterSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Farm;
 
 @RepositoryEventHandler(Farm.class)
 public class FarmHandler {
@@ -18,6 +19,7 @@ public class FarmHandler {
     @HandleBeforeCreate
     public void beforeCreate(Farm farm) {
         LOGGER.info("Farm: HandleBeforeCreate");
+        farm.setStatus(EntityStatus.OK);
     }
 
     @HandleAfterCreate
