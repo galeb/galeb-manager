@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
+import org.springframework.jms.annotation.EnableJms;
 
 import io.galeb.entity.Environment;
 import io.galeb.entity.Farm;
@@ -19,6 +20,7 @@ import io.galeb.entity.TargetType;
 import io.galeb.entity.VirtualHost;
 
 @SpringBootApplication
+@EnableJms
 @Import(RepositoryRestMvcConfiguration.class)
 public class Application {
 
