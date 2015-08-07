@@ -7,23 +7,16 @@ import javax.persistence.OneToOne;
 import org.springframework.util.Assert;
 
 @Entity
-public class Rule extends AbstractEntity<Rule> {
+public class Rule extends EntityAffiliable<Rule> {
 
     @OneToOne
     @JoinColumn(nullable = false)
     private RuleType ruleType;
 
-    @OneToOne
-    @JoinColumn(nullable = true)
-    private Rule nextRule;
-
-    @OneToOne
-    @JoinColumn(nullable = true)
-    private Target target;
-
-    public Rule(String name, RuleType ruleType) {
+    public Rule(String name, RuleType ruleType, String parent) {
         Assert.notNull(ruleType);
         setName(name);
+        setParent(parent);
         this.ruleType = ruleType;
     }
 
@@ -40,21 +33,4 @@ public class Rule extends AbstractEntity<Rule> {
         return this;
     }
 
-    public Rule getNextRule() {
-        return nextRule;
-    }
-
-    public Rule setNextRule(Rule nextRule) {
-        this.nextRule = nextRule;
-        return this;
-    }
-
-    public Target getTarget() {
-        return target;
-    }
-
-    public Rule setTarget(Target target) {
-        this.target = target;
-        return this;
-    }
 }

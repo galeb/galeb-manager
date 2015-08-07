@@ -9,9 +9,25 @@ Feature: Rule Support
         And send POST /ruletype
         And the response status is 201
         And a REST client
+        When request json body has:
+            | name | envOne |
+        And send POST /environment
+        And a REST client
+        When request json body has:
+            | name | projectOne |
+        And send POST /project
+        And a REST client
+        When request json body has:
+            | name        | virtOne                        |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /virtualhost
+        And the response status is 201
+        And a REST client
         And request json body has:
-            | name       | one                       |
-            | ruleType | http://localhost/ruletype/1 |
+            | name     | one                            |
+            | ruleType | http://localhost/ruletype/1    |
+            | parent   | http://localhost/virtualhost/1 |
         And send POST /rule
 
     Scenario: Create Rule
@@ -22,8 +38,9 @@ Feature: Rule Support
         Then the response status is 201
         And a REST client
         When request json body has:
-            | name | one |
-            | ruleType | http://localhost/ruletype/1 |
+            | name     | one                            |
+            | ruleType | http://localhost/ruletype/1    |
+            | parent   | http://localhost/virtualhost/1 |
         And send POST /rule
         Then the response status is 409
 
@@ -44,7 +61,9 @@ Feature: Rule Support
         And property name contains one
         And a REST client
         When request json body has:
-            | name | two |
+            | name     | two                            |
+            | ruleType | http://localhost/ruletype/1    |
+            | parent   | http://localhost/virtualhost/1 |
         And send PUT /rule/1
         Then the response status is 200
         And property name contains two

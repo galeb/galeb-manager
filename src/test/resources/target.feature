@@ -9,9 +9,38 @@ Feature: Target Support
         And send POST /targettype
         And the response status is 201
         And a REST client
+        When request json body has:
+            | name | one |
+        And send POST /ruletype
+        And the response status is 201
+        And a REST client
+        When request json body has:
+            | name | envOne |
+        And send POST /environment
+        And a REST client
+        When request json body has:
+            | name | projectOne |
+        And send POST /project
+        And the response status is 201
+        And a REST client
+        When request json body has:
+            | name        | virtOne                        |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /virtualhost
+        And the response status is 201
+        And a REST client
+        And request json body has:
+            | name     | one                            |
+            | ruleType | http://localhost/ruletype/1    |
+            | parent   | http://localhost/virtualhost/1 |
+        And send POST /rule
+        And the response status is 201
+        And a REST client
         And request json body has:
             | name       | one                           |
             | targetType | http://localhost/targettype/1 |
+            | parent     | http://localhost/rule/1       |
         And send POST /target
 
     Scenario: Create Target
@@ -24,6 +53,7 @@ Feature: Target Support
         When request json body has:
             | name | one |
             | targetType | http://localhost/targettype/1 |
+            | parent     | http://localhost/rule/1       |
         And send POST /target
         Then the response status is 409
 
@@ -44,7 +74,9 @@ Feature: Target Support
         And property name contains one
         And a REST client
         When request json body has:
-            | name | two |
+            | name       | two                           |
+            | targetType | http://localhost/targettype/1 |
+            | parent     | http://localhost/rule/1       |
         And send PUT /target/1
         Then the response status is 200
         And property name contains two

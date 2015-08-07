@@ -7,19 +7,16 @@ import javax.persistence.OneToOne;
 import org.springframework.util.Assert;
 
 @Entity
-public class Target extends AbstractEntity<Target> {
+public class Target extends EntityAffiliable<Target> {
 
     @OneToOne
     @JoinColumn(nullable = false)
     private TargetType targetType;
 
-    @OneToOne
-    @JoinColumn(nullable = true)
-    private Target nextTarget;
-
-    public Target(String name, TargetType targetType) {
+    public Target(String name, TargetType targetType, String parent) {
         Assert.notNull(targetType);
         setName(name);
+        setParent(parent);
         this.targetType = targetType;
     }
 
@@ -36,12 +33,4 @@ public class Target extends AbstractEntity<Target> {
         return this;
     }
 
-    public Target getNextTarget() {
-        return nextTarget;
-    }
-
-    public Target setNextTarget(Target nextTarget) {
-        this.nextTarget = nextTarget;
-        return this;
-    }
 }
