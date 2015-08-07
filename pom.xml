@@ -7,6 +7,11 @@
     <artifactId>galeb-manager</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
+    <properties>
+        <java.version>1.8</java.version>
+        <google.gson.version>2.3.1</google.gson.version>
+    </properties>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -67,6 +72,11 @@
             <groupId>org.apache.activemq</groupId>
             <artifactId>activemq-broker</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${google.gson.version}</version>
+        </dependency>
 
         <!--  tests -->
         <dependency>
@@ -110,11 +120,6 @@
          <version>1.4.4</version>
         </dependency>
     </dependencies>
-
-    <properties>
-        <java.version>1.8</java.version>
-    </properties>
-
 
     <build>
         <plugins>
@@ -184,6 +189,7 @@
                     <argument>target/galeb-manager-${project.version}-uber.jar</argument>
                     <argument>-jar</argument>
                     <argument>target/galeb-manager-${project.version}.jar</argument>
+                    <argument>--server.port=8000</argument>
                   </arguments>
                 </configuration>
               </plugin>
