@@ -12,6 +12,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class Provider extends AbstractEntity<Provider> {
 
+    private static final long serialVersionUID = 5596582746795373019L;
+
     @JsonIgnore
     @OneToMany(mappedBy = "provider")
     private final Set<Farm> farms = new HashSet<>();

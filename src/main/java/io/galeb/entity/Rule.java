@@ -9,6 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 public class Rule extends EntityAffiliable<Rule> {
 
+    private static final long serialVersionUID = 5596582746795373020L;
+
     @OneToOne
     @JoinColumn(nullable = false)
     private RuleType ruleType;

@@ -9,6 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 public class Target extends EntityAffiliable<Target> {
 
+    private static final long serialVersionUID = 5596582746795373012L;
+
     @OneToOne
     @JoinColumn(nullable = false)
     private TargetType targetType;

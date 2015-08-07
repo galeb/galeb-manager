@@ -9,6 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 public class VirtualHost extends AbstractEntity<VirtualHost> {
 
+    private static final long serialVersionUID = 5596582746795373014L;
+
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false)
     private Environment environment;

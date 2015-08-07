@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class Environment extends AbstractEntity<Environment> {
 
+    private static final long serialVersionUID = 5596582746795373016L;
+
     @JsonIgnore
     @OneToMany(mappedBy = "environment")
     private final Set<Farm> farms = new HashSet<>();

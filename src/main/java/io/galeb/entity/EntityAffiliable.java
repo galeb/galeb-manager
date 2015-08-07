@@ -8,6 +8,8 @@ import org.springframework.util.Assert;
 @MappedSuperclass
 public abstract class EntityAffiliable<T extends AbstractEntity<?>> extends AbstractEntity<T> {
 
+    private static final long serialVersionUID = 5596582746795373015L;
+
     @Column(nullable = false)
     private String parent;
 

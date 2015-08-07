@@ -8,6 +8,8 @@ import javax.persistence.OneToMany;
 @Entity
 public class TargetType extends AbstractEntity<TargetType> {
 
+    private static final long serialVersionUID = 5596582746795373013L;
+
     @OneToMany()
     private Set<Target> targets;
 

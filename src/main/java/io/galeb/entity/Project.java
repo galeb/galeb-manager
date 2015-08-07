@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class Project extends AbstractEntity<Project> {
 
+    private static final long serialVersionUID = 5596582746795373018L;
+
     @JsonIgnore
     @OneToMany(mappedBy = "project")
     private final Set<VirtualHost> virtualhosts = new HashSet<>();

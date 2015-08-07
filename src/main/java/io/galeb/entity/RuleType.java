@@ -8,6 +8,8 @@ import javax.persistence.OneToMany;
 @Entity
 public class RuleType extends AbstractEntity<RuleType> {
 
+    private static final long serialVersionUID = 5596582746795373010L;
+
     @OneToMany
     private Set<Rule> rules;
 

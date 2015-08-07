@@ -11,6 +11,8 @@ import org.springframework.util.Assert;
 @Entity
 public class Farm extends AbstractEntity<Farm> {
 
+    private static final long serialVersionUID = 5596582746795373017L;
+
     @Column(nullable = false)
     private String domain;
 
