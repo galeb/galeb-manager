@@ -1,13 +1,18 @@
 package io.galeb.engine.farm;
 
+import java.util.Optional;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import io.galeb.engine.Driver;
 import io.galeb.engine.DriverBuilder;
+import io.galeb.entity.Farm;
 import io.galeb.entity.VirtualHost;
+import io.galeb.repository.FarmRepository;
 
 @Component
 public class VirtualHostEngine {
@@ -18,8 +23,19 @@ public class VirtualHostEngine {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostEngine.class);
 
+    @Autowired
+    private FarmRepository farmRepository;
+
     private Driver getDriver(VirtualHost virtualHost) {
-        return DriverBuilder.build(Driver.DEFAULT_DRIVER_NAME);
+        long farmId = virtualHost.getFarmId();
+        String driverName = Driver.DEFAULT_DRIVER_NAME;
+        if (farmId>-1) {
+            Optional<Farm> farm = farmRepository.findById(farmId).stream().findFirst();
+            if (farm.isPresent()) {
+                driverName = farm.get().getProvider().getDriver();
+            }
+        }
+        return DriverBuilder.build(driverName);
     }
 
     @JmsListener(destination = QUEUE_CREATE)
