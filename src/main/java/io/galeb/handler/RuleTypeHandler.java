@@ -2,12 +2,17 @@ package io.galeb.handler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
+import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
+import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.jms.core.JmsTemplate;
 
+import io.galeb.engine.farm.RuleTypeEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.RuleType;
 
@@ -15,6 +20,9 @@ import io.galeb.entity.RuleType;
 public class RuleTypeHandler {
 
     private static Log LOGGER = LogFactory.getLog(RuleTypeHandler.class);
+
+    @Autowired
+    private JmsTemplate jms;
 
     @HandleBeforeCreate
     public void beforeCreate(RuleType ruleType) {
@@ -25,6 +33,7 @@ public class RuleTypeHandler {
     @HandleAfterCreate
     public void afterCreate(RuleType ruleType) {
         LOGGER.info("RuleType: HandleAfterCreate");
+        jms.convertAndSend(RuleTypeEngine.QUEUE_CREATE, ruleType);
     }
 
     @HandleBeforeSave
@@ -35,6 +44,17 @@ public class RuleTypeHandler {
     @HandleAfterSave
     public void afterSave(RuleType ruleType) {
         LOGGER.info("RuleType: HandleAfterSave");
+        jms.convertAndSend(RuleTypeEngine.QUEUE_UPDATE, ruleType);
     }
 
+    @HandleBeforeDelete
+    public void beforeDelete(RuleType ruleType) {
+        LOGGER.info("RuleType: HandleBeforeDelete");
+    }
+
+    @HandleAfterDelete
+    public void afterDelete(RuleType ruleType) {
+        LOGGER.info("RuleType: HandleAfterDelete");
+        jms.convertAndSend(RuleTypeEngine.QUEUE_REMOVE, ruleType);
+    }
 }

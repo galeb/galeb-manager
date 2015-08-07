@@ -3,8 +3,10 @@ package io.galeb.handler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
+import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
+import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 
@@ -44,6 +46,16 @@ public class ProviderHandler {
     @HandleAfterSave
     public void afterSave(Provider provider) {
         LOGGER.info("Provider: HandleAfterSave");
+    }
+
+    @HandleBeforeDelete
+    public void beforeDelete(Provider provider) {
+        LOGGER.info("Provider: HandleBeforeDelete");
+    }
+
+    @HandleAfterDelete
+    public void afterDelete(Provider provider) {
+        LOGGER.info("Provider: HandleAfterDelete");
     }
 
 }

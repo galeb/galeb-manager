@@ -2,12 +2,17 @@ package io.galeb.handler;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
+import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
+import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.jms.core.JmsTemplate;
 
+import io.galeb.engine.farm.EnvironmentEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Environment;
 
@@ -15,6 +20,9 @@ import io.galeb.entity.Environment;
 public class EnvironmentHandler {
 
     private static Log LOGGER = LogFactory.getLog(EnvironmentHandler.class);
+
+    @Autowired
+    private JmsTemplate jms;
 
     @HandleBeforeCreate
     public void beforeCreate(Environment environment) {
@@ -25,6 +33,7 @@ public class EnvironmentHandler {
     @HandleAfterCreate
     public void afterCreate(Environment environment) {
         LOGGER.info("Environment: HandleAfterCreate");
+        jms.convertAndSend(EnvironmentEngine.QUEUE_CREATE, environment);
     }
 
     @HandleBeforeSave
@@ -35,6 +44,18 @@ public class EnvironmentHandler {
     @HandleAfterSave
     public void afterSave(Environment environment) {
         LOGGER.info("Environment: HandleAfterSave");
+        jms.convertAndSend(EnvironmentEngine.QUEUE_UPDATE, environment);
+    }
+
+    @HandleBeforeDelete
+    public void beforeDelete(Environment environment) {
+        LOGGER.info("Environment: HandleBeforeDelete");
+    }
+
+    @HandleAfterDelete
+    public void afterDelete(Environment environment) {
+        LOGGER.info("Environment: HandleAfterDelete");
+        jms.convertAndSend(EnvironmentEngine.QUEUE_REMOVE, environment);
     }
 
 }
