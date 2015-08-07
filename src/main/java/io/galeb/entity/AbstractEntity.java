@@ -1,5 +1,6 @@
 package io.galeb.entity;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +18,9 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
 @MappedSuperclass
-public abstract class AbstractEntity<T extends AbstractEntity<?>> {
+public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
+
+    private static final long serialVersionUID = 4521414292400791447L;
 
     public enum EntityStatus {
         PENDING,
