@@ -11,6 +11,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.CreatedDate;
@@ -37,9 +39,11 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     public Long version;
 
     @CreatedDate
+    @Column(nullable = false, updatable=false)
     public Date createdDate;
 
     @LastModifiedDate
+    @Column(nullable = false)
     public Date lastModifiedDate;
 
     @Column(unique = true, nullable = false)
@@ -51,8 +55,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Column
     private EntityStatus status;
 
-    public AbstractEntity() {
-        this.status = EntityStatus.UNKNOWN;
+    @PrePersist
+    private void onCreate() {
+        createdDate = new Date();
+        lastModifiedDate = createdDate;
+        status = EntityStatus.UNKNOWN;
+    }
+
+    @PreUpdate
+    private void onUpdate() {
+        lastModifiedDate = new Date();
     }
 
     public long getId() {
