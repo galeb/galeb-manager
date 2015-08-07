@@ -22,19 +22,19 @@ public interface Driver {
     }
 
     default boolean create(AbstractEntity<?> entity) {
-        return false;
+        return true;
     }
 
     default boolean update(AbstractEntity<?> entity) {
-        return false;
+        return true;
     }
 
     default boolean remove(AbstractEntity<?> entity) {
-        return false;
+        return true;
     }
 
     default boolean reload() {
-        return false;
+        return true;
     }
 
     default StatusFarm status() {
