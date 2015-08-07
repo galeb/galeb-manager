@@ -14,7 +14,6 @@ Feature: Farm Support
         And a REST client
         When request json body has:
             | name        | one                            |
-            | available   | true                           |
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
@@ -29,7 +28,6 @@ Feature: Farm Support
         Given a REST client
         When request json body has:
             | name        | one                            |
-            | available   | true                           |
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
@@ -52,7 +50,6 @@ Feature: Farm Support
         Given a REST client
         When request json body has:
             | name        | two                            |
-            | available   | false                          |
             | domain      | domain2                        |
             | api         | api2                           |
             | environment | http://localhost/environment/1 |
