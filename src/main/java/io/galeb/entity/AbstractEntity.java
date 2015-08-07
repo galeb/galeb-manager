@@ -59,7 +59,6 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private void onCreate() {
         createdDate = new Date();
         lastModifiedDate = createdDate;
-        status = EntityStatus.UNKNOWN;
     }
 
     @PreUpdate
