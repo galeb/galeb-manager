@@ -6,6 +6,8 @@ import javax.persistence.ManyToOne;
 
 import org.springframework.util.Assert;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class VirtualHost extends AbstractEntity<VirtualHost> {
 
@@ -18,6 +20,9 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false)
     private Project project;
+
+    @JsonIgnore
+    private long farmId;
 
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);
@@ -46,6 +51,15 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
 
     public VirtualHost setProject(Project project) {
         this.project = project;
+        return this;
+    }
+
+    public long getFarmId() {
+        return farmId;
+    }
+
+    public VirtualHost setFarmId(long farmId) {
+        this.farmId = farmId;
         return this;
     }
 }

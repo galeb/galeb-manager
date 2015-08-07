@@ -13,19 +13,35 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.engine.farm.VirtualHostEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Farm;
 import io.galeb.entity.VirtualHost;
+import io.galeb.repository.FarmRepository;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler {
 
-    private static Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
+    private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
 
     @Autowired
     private JmsTemplate jms;
 
+    @Autowired
+    private FarmRepository farmRepository;
+
+    private void setBestFarm(final VirtualHost virtualhost) {
+        Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
+                .stream().findFirst().orElse(null);
+        if (farm!=null) {
+            virtualhost.setFarmId(farm.getId());
+        }
+    }
+
     @HandleBeforeCreate
     public void beforeCreate(VirtualHost virtualhost) {
         LOGGER.info("VirtualHost: HandleBeforeCreate");
+        virtualhost.setFarmId(-1L);
+        setBestFarm(virtualhost);
     }
 
     @HandleAfterCreate
@@ -37,6 +53,7 @@ public class VirtualHostHandler {
     @HandleBeforeSave
     public void beforeSave(VirtualHost virtualhost) {
         LOGGER.info("VirtualHost: HandleBeforeSave");
+        setBestFarm(virtualhost);
     }
 
     @HandleAfterSave
