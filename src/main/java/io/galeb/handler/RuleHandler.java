@@ -1,5 +1,12 @@
 package io.galeb.handler;
 
+import io.galeb.engine.farm.RuleEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Rule;
+import io.galeb.entity.VirtualHost;
+import io.galeb.repository.FarmRepository;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +19,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.engine.farm.RuleEngine;
-import io.galeb.entity.Rule;
-
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler {
 
@@ -23,9 +27,26 @@ public class RuleHandler {
     @Autowired
     private JmsTemplate jms;
 
+    @Autowired
+    private FarmRepository farmRepository;
+
+    private void setBestFarm(final Rule rule) {
+        long farmId = -1L;
+        if (rule.getParent() != null) {
+            final VirtualHost virtualhost = rule.getParent();
+            farmId = virtualhost.getFarmId();
+        } else {
+            final Farm farm = farmRepository.findByEnvironmentAndStatus(rule.getEnvironment(), EntityStatus.OK)
+                    .stream().findFirst().orElse(null);
+            farmId = farm.getId();
+        }
+        rule.setFarmId(farmId);
+    }
+
     @HandleBeforeCreate
     public void beforeCreate(Rule rule) {
         LOGGER.info("Rule: HandleBeforeCreate");
+        setBestFarm(rule);
     }
 
     @HandleAfterCreate
