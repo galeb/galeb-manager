@@ -13,4 +13,6 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     List<Target> findByName(@Param("name") String name);
 
+    List<Target> findByParent(@Param("rule") String rule);
+
 }

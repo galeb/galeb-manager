@@ -9,15 +9,12 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.galeb.engine.Driver;
 import io.galeb.entity.AbstractEntity;
 import io.galeb.entity.Farm;
 import io.galeb.entity.VirtualHost;
+import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.repository.FarmRepository;
 
@@ -42,33 +39,6 @@ public class VirtualHostEngine extends AbstractEngine {
         return farmRepository.findById(farmId).stream().findFirst();
     }
 
-    @Override
-    protected String makeJson(AbstractEntity<?> entity) {
-        String result = "{}";
-        if(entity instanceof VirtualHost) {
-            JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(false);
-            ObjectNode node = jsonNodeFactory.objectNode();
-
-            node.put("id", entity.getName());
-            node.put("pk", entity.getId());
-            node.put("version", entity.getId());
-            ObjectNode properties = jsonNodeFactory.objectNode();
-            entity.getProperties().entrySet().stream().forEach(entry -> {
-                properties.put(entry.getKey(), entry.getValue());
-            });
-            node.set("properties", properties);
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-            try {
-                result = mapper.writeValueAsString(node);
-            } catch (JsonProcessingException e) {
-                LOGGER.error(e.getMessage());
-            }
-        }
-        return result;
-    }
-
     @JmsListener(destination = QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
@@ -91,7 +61,13 @@ public class VirtualHostEngine extends AbstractEngine {
     }
 
     private Properties makeProperties(VirtualHost virtualHost) {
-        String json = makeJson(virtualHost);
+        String json = "{}";
+        try {
+            JsonMapper jsonMapper = makeJson(virtualHost);
+            json = jsonMapper.toString();
+        } catch (JsonProcessingException e) {
+            LOGGER.equals(e.getMessage());
+        }
         Properties properties = fromEntity(virtualHost);
         properties.put("json", json);
         properties.put("path", "virtualhost");

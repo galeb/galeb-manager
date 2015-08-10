@@ -12,7 +12,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.engine.farm.ProjectEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Project;
 
@@ -34,7 +33,6 @@ public class ProjectHandler {
     @HandleAfterCreate
     public void afterCreate(Project project) {
         LOGGER.info("Project: HandleAfterCreate");
-        jms.convertAndSend(ProjectEngine.QUEUE_CREATE, project);
     }
 
     @HandleBeforeSave
@@ -45,7 +43,6 @@ public class ProjectHandler {
     @HandleAfterSave
     public void afterSave(Project project) {
         LOGGER.info("Project: HandleAfterSave");
-        jms.convertAndSend(ProjectEngine.QUEUE_UPDATE, project);
     }
 
     @HandleBeforeDelete
@@ -56,7 +53,6 @@ public class ProjectHandler {
     @HandleAfterDelete
     public void afterDelete(Project project) {
         LOGGER.info("Project: HandleAfterDelete");
-        jms.convertAndSend(ProjectEngine.QUEUE_REMOVE, project);
     }
 
 }

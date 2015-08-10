@@ -12,7 +12,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.engine.farm.EnvironmentEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Environment;
 
@@ -33,7 +32,6 @@ public class EnvironmentHandler {
     @HandleAfterCreate
     public void afterCreate(Environment environment) {
         LOGGER.info("Environment: HandleAfterCreate");
-        jms.convertAndSend(EnvironmentEngine.QUEUE_CREATE, environment);
     }
 
     @HandleBeforeSave
@@ -44,7 +42,6 @@ public class EnvironmentHandler {
     @HandleAfterSave
     public void afterSave(Environment environment) {
         LOGGER.info("Environment: HandleAfterSave");
-        jms.convertAndSend(EnvironmentEngine.QUEUE_UPDATE, environment);
     }
 
     @HandleBeforeDelete
@@ -55,7 +52,6 @@ public class EnvironmentHandler {
     @HandleAfterDelete
     public void afterDelete(Environment environment) {
         LOGGER.info("Environment: HandleAfterDelete");
-        jms.convertAndSend(EnvironmentEngine.QUEUE_REMOVE, environment);
     }
 
 }
