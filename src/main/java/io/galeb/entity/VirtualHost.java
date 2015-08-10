@@ -1,9 +1,13 @@
 package io.galeb.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 
 import org.springframework.util.Assert;
 
@@ -24,6 +28,10 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
 
     @JsonIgnore
     private long farmId;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    private final Set<Rule> rules = new HashSet<>();
 
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);
