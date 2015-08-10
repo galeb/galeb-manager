@@ -2,6 +2,7 @@ package io.galeb.engine.impl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 import io.galeb.engine.Driver;
 import io.galeb.handler.VirtualHostHandler;
 import io.galeb.manager.common.Properties;
@@ -20,10 +21,11 @@ public class GalebV3Driver implements Driver {
 
     @Override
     public boolean create(Properties properties) {
-        Class<?> entityClass = properties.getOrDefault("entity", new Object()).getClass();
         String api = properties.getOrDefault("api", "NULL").toString();
-        LOGGER.info(entityClass.getName());
-        LOGGER.info(">>>>>>>>>>> FARM API:" + api);
+        String json = properties.getOrDefault("json", "{}").toString();
+        String path = properties.getOrDefault("path", "").toString();
+        LOGGER.info(">>>>>>>>>>> POST http://" + api + "/" + path);
+        LOGGER.info(json);
         return true;
     }
 

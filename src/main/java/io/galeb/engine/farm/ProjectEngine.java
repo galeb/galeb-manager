@@ -26,6 +26,11 @@ public class ProjectEngine extends AbstractEngine {
         return Optional.empty();
     }
 
+    @Override
+    protected String makeJson(AbstractEntity<?> entity) {
+        return "{}";
+    }
+
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Project project) {
         LOGGER.info("Creating "+project.getClass().getSimpleName()+" "+project.getName());

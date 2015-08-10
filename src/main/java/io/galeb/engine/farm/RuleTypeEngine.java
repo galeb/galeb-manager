@@ -26,6 +26,11 @@ public class RuleTypeEngine extends AbstractEngine {
         return Optional.empty();
     }
 
+    @Override
+    protected String makeJson(AbstractEntity<?> entity) {
+        return "{}";
+    }
+
     @JmsListener(destination = QUEUE_CREATE)
     public void create(RuleType ruleType) {
         LOGGER.info("Creating "+ruleType.getClass().getSimpleName()+" "+ruleType.getName());

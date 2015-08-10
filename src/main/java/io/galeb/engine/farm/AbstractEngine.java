@@ -12,9 +12,10 @@ public abstract class AbstractEngine {
 
     protected abstract Optional<Farm> findFarm(AbstractEntity<?> entity);
 
+    protected abstract String makeJson(AbstractEntity<?> entity);
+
     protected Properties fromEntity(AbstractEntity<?> entity) {
         Properties properties = new Properties();
-        properties.put("entity", entity);
         properties.put("api", findApi(entity));
         return properties;
     }

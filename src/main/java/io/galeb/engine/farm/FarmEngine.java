@@ -25,6 +25,11 @@ public class FarmEngine extends AbstractEngine {
         return Optional.empty();
     }
 
+    @Override
+    protected String makeJson(AbstractEntity<?> entity) {
+        return "{}";
+    }
+
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Farm farm) {
         LOGGER.info("Creating "+farm.getClass().getSimpleName()+" "+farm.getName());

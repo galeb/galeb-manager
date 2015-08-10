@@ -26,6 +26,11 @@ public class TargetTypeEngine extends AbstractEngine {
         return Optional.empty();
     }
 
+    @Override
+    protected String makeJson(AbstractEntity<?> entity) {
+        return "{}";
+    }
+
     @JmsListener(destination = QUEUE_CREATE)
     public void create(TargetType targetType) {
         LOGGER.info("Creating "+targetType.getClass().getSimpleName()+" "+targetType.getName());

@@ -26,6 +26,11 @@ public class EnvironmentEngine extends AbstractEngine {
         return Optional.empty();
     }
 
+    @Override
+    protected String makeJson(AbstractEntity<?> entity) {
+        return "{}";
+    }
+
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Environment environment) {
         LOGGER.info("Creating "+environment.getClass().getSimpleName()+" "+environment.getName());
