@@ -3,6 +3,7 @@ package io.galeb.entity;
 import java.util.Set;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 
 @Entity
@@ -10,7 +11,7 @@ public class RuleType extends AbstractEntity<RuleType> {
 
     private static final long serialVersionUID = 5596582746795373010L;
 
-    @OneToMany
+    @OneToMany(fetch = FetchType.EAGER)
     private Set<Rule> rules;
 
     public RuleType(String name) {

@@ -2,6 +2,7 @@ package io.galeb.entity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
@@ -19,7 +20,7 @@ public class Farm extends AbstractEntity<Farm> {
     @Column(nullable = false)
     private String api;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(nullable = false)
     private Environment environment;
 

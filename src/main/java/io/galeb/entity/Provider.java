@@ -5,6 +5,7 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,7 +16,7 @@ public class Provider extends AbstractEntity<Provider> {
     private static final long serialVersionUID = 5596582746795373019L;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "provider")
+    @OneToMany(mappedBy = "provider", fetch = FetchType.EAGER)
     private final Set<Farm> farms = new HashSet<>();
 
     @Column
