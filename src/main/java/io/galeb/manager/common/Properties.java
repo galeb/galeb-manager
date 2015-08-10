@@ -3,7 +3,9 @@ package io.galeb.manager.common;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class Properties {
 
@@ -44,6 +46,10 @@ public class Properties {
 
     public boolean containValue(Object obj) {
         return properties.containsValue(obj);
+    }
+
+    public Stream<Entry<String, Object>> stream() {
+        return properties.entrySet().stream();
     }
 
 }
