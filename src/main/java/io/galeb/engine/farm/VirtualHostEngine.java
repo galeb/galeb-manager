@@ -1,6 +1,7 @@
 package io.galeb.engine.farm;
 
 import java.util.Optional;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,25 +72,29 @@ public class VirtualHostEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        String json = makeJson(virtualHost);
-        Properties properties = fromEntity(virtualHost);
-        properties.put("json", json);
-        properties.put("path", "virtualhost");
         Driver driver = getDriver(virtualHost);
-        driver.create(properties);
+        driver.create(makeProperties(virtualHost));
     }
 
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(VirtualHost virtualHost) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         Driver driver = getDriver(virtualHost);
-        driver.update(fromEntity(virtualHost));
+        driver.update(makeProperties(virtualHost));
     }
 
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(VirtualHost virtualHost) {
         LOGGER.info("Removing "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         Driver driver = getDriver(virtualHost);
-        driver.remove(fromEntity(virtualHost));
+        driver.remove(makeProperties(virtualHost));
+    }
+
+    private Properties makeProperties(VirtualHost virtualHost) {
+        String json = makeJson(virtualHost);
+        Properties properties = fromEntity(virtualHost);
+        properties.put("json", json);
+        properties.put("path", "virtualhost");
+        return properties;
     }
 }
