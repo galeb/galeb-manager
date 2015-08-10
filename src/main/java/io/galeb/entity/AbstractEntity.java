@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -49,7 +50,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Column(unique = true, nullable = false)
     private String name;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private final Map<String, String> properties = new HashMap<>();
 
     @Column
