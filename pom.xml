@@ -114,11 +114,6 @@
             <version>2.4.1</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-         <groupId>com.couchbase.client</groupId>
-         <artifactId>couchbase-client</artifactId>
-         <version>1.4.4</version>
-        </dependency>
     </dependencies>
 
     <build>
