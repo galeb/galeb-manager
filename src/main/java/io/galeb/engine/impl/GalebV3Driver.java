@@ -2,24 +2,16 @@ package io.galeb.engine.impl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.stereotype.Service;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
 import io.galeb.engine.Driver;
-import io.galeb.entity.AbstractEntity;
 import io.galeb.handler.VirtualHostHandler;
+import io.galeb.manager.common.Properties;
 
-@Service
 public class GalebV3Driver implements Driver {
 
     public static final String DRIVER_NAME = GalebV3Driver.class.getSimpleName()
                                                                 .replaceAll("Driver", "");
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
-    private static final Gson jsonParser = new GsonBuilder().setPrettyPrinting()
-                                                            .create();
 
     @Override
     public String toString() {
@@ -27,10 +19,11 @@ public class GalebV3Driver implements Driver {
     }
 
     @Override
-    public boolean create(AbstractEntity<?> entity) {
-        Class<?> entityClass = entity.getClass();
+    public boolean create(Properties properties) {
+        Class<?> entityClass = properties.getOrDefault("entity", new Object()).getClass();
+        String api = properties.getOrDefault("api", "NULL").toString();
         LOGGER.info(entityClass.getName());
-        LOGGER.info(jsonParser.toJson(entity));
+        LOGGER.info(">>>>>>>>>>> FARM API:" + api);
         return true;
     }
 

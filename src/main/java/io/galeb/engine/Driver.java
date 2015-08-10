@@ -1,7 +1,7 @@
 package io.galeb.engine;
 
 import io.galeb.engine.farm.EntityFarm;
-import io.galeb.entity.AbstractEntity;
+import io.galeb.manager.common.Properties;
 
 public interface Driver {
 
@@ -13,31 +13,27 @@ public interface Driver {
 
     public static final String DEFAULT_DRIVER_NAME = "NULL";
 
-    default Driver setParams(String... param) {
-        return this;
-    }
-
-    default EntityFarm info(AbstractEntity<?> entity) {
+    default EntityFarm info(Properties properties) {
         return null;
     }
 
-    default boolean create(AbstractEntity<?> entity) {
+    default boolean create(Properties properties) {
         return true;
     }
 
-    default boolean update(AbstractEntity<?> entity) {
+    default boolean update(Properties properties) {
         return true;
     }
 
-    default boolean remove(AbstractEntity<?> entity) {
+    default boolean remove(Properties properties) {
         return true;
     }
 
-    default boolean reload() {
+    default boolean reload(Properties properties) {
         return true;
     }
 
-    default StatusFarm status() {
+    default StatusFarm status(Properties properties) {
         return StatusFarm.UNKNOWN;
     }
 
