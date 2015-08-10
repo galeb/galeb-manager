@@ -12,7 +12,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.engine.farm.RuleTypeEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.RuleType;
 
@@ -33,7 +32,6 @@ public class RuleTypeHandler {
     @HandleAfterCreate
     public void afterCreate(RuleType ruleType) {
         LOGGER.info("RuleType: HandleAfterCreate");
-        jms.convertAndSend(RuleTypeEngine.QUEUE_CREATE, ruleType);
     }
 
     @HandleBeforeSave
@@ -44,7 +42,6 @@ public class RuleTypeHandler {
     @HandleAfterSave
     public void afterSave(RuleType ruleType) {
         LOGGER.info("RuleType: HandleAfterSave");
-        jms.convertAndSend(RuleTypeEngine.QUEUE_UPDATE, ruleType);
     }
 
     @HandleBeforeDelete
@@ -55,6 +52,5 @@ public class RuleTypeHandler {
     @HandleAfterDelete
     public void afterDelete(RuleType ruleType) {
         LOGGER.info("RuleType: HandleAfterDelete");
-        jms.convertAndSend(RuleTypeEngine.QUEUE_REMOVE, ruleType);
     }
 }
