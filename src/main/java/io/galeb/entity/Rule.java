@@ -1,18 +1,12 @@
 package io.galeb.entity;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
 import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Rule extends AbstractEntity<Rule> {
@@ -23,23 +17,22 @@ public class Rule extends AbstractEntity<Rule> {
     @JoinColumn(nullable = false)
     private RuleType ruleType;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    private Environment environment;
-
-    @JsonIgnore
-    private long farmId;
-
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
     private VirtualHost parent;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
-    private final Set<Target> targets = new HashSet<>();
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
+    private Target target;
 
-    public Rule(String name, RuleType ruleType, Environment environment) {
+    public Rule(String name, RuleType ruleType, Environment environment, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);
+        Assert.notNull(parent);
+        Assert.notNull(target);
         setName(name);
         this.ruleType = ruleType;
+        this.parent = parent;
+        this.target = target;
     }
 
     protected Rule() {
@@ -55,24 +48,6 @@ public class Rule extends AbstractEntity<Rule> {
         return this;
     }
 
-    public Environment getEnvironment() {
-        return environment;
-    }
-
-    public Rule setEnvironment(Environment environment) {
-        this.environment = environment;
-        return this;
-    }
-
-    public long getFarmId() {
-        return farmId;
-    }
-
-    public Rule setFarmId(long farmId) {
-        this.farmId = farmId;
-        return this;
-    }
-
     public VirtualHost getParent() {
         return parent;
     }
@@ -80,6 +55,16 @@ public class Rule extends AbstractEntity<Rule> {
     public Rule setParent(VirtualHost parent) {
         Assert.notNull(parent);
         this.parent = parent;
+        return this;
+    }
+
+    public Target getTarget() {
+        return target;
+    }
+
+    public Rule setTarget(Target target) {
+        Assert.notNull(target);
+        this.target = target;
         return this;
     }
 

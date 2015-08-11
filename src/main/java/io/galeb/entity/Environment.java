@@ -22,6 +22,10 @@ public class Environment extends AbstractEntity<Environment> {
     @OneToMany(mappedBy = "environment", fetch = FetchType.EAGER)
     private final Set<VirtualHost> virtualhosts = new HashSet<>();
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "environment", fetch = FetchType.EAGER)
+    private final Set<Target> targets = new HashSet<>();
+
     public Environment(String name) {
         setName(name);
     }

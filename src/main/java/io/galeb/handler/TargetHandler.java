@@ -1,5 +1,11 @@
 package io.galeb.handler;
 
+import io.galeb.engine.farm.TargetEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Target;
+import io.galeb.repository.FarmRepository;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +18,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.engine.farm.TargetEngine;
-import io.galeb.entity.Target;
-
 @RepositoryEventHandler(Target.class)
 public class TargetHandler {
 
@@ -23,9 +26,29 @@ public class TargetHandler {
     @Autowired
     private JmsTemplate jms;
 
+    @Autowired
+    private FarmRepository farmRepository;
+
+    private void setBestFarm(final Target target) {
+        long farmId = -1L;
+        if (target.getParent() != null) {
+            final Target targetParent = target.getParent();
+            farmId = targetParent.getFarmId();
+        } else {
+            final Farm farm = farmRepository.findByEnvironmentAndStatus(target.getEnvironment(), EntityStatus.OK)
+                    .stream().findFirst().orElse(null);
+            if (farm != null) {
+                farmId = farm.getId();
+            }
+        }
+        target.setFarmId(farmId);
+    }
+
     @HandleBeforeCreate
     public void beforeCreate(Target target) {
         LOGGER.info("Target: HandleBeforeCreate");
+        setBestFarm(target);
+        target.setStatus(EntityStatus.PENDING);
     }
 
     @HandleAfterCreate

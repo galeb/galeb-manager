@@ -1,5 +1,11 @@
 package io.galeb.handler;
 
+import io.galeb.engine.farm.VirtualHostEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Farm;
+import io.galeb.entity.VirtualHost;
+import io.galeb.repository.FarmRepository;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +17,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
-
-import io.galeb.engine.farm.VirtualHostEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Farm;
-import io.galeb.entity.VirtualHost;
-import io.galeb.repository.FarmRepository;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler {
@@ -30,7 +30,7 @@ public class VirtualHostHandler {
     private FarmRepository farmRepository;
 
     private void setBestFarm(final VirtualHost virtualhost) {
-        Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
+        final Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
                 .stream().findFirst().orElse(null);
         if (farm!=null) {
             virtualhost.setFarmId(farm.getId());
@@ -42,6 +42,7 @@ public class VirtualHostHandler {
         LOGGER.info("VirtualHost: HandleBeforeCreate");
         virtualhost.setFarmId(-1L);
         setBestFarm(virtualhost);
+        virtualhost.setStatus(EntityStatus.PENDING);
     }
 
     @HandleAfterCreate

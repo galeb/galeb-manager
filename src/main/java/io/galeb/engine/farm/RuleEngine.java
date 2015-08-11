@@ -1,5 +1,13 @@
 package io.galeb.engine.farm;
 
+import io.galeb.engine.Driver;
+import io.galeb.entity.AbstractEntity;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Rule;
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.repository.FarmRepository;
+
 import java.util.Optional;
 
 import org.apache.commons.logging.Log;
@@ -9,14 +17,6 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import io.galeb.engine.Driver;
-import io.galeb.entity.AbstractEntity;
-import io.galeb.entity.Farm;
-import io.galeb.entity.Rule;
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.repository.FarmRepository;
 
 @Component
 public class RuleEngine extends AbstractEngine {
@@ -34,8 +34,7 @@ public class RuleEngine extends AbstractEngine {
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         long farmId = -1L;
         if (entity instanceof Rule) {
-            Rule rule = (Rule)entity;
-            farmId = -1L; // = rule.getFarmId();
+            farmId = ((Rule)entity).getParent().getFarmId();
         }
         return farmRepository.findById(farmId).stream().findFirst();
     }
@@ -43,42 +42,37 @@ public class RuleEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        Driver driver = getDriver(rule);
+        final Driver driver = getDriver(rule);
         driver.create(makeProperties(rule));
     }
 
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        Driver driver = getDriver(rule);
+        final Driver driver = getDriver(rule);
         driver.update(makeProperties(rule));
     }
 
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Rule rule) {
         LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
-        Driver driver = getDriver(rule);
+        final Driver driver = getDriver(rule);
         driver.remove(makeProperties(rule));
     }
 
     private Properties makeProperties(Rule rule) {
-        /**
-         * TODO
-         *
-         * RuleHandler.beforeCreate
-         *         rule.getProperties().put("ruleType", rule.getRuleType().getName());
-         *         rule.getProperties().put("targetType", "BackendPool");
-         *         rule.getProperties().put("targetId", targetRepository.findByParent(rule).getName());
-         */
         String json = "{}";
         try {
-            JsonMapper jsonMapper = makeJson(rule);
-//            jsonMapper.putString("parentId", rule.getParentId());
+            final JsonMapper jsonMapper = makeJson(rule);
+            jsonMapper.putString("parentId", rule.getParent().getName());
+            jsonMapper.addToNode("properties", "ruleType", rule.getRuleType().getName());
+            jsonMapper.addToNode("properties", "targetType", rule.getTarget().getTargetType().getName());
+            jsonMapper.addToNode("properties", "targetId", rule.getTarget().getName());
             json = jsonMapper.toString();
-        } catch (JsonProcessingException e) {
+        } catch (final JsonProcessingException e) {
             LOGGER.equals(e.getMessage());
         }
-        Properties properties = fromEntity(rule);
+        final Properties properties = fromEntity(rule);
         properties.put("json", json);
         properties.put("path", "rule");
         return properties;

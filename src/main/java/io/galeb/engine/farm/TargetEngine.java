@@ -3,7 +3,6 @@ package io.galeb.engine.farm;
 import io.galeb.engine.Driver;
 import io.galeb.entity.AbstractEntity;
 import io.galeb.entity.Farm;
-import io.galeb.entity.Rule;
 import io.galeb.entity.Target;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
@@ -31,16 +30,11 @@ public class TargetEngine extends AbstractEngine {
     @Autowired
     private FarmRepository farmRepository;
 
-    @SuppressWarnings("unused")
     @Override
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
-        final long farmId = -1L;
-        if (entity instanceof AbstractEntity) {
-            final AbstractEntity<?> targetParent = null;// = ((EntityAffiliable<Target>) entity).getParent();
-            if (targetParent instanceof Rule) {
-                final Rule rule = (Rule)targetParent;
-                //farmId = rule.getFarmId();
-            }
+        long farmId = -1L;
+        if (entity instanceof Target) {
+            farmId = ((Target)entity).getFarmId();
         }
         return farmRepository.findById(farmId).stream().findFirst();
     }
@@ -70,6 +64,9 @@ public class TargetEngine extends AbstractEngine {
         String json = "{}";
         try {
             final JsonMapper jsonMapper = makeJson(target);
+            if (target.getParent() != null) {
+                jsonMapper.putString("parentId", target.getParent().getName());
+            }
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
             LOGGER.equals(e.getMessage());

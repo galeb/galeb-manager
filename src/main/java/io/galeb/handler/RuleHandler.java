@@ -2,10 +2,12 @@ package io.galeb.handler;
 
 import io.galeb.engine.farm.RuleEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Farm;
 import io.galeb.entity.Rule;
+import io.galeb.entity.Target;
 import io.galeb.entity.VirtualHost;
 import io.galeb.repository.FarmRepository;
+
+import javax.persistence.EntityNotFoundException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -31,22 +33,24 @@ public class RuleHandler {
     private FarmRepository farmRepository;
 
     private void setBestFarm(final Rule rule) {
-        long farmId = -1L;
-        if (rule.getParent() != null) {
+        if (rule.getParent() != null && rule.getTarget() != null) {
             final VirtualHost virtualhost = rule.getParent();
-            farmId = virtualhost.getFarmId();
-        } else {
-            final Farm farm = farmRepository.findByEnvironmentAndStatus(rule.getEnvironment(), EntityStatus.OK)
-                    .stream().findFirst().orElse(null);
-            farmId = farm.getId();
+            final Target target           = rule.getTarget();
+
+            final long farmIdVirtualHost = virtualhost.getFarmId();
+            final long farmIdTarget      = target.getFarmId();
+
+            if (farmIdVirtualHost != farmIdTarget) {
+                throw new EntityNotFoundException();
+            }
         }
-        rule.setFarmId(farmId);
     }
 
     @HandleBeforeCreate
     public void beforeCreate(Rule rule) {
         LOGGER.info("Rule: HandleBeforeCreate");
         setBestFarm(rule);
+        rule.setStatus(EntityStatus.PENDING);
     }
 
     @HandleAfterCreate
