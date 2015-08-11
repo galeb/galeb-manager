@@ -81,7 +81,6 @@ public class StepDefs {
                 }
             });
             String json = jsonParser.toJson(jsonComponentsProcessed);
-            LOGGER.info(json);
             request.body(json);
         }
     }
