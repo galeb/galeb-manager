@@ -3,6 +3,7 @@ package io.galeb.repository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import io.galeb.handler.AccountHandler;
 import io.galeb.handler.EnvironmentHandler;
 import io.galeb.handler.FarmHandler;
 import io.galeb.handler.ProjectHandler;
@@ -11,6 +12,7 @@ import io.galeb.handler.RuleHandler;
 import io.galeb.handler.RuleTypeHandler;
 import io.galeb.handler.TargetHandler;
 import io.galeb.handler.TargetTypeHandler;
+import io.galeb.handler.TeamHandler;
 import io.galeb.handler.VirtualHostHandler;
 
 @Configuration
@@ -59,6 +61,16 @@ public class RepositoryConfiguration {
     @Bean
     public ProviderHandler providerHandler() {
         return new ProviderHandler();
+    }
+
+    @Bean
+    public AccountHandler accountHandler() {
+        return new AccountHandler();
+    }
+
+    @Bean
+    public TeamHandler teamHandler() {
+        return new TeamHandler();
     }
 
 }
