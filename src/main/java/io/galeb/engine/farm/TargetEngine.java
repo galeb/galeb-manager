@@ -1,5 +1,14 @@
 package io.galeb.engine.farm;
 
+import io.galeb.engine.Driver;
+import io.galeb.entity.AbstractEntity;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Rule;
+import io.galeb.entity.Target;
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.repository.FarmRepository;
+
 import java.util.Optional;
 
 import org.apache.commons.logging.Log;
@@ -9,16 +18,6 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import io.galeb.engine.Driver;
-import io.galeb.entity.AbstractEntity;
-import io.galeb.entity.EntityAffiliable;
-import io.galeb.entity.Farm;
-import io.galeb.entity.Rule;
-import io.galeb.entity.Target;
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.repository.FarmRepository;
 
 @Component
 public class TargetEngine extends AbstractEngine {
@@ -35,11 +34,11 @@ public class TargetEngine extends AbstractEngine {
     @SuppressWarnings("unused")
     @Override
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
-        long farmId = -1L;
-        if (entity instanceof EntityAffiliable) {
-            AbstractEntity<?> targetParent = null;// = ((EntityAffiliable<Target>) entity).getParent();
+        final long farmId = -1L;
+        if (entity instanceof AbstractEntity) {
+            final AbstractEntity<?> targetParent = null;// = ((EntityAffiliable<Target>) entity).getParent();
             if (targetParent instanceof Rule) {
-                Rule rule = (Rule)targetParent;
+                final Rule rule = (Rule)targetParent;
                 //farmId = rule.getFarmId();
             }
         }
@@ -49,33 +48,33 @@ public class TargetEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Target target) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
-        Driver driver = getDriver(target);
+        final Driver driver = getDriver(target);
         driver.create(makeProperties(target));
     }
 
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(Target target) {
         LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
-        Driver driver = getDriver(target);
+        final Driver driver = getDriver(target);
         driver.update(makeProperties(target));
     }
 
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Target target) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
-        Driver driver = getDriver(target);
+        final Driver driver = getDriver(target);
         driver.remove(makeProperties(target));
     }
 
     private Properties makeProperties(Target target) {
         String json = "{}";
         try {
-            JsonMapper jsonMapper = makeJson(target);
+            final JsonMapper jsonMapper = makeJson(target);
             json = jsonMapper.toString();
-        } catch (JsonProcessingException e) {
+        } catch (final JsonProcessingException e) {
             LOGGER.equals(e.getMessage());
         }
-        Properties properties = fromEntity(target);
+        final Properties properties = fromEntity(target);
         properties.put("json", json);
         properties.put("path", target.getTargetType().getName().toLowerCase());
         return properties;
