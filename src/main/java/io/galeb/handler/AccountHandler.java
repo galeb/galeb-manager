@@ -9,6 +9,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Account;
@@ -18,6 +19,7 @@ public class AccountHandler {
 
     private static Log LOGGER = LogFactory.getLog(AccountHandler.class);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Account account) {
         LOGGER.info("Account: HandleBeforeCreate");
@@ -29,6 +31,7 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterCreate");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Account account) {
         LOGGER.info("Account: HandleBeforeSave");
@@ -39,6 +42,7 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterSave");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Account account) {
         LOGGER.info("Account: HandleBeforeDelete");

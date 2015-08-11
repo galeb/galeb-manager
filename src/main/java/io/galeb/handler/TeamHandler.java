@@ -9,6 +9,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Team;
@@ -18,6 +19,7 @@ public class TeamHandler {
 
     private static Log LOGGER = LogFactory.getLog(TeamHandler.class);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Team team) {
         LOGGER.info("Team: HandleBeforeCreate");
@@ -29,6 +31,7 @@ public class TeamHandler {
         LOGGER.info("Team: HandleAfterCreate");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Team team) {
         LOGGER.info("Team: HandleBeforeSave");
@@ -39,6 +42,7 @@ public class TeamHandler {
         LOGGER.info("Team: HandleAfterSave");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Team team) {
         LOGGER.info("Team: HandleBeforeDelete");
