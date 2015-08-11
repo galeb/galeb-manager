@@ -1,9 +1,13 @@
 package io.galeb.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 
 import org.springframework.util.Assert;
@@ -27,6 +31,10 @@ public class Rule extends AbstractEntity<Rule> {
 
     @ManyToOne(fetch = FetchType.EAGER)
     private VirtualHost parent;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    private final Set<Target> targets = new HashSet<>();
 
     public Rule(String name, RuleType ruleType, Environment environment) {
         Assert.notNull(ruleType);
