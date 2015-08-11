@@ -1,13 +1,15 @@
 package io.galeb.entity;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 
 import org.springframework.util.Assert;
 
 @Entity
-public class Target extends EntityAffiliable<Target> {
+public class Target extends AbstractEntity<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
@@ -15,10 +17,15 @@ public class Target extends EntityAffiliable<Target> {
     @JoinColumn(nullable = false)
     private TargetType targetType;
 
-    public Target(String name, TargetType targetType, String parent) {
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
+    private Rule parent;
+
+    public Target(String name, TargetType targetType, Rule parent) {
         Assert.notNull(targetType);
+        Assert.notNull(parent);
         setName(name);
-        setParent(parent);
+        this.parent = parent;
         this.targetType = targetType;
     }
 
@@ -32,6 +39,16 @@ public class Target extends EntityAffiliable<Target> {
 
     public Target setTargetType(TargetType targetType) {
         this.targetType = targetType;
+        return this;
+    }
+
+    public Rule getParent() {
+        return parent;
+    }
+
+    public Target setParent(Rule parent) {
+        Assert.notNull(parent);
+        this.parent = parent;
         return this;
     }
 
