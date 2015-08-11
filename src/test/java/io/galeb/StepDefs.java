@@ -63,7 +63,7 @@ public class StepDefs {
 
     @Given("^a REST client$")
     public void givenRestClient() throws Throwable {
-        request = with().contentType("application/json");
+        request = with().contentType("application/json").auth().basic("admin", "password");
         LOGGER.info("Using "+RestAssured.class.getName());
     }
 
