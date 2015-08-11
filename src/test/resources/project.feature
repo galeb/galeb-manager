@@ -5,17 +5,17 @@ Feature: Project Support
     Background:
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | projOne |
         And send POST /project
 
     Scenario: Create Project
         Then the response status is 201
-        And property name contains one
+        And property name contains projOne
 
     Scenario: Create duplicated Project
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | projOne |
         And send POST /project
         Then the response status is 409
 
@@ -23,7 +23,7 @@ Feature: Project Support
         Given a REST client
         When send GET /project/1
         Then the response status is 200
-        And property name contains one
+        And property name contains projOne
 
     Scenario: Get null Project
         Given a REST client
@@ -33,18 +33,18 @@ Feature: Project Support
     Scenario: Update Project
         Given a REST client
         When request json body has:
-            | name | two |
+            | name | projTwo |
         And send PUT /project/1
         Then the response status is 200
-        And property name contains two
+        And property name contains projTwo
 
     Scenario: Update one field of Project
         Given a REST client
         When request json body has:
-            | name | two |
+            | name | pwrojTree |
         And send PATCH /project/1
         Then the response status is 200
-        And property name contains two
+        And property name contains pwrojTree
 
     Scenario: Delete Project
         Given a REST client

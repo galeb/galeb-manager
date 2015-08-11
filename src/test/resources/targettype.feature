@@ -5,17 +5,17 @@ Feature: TargetType Support
     Background:
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | tTypeOne |
         And send POST /targettype
 
     Scenario: Create TargetType
         Then the response status is 201
-        And property name contains one
+        And property name contains tTypeOne
 
     Scenario: Create duplicated TargetType
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | tTypeOne |
         And send POST /targettype
         Then the response status is 409
 
@@ -23,7 +23,7 @@ Feature: TargetType Support
         Given a REST client
         When send GET /targettype/1
         Then the response status is 200
-        And property name contains one
+        And property name contains tTypeOne
 
     Scenario: Get null TargetType
         Given a REST client
@@ -33,18 +33,18 @@ Feature: TargetType Support
     Scenario: Update TargetType
         Given a REST client
         When request json body has:
-            | name | two |
+            | name | tTypeTwo |
         And send PUT /targettype/1
         Then the response status is 200
-        And property name contains two
+        And property name contains tTypeTwo
 
     Scenario: Update one field of TargetType
         Given a REST client
         When request json body has:
-            | name | two |
+            | name | tTypeTree |
         And send PATCH /targettype/1
         Then the response status is 200
-        And property name contains two
+        And property name contains tTypeTree
 
     Scenario: Delete TargetType
         Given a REST client

@@ -5,7 +5,7 @@ Feature: Farm Support
     Background:
         Given a REST client
         When request json body has:
-            | name | EnvOne |
+            | name | envOne |
         And send POST /environment
         And a REST client
         When request json body has:
@@ -13,7 +13,7 @@ Feature: Farm Support
         And send POST /provider
         And a REST client
         When request json body has:
-            | name        | one                            |
+            | name        | farmOne                        |
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
@@ -22,12 +22,12 @@ Feature: Farm Support
 
     Scenario: Create Farm
         Then the response status is 201
-        And property name contains one
+        And property name contains farmOne
 
-    Scenario: Create duplicated Environment
+    Scenario: Create duplicated Farm
         Given a REST client
         When request json body has:
-            | name        | one                            |
+            | name        | farmOne                        |
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
@@ -39,7 +39,7 @@ Feature: Farm Support
         Given a REST client
         When send GET /farm/1
         Then the response status is 200
-        And property name contains one
+        And property name contains farmOne
 
     Scenario: Get null Farm
         Given a REST client
@@ -49,25 +49,27 @@ Feature: Farm Support
     Scenario: Update Farm
         Given a REST client
         When request json body has:
-            | name        | two                            |
-            | domain      | domain2                        |
-            | api         | api2                           |
+            | name        | farmTwo                        |
+            | domain      | domainTwo                      |
+            | api         | apiTwo                         |
             | environment | http://localhost/environment/1 |
             | provider    | http://localhost/provider/1    |
         And send PUT /farm/1
         Then the response status is 200
-        And property name contains two
+        And property name contains farmTwo
+        And property domain contains domainTwo
+        And property api contains apiTwo
 
-    Scenario: Update one field of Environment
+    Scenario: Update one field of Farm
         Given a REST client
         When request json body has:
-            | name | two |
+            | name | farmTree |
         And send PATCH /farm/1
         Then the response status is 200
-        And property name contains two
+        And property name contains farmTree
         And property domain contains domain
 
-    Scenario: Delete Environment
+    Scenario: Delete Farm
         Given a REST client
         When send DELETE /farm/1
         Then the response status is 204

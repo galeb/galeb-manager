@@ -5,9 +5,12 @@ Feature: Rule Support
     Background:
         Given a REST client
         When request json body has:
-            | name | one |
+            | name | ruleOne |
         And send POST /ruletype
-        And the response status is 201
+        And a REST client
+        When request json body has:
+            | name | poolOne |
+        And send POST /targettype
         And a REST client
         When request json body has:
             | name | envOne |
@@ -22,7 +25,7 @@ Feature: Rule Support
         And send POST /provider
         And a REST client
         When request json body has:
-            | name        | one                            |
+            | name        | farmOne                        |
             | domain      | domain                         |
             | api         | api                            |
             | environment | http://localhost/environment/1 |
@@ -34,44 +37,67 @@ Feature: Rule Support
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send POST /virtualhost
-        And the response status is 201
+        And a REST client
+        When request json body has:
+            | name        | targetOne                      |
+            | environment | http://localhost/environment/1 |
+            | targetType  | http://localhost/targettype/1  |
+        And send POST /target
         And a REST client
         And request json body has:
-            | name     | one                            |
+            | name     | ruleOne                        |
             | ruleType | http://localhost/ruletype/1    |
             | parent   | http://localhost/virtualhost/1 |
+            | target   | http://localhost/target/1      |
         And send POST /rule
 
     Scenario: Create Rule
         Then the response status is 201
-        And property name contains one
-
-    Scenario: Create Rule without parent
-        Then the response status is 201
-        And a REST client
-        When request json body has:
-            | name        | RulewithOutParent              |
-            | ruleType    | http://localhost/ruletype/1    |
-            | environment | http://localhost/environment/1 |
-        And send POST /rule
-        Then the response status is 201
+        And property name contains ruleOne
 
     Scenario: Create duplicated Rule
-        Then the response status is 201
-        And a REST client
+        Given a REST client
         When request json body has:
-            | name     | one                            |
+            | name     | ruleOne                        |
             | ruleType | http://localhost/ruletype/1    |
             | parent   | http://localhost/virtualhost/1 |
+            | target   | http://localhost/target/1      |
         And send POST /rule
         Then the response status is 409
 
-    Scenario: Get Rule
-        Then the response status is 201
+    Scenario: Create Rule with parent and target different
+        Given a REST client
+        When request json body has:
+            | name | envTwo |
+        And send POST /environment
         And a REST client
+        When request json body has:
+            | name        | farmTwo                        |
+            | domain      | domain                         |
+            | api         | api                            |
+            | environment | http://localhost/environment/2 |
+            | provider    | http://localhost/provider/1    |
+        And send POST /farm
+        And a REST client
+        When request json body has:
+            | name        | targetTwo                      |
+            | environment | http://localhost/environment/2 |
+            | targetType  | http://localhost/targettype/1  |
+        And send POST /target
+        And a REST client
+        And request json body has:
+            | name     | ruleTwo                        |
+            | ruleType | http://localhost/ruletype/1    |
+            | parent   | http://localhost/virtualhost/1 |
+            | target   | http://localhost/target/2      |
+        And send POST /rule
+        Then the response status is 500
+
+    Scenario: Get Rule
+        Given a REST client
         When send GET /rule/1
         Then the response status is 200
-        And property name contains one
+        And property name contains ruleOne
 
     Scenario: Get null Rule
         Given a REST client
@@ -79,30 +105,25 @@ Feature: Rule Support
         Then the response status is 404
 
     Scenario: Update Rule
-        Then the response status is 201
-        And property name contains one
-        And a REST client
+        Given a REST client
         When request json body has:
-            | name     | two                            |
+            | name     | ruleTwo                        |
             | ruleType | http://localhost/ruletype/1    |
             | parent   | http://localhost/virtualhost/1 |
+            | target   | http://localhost/target/1      |
         And send PUT /rule/1
         Then the response status is 200
-        And property name contains two
+        And property name contains ruleTwo
 
     Scenario: Update one field of Rule
-        Then the response status is 201
-        And property name contains one
-        And a REST client
+        Given a REST client
         When request json body has:
-            | name | two |
+            | name | ruleTree |
         And send PATCH /rule/1
         Then the response status is 200
-        And property name contains two
+        And property name contains ruleTree
 
     Scenario: Delete Rule
-        Then the response status is 201
-        And property name contains one
-        And a REST client
+        Given a REST client
         When send DELETE /rule/1
         Then the response status is 204
