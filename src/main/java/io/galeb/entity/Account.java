@@ -4,6 +4,8 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToMany;
 
@@ -12,11 +14,20 @@ public class Account extends AbstractEntity<Account> {
 
     private static final long serialVersionUID = -2745836665462717899L;
 
+    public enum Role {
+        USER,
+        ADMIN
+    }
+
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Team> teams;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
+
+    @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public String getEmail() {
         return email;
@@ -33,6 +44,15 @@ public class Account extends AbstractEntity<Account> {
 
     public Account setTeams(Set<Team> teams) {
         this.teams = teams;
+        return this;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public Account setRole(Role role) {
+        this.role = role;
         return this;
     }
 
