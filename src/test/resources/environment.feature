@@ -1,3 +1,4 @@
+@environment
 Feature: Environment Support
     The manager have than
     to support REST standard

@@ -1,3 +1,4 @@
+@ruletype
 Feature: RuleType Support
     The manager have than
     to support REST standard

@@ -1,3 +1,4 @@
+@project
 Feature: Project Support
     The manager have than
     to support REST standard

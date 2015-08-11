@@ -1,3 +1,4 @@
+@rule
 Feature: Rule Support
     The manager have than
     to support REST standard
