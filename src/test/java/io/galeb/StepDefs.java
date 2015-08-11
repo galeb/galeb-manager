@@ -3,6 +3,7 @@ package io.galeb;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.Matchers.hasToString;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -69,7 +70,19 @@ public class StepDefs {
     @When("^request json body has:$")
     public void requestJsonBodyHas(Map<String, String> jsonComponents) throws Throwable {
         if (!jsonComponents.isEmpty() && !jsonComponents.keySet().contains("")) {
-            request.body(jsonParser.toJson(jsonComponents));
+            final Map<String, Object> jsonComponentsProcessed = new HashMap<>();
+            jsonComponents.entrySet().stream().forEach(entry -> {
+                String oldValue = entry.getValue();
+                if (oldValue.contains("[")) {
+                    String[] arrayOfValues = oldValue.replaceAll("\\[|\\]| ", "").split(",");
+                    jsonComponentsProcessed.put(entry.getKey(), arrayOfValues);
+                } else {
+                    jsonComponentsProcessed.put(entry.getKey(), oldValue);
+                }
+            });
+            String json = jsonParser.toJson(jsonComponentsProcessed);
+            LOGGER.info(json);
+            request.body(json);
         }
     }
 
