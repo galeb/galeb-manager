@@ -1,3 +1,4 @@
+@provider
 Feature: Provider Support
     The manager have than
     to support REST standard

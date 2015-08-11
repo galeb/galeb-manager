@@ -1,3 +1,4 @@
+@targettype
 Feature: TargetType Support
     The manager have than
     to support REST standard

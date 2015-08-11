@@ -1,3 +1,4 @@
+@target
 Feature: Target Support
     The manager have than
     to support REST standard
