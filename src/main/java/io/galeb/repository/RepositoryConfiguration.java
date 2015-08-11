@@ -1,4 +1,4 @@
-package io.galeb;
+package io.galeb.repository;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
