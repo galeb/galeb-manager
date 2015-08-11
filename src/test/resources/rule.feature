@@ -18,6 +18,18 @@ Feature: Rule Support
         And send POST /project
         And a REST client
         When request json body has:
+            | name | providerOne |
+        And send POST /provider
+        And a REST client
+        When request json body has:
+            | name        | one                            |
+            | domain      | domain                         |
+            | api         | api                            |
+            | environment | http://localhost/environment/1 |
+            | provider    | http://localhost/provider/1    |
+        And send POST /farm
+        And a REST client
+        When request json body has:
             | name        | virtOne                        |
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
@@ -33,6 +45,16 @@ Feature: Rule Support
     Scenario: Create Rule
         Then the response status is 201
         And property name contains one
+
+    Scenario: Create Rule without parent
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name        | RulewithOutParent              |
+            | ruleType    | http://localhost/ruletype/1    |
+            | environment | http://localhost/environment/1 |
+        And send POST /rule
+        Then the response status is 201
 
     Scenario: Create duplicated Rule
         Then the response status is 201
