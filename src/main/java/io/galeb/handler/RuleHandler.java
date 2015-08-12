@@ -27,7 +27,7 @@ public class RuleHandler {
     @Autowired
     private JmsTemplate jms;
 
-    private void setBestFarm(final Rule rule) {
+    private void checkFarmId(final Rule rule) {
         if (rule.getParent() != null && rule.getTarget() != null) {
             final VirtualHost virtualhost = rule.getParent();
             final Target target           = rule.getTarget();
@@ -46,14 +46,16 @@ public class RuleHandler {
     @HandleBeforeCreate
     public void beforeCreate(Rule rule) {
         LOGGER.info("Rule: HandleBeforeCreate");
-        setBestFarm(rule);
+        checkFarmId(rule);
         rule.setStatus(EntityStatus.PENDING);
     }
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) {
         LOGGER.info("Rule: HandleAfterCreate");
-        jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
+        if (rule.getParent() != null) {
+            jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
+        }
     }
 
     @HandleBeforeSave
