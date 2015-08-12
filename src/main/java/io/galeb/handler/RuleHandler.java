@@ -1,14 +1,5 @@
 package io.galeb.handler;
 
-import io.galeb.engine.farm.RuleEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Rule;
-import io.galeb.entity.Target;
-import io.galeb.entity.VirtualHost;
-import io.galeb.repository.FarmRepository;
-
-import javax.persistence.EntityNotFoundException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +12,13 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
+import io.galeb.engine.farm.RuleEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Rule;
+import io.galeb.entity.Target;
+import io.galeb.entity.VirtualHost;
+import io.galeb.exceptions.BadRequestException;
+
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler {
 
@@ -28,9 +26,6 @@ public class RuleHandler {
 
     @Autowired
     private JmsTemplate jms;
-
-    @Autowired
-    private FarmRepository farmRepository;
 
     private void setBestFarm(final Rule rule) {
         if (rule.getParent() != null && rule.getTarget() != null) {
@@ -41,7 +36,9 @@ public class RuleHandler {
             final long farmIdTarget      = target.getFarmId();
 
             if (farmIdVirtualHost != farmIdTarget) {
-                throw new EntityNotFoundException();
+                String errorMsg = "VirtualHost.farmId is not equal Target.farmId";
+                LOGGER.error(errorMsg);
+                throw new BadRequestException(errorMsg);
             }
         }
     }
