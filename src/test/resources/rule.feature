@@ -43,6 +43,7 @@ Feature: Rule Support
             | name        | targetOne                      |
             | environment | http://localhost/environment/1 |
             | targetType  | http://localhost/targettype/1  |
+            | project     | http://localhost/project/1     |
         And send POST /target
         And a REST client
         And request json body has:
@@ -84,6 +85,7 @@ Feature: Rule Support
             | name        | targetTwo                      |
             | environment | http://localhost/environment/2 |
             | targetType  | http://localhost/targettype/1  |
+            | project     | http://localhost/project/1     |
         And send POST /target
         And a REST client
         And request json body has:
@@ -92,7 +94,7 @@ Feature: Rule Support
             | parent   | http://localhost/virtualhost/1 |
             | target   | http://localhost/target/2      |
         And send POST /rule
-        Then the response status is 500
+        Then the response status is 400
 
     Scenario: Get Rule
         Given a REST client
