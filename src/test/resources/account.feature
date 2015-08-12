@@ -12,7 +12,7 @@ Feature: Account Support
         When request json body has:
             | name  | one                         |
             | email | test@teste.com              |
-            | role  | USER                        |
+            | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send POST /account
 
@@ -25,7 +25,7 @@ Feature: Account Support
         When request json body has:
             | name  | one                         |
             | email | test@teste.com              |
-            | role  | USER                        |
+            | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send POST /account
         Then the response status is 409
@@ -46,7 +46,7 @@ Feature: Account Support
         When request json body has:
             | name  | two                         |
             | email | test@teste.com              |
-            | role  | USER                        |
+            | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send PUT /account/1
         Then the response status is 200
@@ -57,7 +57,7 @@ Feature: Account Support
         When request json body has:
             | name  | one                         |
             | email | other@teste.com             |
-            | role  | USER                        |
+            | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send PUT /account/1
         Then the response status is 200

@@ -3,6 +3,7 @@ package io.galeb.entity;
 import java.util.Set;
 
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -25,9 +26,9 @@ public class Account extends AbstractEntity<Account> {
     @Column(nullable = false)
     private String email;
 
-    @Column(name = "role", nullable = false)
+    @ElementCollection()
     @Enumerated(EnumType.STRING)
-    private Role role;
+    private Set<Role> roles;
 
     public String getEmail() {
         return email;
@@ -47,12 +48,12 @@ public class Account extends AbstractEntity<Account> {
         return this;
     }
 
-    public Role getRole() {
-        return role;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public Account setRole(Role role) {
-        this.role = role;
+    public Account setRoles(Set<Role> roles) {
+        this.roles = roles;
         return this;
     }
 
