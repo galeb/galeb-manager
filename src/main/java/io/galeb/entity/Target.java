@@ -36,6 +36,9 @@ public class Target extends AbstractEntity<Target> {
     @OneToMany(mappedBy = "target", fetch = FetchType.EAGER)
     private final Set<Rule> rules = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    private Project project;
+
     public Target(String name, TargetType targetType) {
         Assert.notNull(targetType);
         setName(name);
@@ -79,6 +82,15 @@ public class Target extends AbstractEntity<Target> {
 
     public Target setParent(Target parent) {
         this.parent = parent;
+        return this;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public Target setProject(Project project) {
+        this.project = project;
         return this;
     }
 

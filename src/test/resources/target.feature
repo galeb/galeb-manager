@@ -17,38 +17,48 @@ Feature: Target Support
             | name | projOne |
         And send POST /project
         And a REST client
-        When request json body has:
-            | name        | virtOne                        |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
-        And send POST /virtualhost
-        And a REST client
         And request json body has:
             | name        | targetOne                      |
             | targetType  | http://localhost/targettype/1  |
-            | environment | http://localhost/environemtn/1 |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
         And send POST /target
 
     Scenario: Create Target
         Then the response status is 201
         And property name contains targetOne
-        
+
     Scenario: Create Target with Parent
         Given a REST client
         And request json body has:
             | name       | newTargetTwo                  |
             | targetType | http://localhost/targettype/1 |
-            | parent     | http://localhost/target/2     |
+            | parent     | http://localhost/target/1     |
         And send POST /target
         Then the response status is 201
         And property name contains newTargetTwo
+
+    Scenario: Create Target with Parent and Project inconsistent
+        Given a REST client
+        When request json body has:
+            | name | projTwo |
+        And send POST /project
+        And a REST client
+        And request json body has:
+            | name       | newTargetTwo                  |
+            | targetType | http://localhost/targettype/1 |
+            | parent     | http://localhost/target/1     |
+            | project    | http://localhost/project/2    |
+        And send POST /target
+        Then the response status is 400
 
     Scenario: Create duplicated Target
         Given a REST client
         When request json body has:
             | name        | targetOne                      |
             | targetType  | http://localhost/targettype/1  |
-            | environment | http://localhost/environemtn/1 |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
         And send POST /target
         Then the response status is 409
 
@@ -68,7 +78,8 @@ Feature: Target Support
         When request json body has:
             | name        | targetTwo                      |
             | targetType  | http://localhost/targettype/1  |
-            | environment | http://localhost/environemtn/1 |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
         And send PUT /target/1
         Then the response status is 200
         And property name contains targetTwo
