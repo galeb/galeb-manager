@@ -30,15 +30,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
-        .antMatchers("/",
-                     "/environment/**",
-                     "/project/**",
-                     "/rule/**",
-                     "/ruletype/**",
-                     "/target/**",
-                     "/targettype/**",
-                     "/virtualhost/**").permitAll()
-        .anyRequest().fullyAuthenticated();
+            .antMatchers("/",
+                         "/environment/**",
+                         "/project/**",
+                         "/rule/**",
+                         "/ruletype/**",
+                         "/target/**",
+                         "/targettype/**",
+                         "/virtualhost/**").permitAll()
+            .anyRequest().fullyAuthenticated();
         http.httpBasic();
         http.csrf().disable();
     }
