@@ -10,7 +10,7 @@ import cucumber.api.junit.Cucumber;
         monochrome = true,
         plugin= {"pretty"},
         glue = {"io.galeb"},
-        features= {"classpath:"}
+        features= {"classpath:cucumber"}
         )
 public class CucumberTest {
 
