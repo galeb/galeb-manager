@@ -3,6 +3,8 @@ package io.galeb.engine.impl;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,6 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.galeb.engine.Driver;
 import io.galeb.handler.VirtualHostHandler;
@@ -62,7 +66,7 @@ public class GalebV3Driver implements Driver {
         String api = properties.getOrDefault("api", "NULL").toString();
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
-        String uriPath = "http://" + api + "/" + path;
+        String uriPath = "http://" + api + "/" + path + "/" +getIdEncoded(json);
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
 
@@ -83,7 +87,7 @@ public class GalebV3Driver implements Driver {
         String api = properties.getOrDefault("api", "NULL").toString();
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
-        String uriPath = "http://" + api + "/" + path;
+        String uriPath = "http://" + api + "/" + path + "/" +getIdEncoded(json);
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
 
@@ -114,6 +118,20 @@ public class GalebV3Driver implements Driver {
         public HttpDeleteWithBody(String uri) {
             super();
             setURI(URI.create(uri));
+        }
+    }
+
+    private String getIdEncoded(String json) {
+        try {
+            String id = new ObjectMapper().readTree(json).get("id").asText();
+            if (id!=null) {
+                id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
+            } else {
+                id = "";
+            }
+            return id;
+        } catch (IOException e) {
+            return "";
         }
     }
 }
