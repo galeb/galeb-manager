@@ -184,11 +184,15 @@
                     <argument>-Xms4096m</argument>
                     <argument>-Xmx4096m</argument>
                     <argument>-Dlog4j.configurationFile=log4j.xml</argument>
+                    <argument>-Dserver.port=8443</argument>
+                    <argument>-Dserver.ssl.key-store=src/test/resources/keystore.p12</argument>
+                    <argument>-Dserver.ssl.key-store-password=mypassword</argument>
+                    <argument>-Dserver.ssl.keyStoreType=PKCS12</argument>
+                    <argument>-Dserver.ssl.keyAlias=galeb</argument>
                     <argument>-cp</argument>
                     <argument>target/galeb-manager-${project.version}-uber.jar</argument>
                     <argument>-jar</argument>
                     <argument>target/galeb-manager-${project.version}.jar</argument>
-                    <argument>--server.port=8000</argument>
                   </arguments>
                 </configuration>
               </plugin>
