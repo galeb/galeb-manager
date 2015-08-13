@@ -65,8 +65,8 @@ public class GalebV3Driver implements Driver {
     public boolean update(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString();
-        String uriPath = "http://" + api + "/" + path + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String uriPath = "http://" + api + "/" + path;
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
 
@@ -86,8 +86,8 @@ public class GalebV3Driver implements Driver {
         boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString();
-        String uriPath = "http://" + api + "/" + path + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String uriPath = "http://" + api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
 
