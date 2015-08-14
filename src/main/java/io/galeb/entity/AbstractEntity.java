@@ -1,5 +1,7 @@
 package io.galeb.entity;
 
+import io.galeb.security.SpringSecurityAuditorAware;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,8 +27,6 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.galeb.security.SpringSecurityAuditorAware;
-
 @MappedSuperclass
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
@@ -40,7 +40,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         PENDING,
         OK,
         ERROR,
-        UNKNOWN
+        UNKNOWN,
+        DISABLED,
+        ENABLE
     }
 
     @Id
