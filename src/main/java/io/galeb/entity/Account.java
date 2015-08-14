@@ -26,7 +26,7 @@ public class Account extends AbstractEntity<Account> {
     @Column(nullable = false)
     private String email;
 
-    @ElementCollection()
+    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     private Set<Role> roles;
 
