@@ -11,7 +11,6 @@ Feature: TargetType Support
 
     Scenario: Create TargetType
         Then the response status is 201
-        And property name contains tTypeOne
 
     Scenario: Create duplicated TargetType
         Given a REST client
@@ -36,16 +35,22 @@ Feature: TargetType Support
         When request json body has:
             | name | tTypeTwo |
         And send PUT /targettype/1
+        Then the response status is 204
+        And a REST client
+        When send GET /targettype/1
         Then the response status is 200
         And property name contains tTypeTwo
 
     Scenario: Update one field of TargetType
         Given a REST client
         When request json body has:
-            | name | tTypeTree |
+            | name | tTypeThree |
         And send PATCH /targettype/1
+        Then the response status is 204
+        And a REST client
+        When send GET /targettype/1
         Then the response status is 200
-        And property name contains tTypeTree
+        And property name contains tTypeThree
 
     Scenario: Delete TargetType
         Given a REST client

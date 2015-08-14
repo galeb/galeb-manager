@@ -11,7 +11,6 @@ Feature: Team Support
 
     Scenario: Create Team
         Then the response status is 201
-        And property name contains one
 
     Scenario: Create duplicated Team
         Given a REST client
@@ -36,6 +35,9 @@ Feature: Team Support
         When request json body has:
             | name | two |
         And send PUT /team/1
+        Then the response status is 204
+        And a REST client
+        When send GET /team/1
         Then the response status is 200
         And property name contains two
 
@@ -44,6 +46,9 @@ Feature: Team Support
         When request json body has:
             | name | two |
         And send PATCH /team/1
+        Then the response status is 204
+        And a REST client
+        When send GET /team/1
         Then the response status is 200
         And property name contains two
 
