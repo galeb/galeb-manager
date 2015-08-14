@@ -1,7 +1,5 @@
 package io.galeb.entity;
 
-import io.galeb.security.SpringSecurityAuditorAware;
-
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
@@ -16,7 +14,6 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
-import javax.persistence.Transient;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.CreatedBy;
@@ -25,16 +22,12 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.galeb.security.SpringSecurityAuditorAware;
 
 @MappedSuperclass
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
-
-    @JsonIgnore
-    @Transient
-    private final SpringSecurityAuditorAware auditorAware = new SpringSecurityAuditorAware();
 
     public enum EntityStatus {
         PENDING,
@@ -80,7 +73,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @PrePersist
     private void onCreate() {
         createdDate = new Date();
-        createdBy = auditorAware.getCurrentAuditor();
+        createdBy = getCurrentAuditor();
         lastModifiedDate = createdDate;
         lastModifiedBy = createdBy;
     }
@@ -88,7 +81,12 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @PreUpdate
     private void onUpdate() {
         lastModifiedDate = new Date();
-        lastModifiedBy = auditorAware.getCurrentAuditor();
+        lastModifiedBy = getCurrentAuditor();
+    }
+
+    private String getCurrentAuditor() {
+        final SpringSecurityAuditorAware auditorAware = new SpringSecurityAuditorAware();
+        return auditorAware.getCurrentAuditor();
     }
 
     public long getId() {
