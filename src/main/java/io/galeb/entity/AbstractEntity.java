@@ -13,6 +13,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
@@ -72,6 +73,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
     private final Map<String, String> properties = new HashMap<>();
 
     @Column
@@ -108,6 +110,13 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     public Map<String, String> getProperties() {
         return properties;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setProperties(Map<String, String> properties) {
+        this.properties.clear();
+        this.properties.putAll(properties);
+        return (T) this;
     }
 
     public EntityStatus getStatus() {
