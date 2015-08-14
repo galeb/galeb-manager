@@ -1,13 +1,5 @@
 package io.galeb.handler;
 
-import io.galeb.engine.farm.TargetEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Environment;
-import io.galeb.entity.Farm;
-import io.galeb.entity.Target;
-import io.galeb.exceptions.BadRequestException;
-import io.galeb.repository.FarmRepository;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +11,14 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
+
+import io.galeb.engine.farm.TargetEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Environment;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Target;
+import io.galeb.exceptions.BadRequestException;
+import io.galeb.repository.FarmRepository;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler {
@@ -91,10 +91,11 @@ public class TargetHandler {
     @HandleAfterSave
     public void afterSave(Target target) {
         LOGGER.info("Target: HandleAfterSave");
-        if (target.getStatus().equals(EntityStatus.DISABLED)) {
+        EntityStatus status = target.getStatus();
+        if (EntityStatus.DISABLED.equals(status)) {
             jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
         } else {
-            if (target.getStatus().equals(EntityStatus.ENABLE)) {
+            if (EntityStatus.ENABLE.equals(status)) {
                 target.setStatus(EntityStatus.PENDING);
                 jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
             } else {
