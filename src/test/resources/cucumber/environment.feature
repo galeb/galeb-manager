@@ -11,7 +11,6 @@ Feature: Environment Support
 
     Scenario: Create Environment
         Then the response status is 201
-        And property name contains envOne
 
     Scenario: Create duplicated Environment
         Given a REST client
@@ -36,6 +35,9 @@ Feature: Environment Support
         When request json body has:
             | name | envTwo |
         And send PUT /environment/1
+        Then the response status is 204
+        And a REST client
+        When send GET /environment/1
         Then the response status is 200
         And property name contains envTwo
 
@@ -44,6 +46,9 @@ Feature: Environment Support
         When request json body has:
             | name | envTree |
         And send PATCH /environment/1
+        Then the response status is 204
+        And a REST client
+        When send GET /environment/1
         Then the response status is 200
         And property name contains envTree
 
@@ -51,3 +56,6 @@ Feature: Environment Support
         Given a REST client
         When send DELETE /environment/1
         Then the response status is 204
+        And a REST client
+        When send GET /environment/1
+        Then the response status is 404

@@ -11,7 +11,6 @@ Feature: RuleType Support
 
     Scenario: Create RuleType
         Then the response status is 201
-        And property name contains rTypeOne
 
     Scenario: Create duplicated RuleType
         Given a REST client
@@ -36,18 +35,27 @@ Feature: RuleType Support
         When request json body has:
             | name | rTypeTwo |
         And send PUT /ruletype/1
+        Then the response status is 204
+        And a REST client
+        When send GET /ruletype/1
         Then the response status is 200
         And property name contains rTypeTwo
 
     Scenario: Update one field of RuleType
         Given a REST client
         When request json body has:
-            | name | rTypeTree |
+            | name | rTypeThree |
         And send PATCH /ruletype/1
+        Then the response status is 204
+        And a REST client
+        When send GET /ruletype/1
         Then the response status is 200
-        And property name contains rTypeTree
+        And property name contains rTypeThree
 
     Scenario: Delete RuleType
         Given a REST client
         When send DELETE /ruletype/1
         Then the response status is 204
+        And a REST client
+        When send GET /ruletype/1
+        Then the response status is 404

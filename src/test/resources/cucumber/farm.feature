@@ -23,7 +23,6 @@ Feature: Farm Support
 
     Scenario: Create Farm
         Then the response status is 201
-        And property name contains farmOne
 
     Scenario: Create duplicated Farm
         Given a REST client
@@ -56,6 +55,9 @@ Feature: Farm Support
             | environment | http://localhost/environment/1 |
             | provider    | http://localhost/provider/1    |
         And send PUT /farm/1
+        Then the response status is 204
+        And a REST client
+        When send GET /farm/1
         Then the response status is 200
         And property name contains farmTwo
         And property domain contains domainTwo
@@ -64,13 +66,19 @@ Feature: Farm Support
     Scenario: Update one field of Farm
         Given a REST client
         When request json body has:
-            | name | farmTree |
+            | name | farmThree |
         And send PATCH /farm/1
+        Then the response status is 204
+        And a REST client
+        When send GET /farm/1
         Then the response status is 200
-        And property name contains farmTree
+        And property name contains farmThree
         And property domain contains domain
 
     Scenario: Delete Farm
         Given a REST client
         When send DELETE /farm/1
         Then the response status is 204
+        And a REST client
+        When send GET /farm/1
+        Then the response status is 404

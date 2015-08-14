@@ -11,7 +11,6 @@ Feature: Provider Support
 
     Scenario: Create Provider
         Then the response status is 201
-        And property name contains provOne
 
     Scenario: Create duplicated Provider
         Given a REST client
@@ -36,18 +35,27 @@ Feature: Provider Support
         When request json body has:
             | name | provTwo |
         And send PUT /provider/1
+        Then the response status is 204
+        And a REST client
+        When send GET /provider/1
         Then the response status is 200
         And property name contains provTwo
 
     Scenario: Update one field of Provider
         Given a REST client
         When request json body has:
-            | name | provTree |
+            | name | provThree |
         And send PATCH /provider/1
+        Then the response status is 204
+        And a REST client
+        When send GET /provider/1
         Then the response status is 200
-        And property name contains provTree
+        And property name contains provThree
 
     Scenario: Delete Provider
         Given a REST client
         When send DELETE /provider/1
         Then the response status is 204
+        And a REST client
+        When send GET /provider/1
+        Then the response status is 404

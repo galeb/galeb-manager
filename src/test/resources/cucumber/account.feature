@@ -18,7 +18,6 @@ Feature: Account Support
 
     Scenario: Create Account
         Then the response status is 201
-        And property name contains one
 
     Scenario: Create duplicated Account
         Given a REST client
@@ -49,6 +48,9 @@ Feature: Account Support
             | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send PUT /account/1
+        Then the response status is 204
+        And a REST client
+        When send GET /account/1
         Then the response status is 200
         And property name contains two
 
@@ -60,6 +62,9 @@ Feature: Account Support
             | roles | [ USER ]                    |
             | teams | [ http://localhost/team/1 ] |
         And send PUT /account/1
+        Then the response status is 204
+        And a REST client
+        When send GET /account/1
         Then the response status is 200
         And property email contains other@teste.com
 
@@ -68,6 +73,9 @@ Feature: Account Support
         When request json body has:
             | name | two |
         And send PATCH /account/1
+        Then the response status is 204
+        And a REST client
+        When send GET /account/1
         Then the response status is 200
         And property name contains two
 
@@ -75,3 +83,6 @@ Feature: Account Support
         Given a REST client
         When send DELETE /account/1
         Then the response status is 204
+        And  a REST client
+        When send GET /account/1
+        Then the response status is 404

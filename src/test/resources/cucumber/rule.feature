@@ -55,7 +55,6 @@ Feature: Rule Support
 
     Scenario: Create Rule
         Then the response status is 201
-        And property name contains ruleOne
 
     Scenario: Create duplicated Rule
         Given a REST client
@@ -67,7 +66,7 @@ Feature: Rule Support
         And send POST /rule
         Then the response status is 409
 
-    Scenario: Create Rule with parent and target different
+    Scenario: Create Rule with parent and target in different Farms
         Given a REST client
         When request json body has:
             | name | envTwo |
@@ -115,18 +114,27 @@ Feature: Rule Support
             | parent   | http://localhost/virtualhost/1 |
             | target   | http://localhost/target/1      |
         And send PUT /rule/1
+        Then the response status is 204
+        And a REST client
+        When send GET /rule/1
         Then the response status is 200
         And property name contains ruleTwo
 
     Scenario: Update one field of Rule
         Given a REST client
         When request json body has:
-            | name | ruleTree |
+            | name | ruleThree |
         And send PATCH /rule/1
+        Then the response status is 204
+        And a REST client
+        When send GET /rule/1
         Then the response status is 200
-        And property name contains ruleTree
+        And property name contains ruleThree
 
     Scenario: Delete Rule
         Given a REST client
         When send DELETE /rule/1
         Then the response status is 204
+        And a REST client
+        When send GET /rule/1
+        Then the response status is 404
