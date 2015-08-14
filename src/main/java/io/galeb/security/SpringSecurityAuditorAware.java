@@ -1,11 +1,14 @@
 package io.galeb.security;
 
+import java.io.Serializable;
+
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class SpringSecurityAuditorAware implements AuditorAware<String> {
+@SuppressWarnings("serial")
+public class SpringSecurityAuditorAware implements AuditorAware<String>, Serializable {
 
     @Override
     public String getCurrentAuditor() {
