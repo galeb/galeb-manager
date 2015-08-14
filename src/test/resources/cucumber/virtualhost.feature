@@ -21,7 +21,6 @@ Feature: VirtualHost Support
 
     Scenario: Create VirtualHost
         Then the response status is 201
-        And property name contains one
 
     Scenario: Create duplicated Environment
         Given a REST client
@@ -50,6 +49,9 @@ Feature: VirtualHost Support
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send PUT /virtualhost/1
+        Then the response status is 204
+        And a REST client
+        When send GET /virtualhost/1
         Then the response status is 200
         And property name contains two
 
@@ -58,6 +60,9 @@ Feature: VirtualHost Support
         When request json body has:
             | name | two |
         And send PATCH /virtualhost/1
+        Then the response status is 204
+        And a REST client
+        When send GET /virtualhost/1
         Then the response status is 200
         And property name contains two
 

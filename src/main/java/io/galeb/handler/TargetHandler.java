@@ -1,5 +1,13 @@
 package io.galeb.handler;
 
+import io.galeb.engine.farm.TargetEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Environment;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Target;
+import io.galeb.exceptions.BadRequestException;
+import io.galeb.repository.FarmRepository;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,14 +19,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
-
-import io.galeb.engine.farm.TargetEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Environment;
-import io.galeb.entity.Farm;
-import io.galeb.entity.Target;
-import io.galeb.exceptions.BadRequestException;
-import io.galeb.repository.FarmRepository;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler {
@@ -37,7 +37,7 @@ public class TargetHandler {
             final Target targetParent = target.getParent();
             farmId = targetParent.getFarmId();
         } else {
-            Environment environment = target.getEnvironment();
+            final Environment environment = target.getEnvironment();
             if (environment != null) {
                 final Farm farm = farmRepository.findByEnvironmentAndStatus(environment, EntityStatus.OK)
                         .stream().findFirst().orElse(null);
@@ -45,7 +45,7 @@ public class TargetHandler {
                     farmId = farm.getId();
                 }
             } else {
-                String errorMgs = "Target.environment and Target.parent are null";
+                final String errorMgs = "Target.environment and Target.parent are null";
                 LOGGER.error(errorMgs);
                 throw new BadRequestException(errorMgs);
             }
@@ -62,14 +62,14 @@ public class TargetHandler {
                 target.setProject(target.getParent().getProject());
             } else {
                 if (!target.getProject().equals(target.getParent().getProject())) {
-                    String errorMsg = "Target Project is not equal of the Parent Project";
+                    final String errorMsg = "Target Project is not equal of the Parent Project";
                     LOGGER.error(errorMsg);
                     throw new BadRequestException(errorMsg);
                 }
             }
         } else {
             if (target.getProject()==null) {
-                String errorMsg = "Target Project and Parent is null";
+                final String errorMsg = "Target Project and Parent is null";
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
             }
@@ -91,7 +91,16 @@ public class TargetHandler {
     @HandleAfterSave
     public void afterSave(Target target) {
         LOGGER.info("Target: HandleAfterSave");
-        jms.convertAndSend(TargetEngine.QUEUE_UPDATE, target);
+        if (target.getStatus().equals(EntityStatus.DISABLED)) {
+            jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
+        } else {
+            if (target.getStatus().equals(EntityStatus.ENABLE)) {
+                target.setStatus(EntityStatus.PENDING);
+                jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
+            } else {
+                jms.convertAndSend(TargetEngine.QUEUE_UPDATE, target);
+            }
+        }
     }
 
     @HandleBeforeDelete
