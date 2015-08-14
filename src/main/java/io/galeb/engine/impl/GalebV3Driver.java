@@ -76,7 +76,7 @@ public class GalebV3Driver implements Driver {
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
             result = response.getStatusCode().value() < 400;
         } catch (RuntimeException|URISyntaxException e) {
-            LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+            LOGGER.error("PUT "+uriPath+" ("+e.getMessage()+")");
         }
         return result;
     }
