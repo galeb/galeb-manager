@@ -26,7 +26,6 @@ Feature: Target Support
 
     Scenario: Create Target
         Then the response status is 201
-        And property name contains targetOne
 
     Scenario: Create Target with Parent
         Given a REST client
@@ -36,7 +35,6 @@ Feature: Target Support
             | parent     | http://localhost/target/1     |
         And send POST /target
         Then the response status is 201
-        And property name contains newTargetTwo
 
     Scenario: Create Target with Parent and Project inconsistent
         Given a REST client
@@ -81,18 +79,27 @@ Feature: Target Support
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send PUT /target/1
+        Then the response status is 204
+        And a REST client
+        When send GET /target/1
         Then the response status is 200
         And property name contains targetTwo
 
     Scenario: Update one field of Target
         Given a REST client
         When request json body has:
-            | name | targetTree |
+            | name | targetThree |
         And send PATCH /target/1
+        Then the response status is 204
+        And a REST client
+        When send GET /target/1
         Then the response status is 200
-        And property name contains targetTree
+        And property name contains targetThree
 
     Scenario: Delete Target
         Given a REST client
         When send DELETE /target/1
         Then the response status is 204
+        And a REST client
+        When send GET /target/1
+        Then the response status is 404
