@@ -19,7 +19,7 @@ public class AccountHandler {
 
     private static Log LOGGER = LogFactory.getLog(AccountHandler.class);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
     @HandleBeforeCreate
     public void beforeCreate(Account account) {
         LOGGER.info("Account: HandleBeforeCreate");
@@ -31,7 +31,7 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterCreate");
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
     @HandleBeforeSave
     public void beforeSave(Account account) {
         LOGGER.info("Account: HandleBeforeSave");
@@ -42,7 +42,7 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterSave");
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
     @HandleBeforeDelete
     public void beforeDelete(Account account) {
         LOGGER.info("Account: HandleBeforeDelete");
