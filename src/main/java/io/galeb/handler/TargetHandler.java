@@ -19,6 +19,7 @@ import io.galeb.entity.Farm;
 import io.galeb.entity.Target;
 import io.galeb.exceptions.BadRequestException;
 import io.galeb.repository.FarmRepository;
+import io.galeb.repository.TargetRepository;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler {
@@ -27,6 +28,9 @@ public class TargetHandler {
 
     @Autowired
     private JmsTemplate jms;
+
+    @Autowired
+    private TargetRepository targetRepository;
 
     @Autowired
     private FarmRepository farmRepository;
@@ -86,6 +90,7 @@ public class TargetHandler {
     @HandleBeforeSave
     public void beforeSave(Target target) {
         LOGGER.info("Target: HandleBeforeSave");
+        checkAndSetStatus(target);
     }
 
     @HandleAfterSave
@@ -113,6 +118,15 @@ public class TargetHandler {
     public void afterDelete(Target target) {
         LOGGER.info("Target: HandleAfterDelete");
         jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
+    }
+
+    private void checkAndSetStatus(Target target) {
+        if (target.getStatus()==null) {
+            Target targetPersisted = targetRepository.findOne(target.getId());
+            if (targetPersisted != null) {
+                target.setStatus(targetPersisted.getStatus());
+            }
+        }
     }
 
 }
