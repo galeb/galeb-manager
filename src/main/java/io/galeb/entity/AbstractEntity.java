@@ -51,11 +51,11 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     public Long version;
 
     @CreatedBy
-    @Column(nullable = false, updatable=false)
+    @Column(nullable = false, updatable = false)
     public String createdBy;
 
     @CreatedDate
-    @Column(nullable = false, updatable=false)
+    @Column(nullable = false, updatable = false)
     public Date createdDate;
 
     @LastModifiedDate
