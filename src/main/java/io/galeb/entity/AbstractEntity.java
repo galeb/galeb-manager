@@ -14,16 +14,27 @@ import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import io.galeb.security.SpringSecurityAuditorAware;
 
 @MappedSuperclass
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
+
+    @JsonIgnore
+    @Transient
+    private final SpringSecurityAuditorAware auditorAware = new SpringSecurityAuditorAware();
 
     public enum EntityStatus {
         PENDING,
@@ -39,6 +50,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Version
     public Long version;
 
+    @CreatedBy
+    @Column(nullable = false, updatable=false)
+    public String createdBy;
+
     @CreatedDate
     @Column(nullable = false, updatable=false)
     public Date createdDate;
@@ -46,6 +61,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @LastModifiedDate
     @Column(nullable = false)
     public Date lastModifiedDate;
+
+    @LastModifiedBy
+    @Column(nullable = false)
+    public String lastModifiedBy;
 
     @Column(unique = true, nullable = false)
     private String name;
@@ -59,12 +78,15 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @PrePersist
     private void onCreate() {
         createdDate = new Date();
+        createdBy = auditorAware.getCurrentAuditor();
         lastModifiedDate = createdDate;
+        lastModifiedBy = createdBy;
     }
 
     @PreUpdate
     private void onUpdate() {
         lastModifiedDate = new Date();
+        lastModifiedBy = auditorAware.getCurrentAuditor();
     }
 
     public long getId() {
