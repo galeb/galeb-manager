@@ -14,48 +14,60 @@ import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.engine.farm.FarmEngine;
 import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.repository.FarmRepository;
 import io.galeb.entity.Farm;
 
 @RepositoryEventHandler(Farm.class)
-public class FarmHandler {
+public class FarmHandler extends RoutableToEngine<Farm> {
 
     private static Log LOGGER = LogFactory.getLog(FarmHandler.class);
 
     @Autowired
     private JmsTemplate jms;
 
+    @Autowired
+    private FarmRepository farmRepository;
+
+    @Override
+    protected void setBestFarm(Farm entity) {
+        // its me !!!
+    }
+
+    public FarmHandler() {
+        setQueueCreateName(FarmEngine.QUEUE_CREATE);
+        setQueueUpdateName(FarmEngine.QUEUE_UPDATE);
+        setQueueRemoveName(FarmEngine.QUEUE_REMOVE);
+    }
+
     @HandleBeforeCreate
-    public void beforeCreate(Farm farm) {
-        LOGGER.info("Farm: HandleBeforeCreate");
+    public void beforeCreate(Farm farm) throws Exception {
+        beforeCreate(farm, LOGGER);
         farm.setStatus(EntityStatus.OK);
     }
 
     @HandleAfterCreate
-    public void afterCreate(Farm farm) {
-        LOGGER.info("Farm: HandleAfterCreate");
-        jms.convertAndSend(FarmEngine.QUEUE_CREATE, farm);
+    public void afterCreate(Farm farm) throws Exception {
+        afterCreate(farm, jms, LOGGER);
     }
 
     @HandleBeforeSave
-    public void beforeSave(Farm farm) {
-        LOGGER.info("Farm: HandleBeforeSave");
+    public void beforeSave(Farm farm) throws Exception {
+        beforeSave(farm, farmRepository, LOGGER);
     }
 
     @HandleAfterSave
-    public void afterSave(Farm farm) {
-        LOGGER.info("Farm: HandleAfterSave");
-        jms.convertAndSend(FarmEngine.QUEUE_UPDATE, farm);
+    public void afterSave(Farm farm) throws Exception {
+        afterSave(farm, jms, LOGGER);
     }
 
     @HandleBeforeDelete
-    public void beforeDelete(Farm farm) {
-        LOGGER.info("Farm: HandleBeforeDelete");
+    public void beforeDelete(Farm farm) throws Exception {
+        beforeDelete(farm, LOGGER);
     }
 
     @HandleAfterDelete
-    public void afterDelete(Farm farm) {
-        LOGGER.info("Farm: HandleAfterDelete");
-        jms.convertAndSend(FarmEngine.QUEUE_REMOVE, farm);
+    public void afterDelete(Farm farm) throws Exception {
+        afterDelete(farm, jms, LOGGER);
     }
 
 }

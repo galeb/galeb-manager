@@ -5,6 +5,7 @@ import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Farm;
 import io.galeb.entity.VirtualHost;
 import io.galeb.repository.FarmRepository;
+import io.galeb.repository.VirtualHostRepository;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,7 +20,7 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 @RepositoryEventHandler(VirtualHost.class)
-public class VirtualHostHandler {
+public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
 
@@ -29,7 +30,17 @@ public class VirtualHostHandler {
     @Autowired
     private FarmRepository farmRepository;
 
-    private void setBestFarm(final VirtualHost virtualhost) {
+    @Autowired
+    private VirtualHostRepository virtualHostRepository;
+
+    public VirtualHostHandler() {
+        setQueueCreateName(VirtualHostEngine.QUEUE_CREATE);
+        setQueueUpdateName(VirtualHostEngine.QUEUE_UPDATE);
+        setQueueRemoveName(VirtualHostEngine.QUEUE_REMOVE);
+    }
+
+    @Override
+    protected void setBestFarm(final VirtualHost virtualhost) {
         final Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
                 .stream().findFirst().orElse(null);
         if (farm!=null) {
@@ -38,40 +49,34 @@ public class VirtualHostHandler {
     }
 
     @HandleBeforeCreate
-    public void beforeCreate(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleBeforeCreate");
+    public void beforeCreate(VirtualHost virtualhost) throws Exception {
         virtualhost.setFarmId(-1L);
-        setBestFarm(virtualhost);
-        virtualhost.setStatus(EntityStatus.PENDING);
+        beforeCreate(virtualhost, LOGGER);
     }
 
     @HandleAfterCreate
-    public void afterCreate(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleAfterCreate");
-        jms.convertAndSend(VirtualHostEngine.QUEUE_CREATE, virtualhost);
+    public void afterCreate(VirtualHost virtualhost) throws Exception {
+        afterCreate(virtualhost, jms, LOGGER);
     }
 
     @HandleBeforeSave
-    public void beforeSave(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleBeforeSave");
-        setBestFarm(virtualhost);
+    public void beforeSave(VirtualHost virtualhost) throws Exception {
+        beforeSave(virtualhost, virtualHostRepository, LOGGER);
     }
 
     @HandleAfterSave
-    public void afterSave(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleAfterSave");
-        jms.convertAndSend(VirtualHostEngine.QUEUE_UPDATE, virtualhost);
+    public void afterSave(VirtualHost virtualhost) throws Exception {
+        afterSave(virtualhost, jms, LOGGER);
     }
 
     @HandleBeforeDelete
     public void beforeDelete(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleBeforeDelete");
+        beforeDelete(virtualhost, LOGGER);
     }
 
     @HandleAfterDelete
-    public void afterDelete(VirtualHost virtualhost) {
-        LOGGER.info("VirtualHost: HandleAfterDelete");
-        jms.convertAndSend(VirtualHostEngine.QUEUE_REMOVE, virtualhost);
+    public void afterDelete(VirtualHost virtualhost) throws Exception {
+        afterDelete(virtualhost, jms, LOGGER);
     }
 
 }

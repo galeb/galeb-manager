@@ -1,20 +1,13 @@
 package io.galeb.handler;
 
-import static io.galeb.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
-import static io.galeb.entity.AbstractEntity.EntityStatus.PENDING;
 import io.galeb.engine.farm.TargetEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Environment;
 import io.galeb.entity.Farm;
 import io.galeb.entity.Target;
 import io.galeb.exceptions.BadRequestException;
 import io.galeb.repository.FarmRepository;
 import io.galeb.repository.TargetRepository;
-
-import java.util.Collections;
-import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,7 +22,7 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 @RepositoryEventHandler(Target.class)
-public class TargetHandler {
+public class TargetHandler extends RoutableToEngine<Target> {
 
     private static Log LOGGER = LogFactory.getLog(TargetHandler.class);
 
@@ -42,7 +35,14 @@ public class TargetHandler {
     @Autowired
     private FarmRepository farmRepository;
 
-    private void setBestFarm(final Target target) {
+    public TargetHandler() {
+        setQueueCreateName(TargetEngine.QUEUE_CREATE);
+        setQueueUpdateName(TargetEngine.QUEUE_UPDATE);
+        setQueueRemoveName(TargetEngine.QUEUE_REMOVE);
+    }
+
+    @Override
+    protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
         if (target.getParent() != null) {
             final Target targetParent = target.getParent();
@@ -65,9 +65,38 @@ public class TargetHandler {
     }
 
     @HandleBeforeCreate
-    public void beforeCreate(Target target) {
-        LOGGER.info("Target: HandleBeforeCreate");
-        setBestFarm(target);
+    public void beforeCreate(Target target) throws Exception {
+        target.setFarmId(-1L);
+        beforeCreate(target, LOGGER);
+        setProject(target);
+    }
+
+    @HandleAfterCreate
+    public void afterCreate(Target target) throws Exception {
+        afterCreate(target, jms, LOGGER);
+    }
+
+    @HandleBeforeSave
+    public void beforeSave(Target target) throws Exception {
+        beforeSave(target, targetRepository, LOGGER);
+    }
+
+    @HandleAfterSave
+    public void afterSave(Target target) throws Exception {
+        afterSave(target, jms, LOGGER);
+    }
+
+    @HandleBeforeDelete
+    public void beforeDelete(Target target) throws Exception {
+        beforeDelete(target, LOGGER);
+    }
+
+    @HandleAfterDelete
+    public void afterDelete(Target target) throws Exception {
+        afterDelete(target, jms, LOGGER);
+    }
+
+    private void setProject(Target target) throws Exception {
         if (target.getParent() != null) {
             if (target.getProject() == null) {
                 target.setProject(target.getParent().getProject());
@@ -83,69 +112,6 @@ public class TargetHandler {
                 final String errorMsg = "Target Project and Parent is null";
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
-            }
-        }
-        target.setStatus(PENDING);
-    }
-
-    @HandleAfterCreate
-    public void afterCreate(Target target) {
-        LOGGER.info("Target: HandleAfterCreate");
-        jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
-    }
-
-    @HandleBeforeSave
-    public void beforeSave(Target target) {
-        LOGGER.info("Target: HandleBeforeSave");
-        checkAndSetStatus(target);
-        checkAndSetProperties(target);
-    }
-
-    @HandleAfterSave
-    public void afterSave(Target target) {
-        LOGGER.info("Target: HandleAfterSave");
-        final EntityStatus status = target.getStatus();
-        if (DISABLED.equals(status)) {
-            jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
-        } else {
-            if (ENABLE.equals(status)) {
-                target.setStatus(PENDING);
-                jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
-            } else {
-                jms.convertAndSend(TargetEngine.QUEUE_UPDATE, target);
-            }
-        }
-    }
-
-    @HandleBeforeDelete
-    public void beforeDelete(Target target) {
-        LOGGER.info("Target: HandleBeforeDelete");
-    }
-
-    @HandleAfterDelete
-    public void afterDelete(Target target) {
-        LOGGER.info("Target: HandleAfterDelete");
-        jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
-    }
-
-    private void checkAndSetStatus(Target target) {
-        final EntityStatus status = target.getStatus();
-        if (status == null || !DISABLED.equals(status) || !ENABLE.equals(status)) {
-            final Target targetPersisted = targetRepository.findOne(target.getId());
-            if (targetPersisted != null) {
-                target.setStatus(targetPersisted.getStatus());
-            }
-        }
-    }
-
-    private void checkAndSetProperties(Target target) {
-        if (target.getProperties().isEmpty()) {
-            final Target targetPersisted = targetRepository.findOne(target.getId());
-            final Map<String, String> map = Collections.unmodifiableMap(targetPersisted.getProperties());
-            if (targetPersisted != null && map != null && !map.isEmpty()) {
-                target.setProperties(map);
-            } else {
-                LOGGER.info("Target: checkAndSetProperties - targetPersisted or targetPersisted.getProperties if NULL");
             }
         }
     }
