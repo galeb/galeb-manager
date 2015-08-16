@@ -82,7 +82,7 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     public void beforeCreate(T entity, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
-        entity.setStatus(EntityStatus.PENDING);
+        entity.setStatus(PENDING);
     }
 
     public void afterCreate(T entity, JmsTemplate jms, Log logger) throws Exception {

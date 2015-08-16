@@ -1,5 +1,7 @@
 package io.galeb.handler;
 
+import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +15,6 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.engine.farm.FarmEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.repository.FarmRepository;
 import io.galeb.entity.Farm;
 
@@ -42,7 +43,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
     @HandleBeforeCreate
     public void beforeCreate(Farm farm) throws Exception {
         beforeCreate(farm, LOGGER);
-        farm.setStatus(EntityStatus.OK);
+        farm.setStatus(OK);
     }
 
     @HandleAfterCreate

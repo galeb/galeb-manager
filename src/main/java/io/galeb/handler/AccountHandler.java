@@ -1,5 +1,7 @@
 package io.galeb.handler;
 
+import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -11,7 +13,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Account;
 
 @RepositoryEventHandler(Account.class)
@@ -23,7 +24,7 @@ public class AccountHandler {
     @HandleBeforeCreate
     public void beforeCreate(Account account) {
         LOGGER.info("Account: HandleBeforeCreate");
-        account.setStatus(EntityStatus.OK);
+        account.setStatus(OK);
     }
 
     @HandleAfterCreate

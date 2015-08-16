@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -124,10 +125,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     @SuppressWarnings("unchecked")
-    public T setStatus(EntityStatus status) {
-        if (status != null) {
-            this.status = status;
-        }
+    public T setStatus(EntityStatus aStatus) {
+        status = Optional.ofNullable(aStatus).orElse(status);
         return (T) this;
     }
 

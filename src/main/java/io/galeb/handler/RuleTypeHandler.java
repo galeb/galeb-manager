@@ -1,5 +1,7 @@
 package io.galeb.handler;
 
+import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -9,7 +11,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
-import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.RuleType;
 
 @RepositoryEventHandler(RuleType.class)
@@ -20,7 +21,7 @@ public class RuleTypeHandler {
     @HandleBeforeCreate
     public void beforeCreate(RuleType ruleType) {
         LOGGER.info("RuleType: HandleBeforeCreate");
-        ruleType.setStatus(EntityStatus.OK);
+        ruleType.setStatus(OK);
     }
 
     @HandleAfterCreate

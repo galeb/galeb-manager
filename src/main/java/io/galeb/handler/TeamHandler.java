@@ -1,5 +1,7 @@
 package io.galeb.handler;
 
+import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -11,7 +13,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.entity.AbstractEntity.EntityStatus;
 import io.galeb.entity.Team;
 
 @RepositoryEventHandler(Team.class)
@@ -23,7 +24,7 @@ public class TeamHandler {
     @HandleBeforeCreate
     public void beforeCreate(Team team) {
         LOGGER.info("Team: HandleBeforeCreate");
-        team.setStatus(EntityStatus.OK);
+        team.setStatus(OK);
     }
 
     @HandleAfterCreate
