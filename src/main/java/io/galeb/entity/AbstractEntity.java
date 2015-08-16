@@ -69,7 +69,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JoinColumn(nullable = false)
     private final Map<String, String> properties = new HashMap<>();
 
-    @Column
+    @Column(nullable = false)
     private EntityStatus status;
 
     @PrePersist
@@ -125,7 +125,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @SuppressWarnings("unchecked")
     public T setStatus(EntityStatus status) {
-        this.status = status;
+        if (status != null) {
+            this.status = status;
+        }
         return (T) this;
     }
 
