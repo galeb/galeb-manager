@@ -112,8 +112,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @SuppressWarnings("unchecked")
     public T setProperties(Map<String, String> properties) {
-        this.properties.clear();
-        this.properties.putAll(properties);
+        if (properties != null) {
+            this.properties.clear();
+            this.properties.putAll(properties);
+        }
         return (T) this;
     }
 
