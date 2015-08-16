@@ -19,7 +19,7 @@ public class AccountHandler {
 
     private static Log LOGGER = LogFactory.getLog(AccountHandler.class);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Account account) {
         LOGGER.info("Account: HandleBeforeCreate");

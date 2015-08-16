@@ -73,6 +73,12 @@ public class StepDefs {
         LOGGER.info("Using "+RestAssured.class.getName()+" unauthenticated");
     }
 
+    @Given("^a REST client authenticated as (.*)$")
+    public void givenRestClientAuthenticatedAs(String login) throws Throwable {
+        request = with().contentType("application/json").auth().basic(login, "password");
+        LOGGER.info("Using "+RestAssured.class.getName()+" authenticated as "+login);
+    }
+
     @When("^request json body has:$")
     public void requestJsonBodyHas(Map<String, String> jsonComponents) throws Throwable {
         if (!jsonComponents.isEmpty() && !jsonComponents.keySet().contains("")) {
