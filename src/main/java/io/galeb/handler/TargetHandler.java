@@ -1,5 +1,21 @@
 package io.galeb.handler;
 
+import static io.galeb.entity.AbstractEntity.EntityStatus.DISABLED;
+import static io.galeb.entity.AbstractEntity.EntityStatus.ENABLE;
+import static io.galeb.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.entity.AbstractEntity.EntityStatus.PENDING;
+import io.galeb.engine.farm.TargetEngine;
+import io.galeb.entity.AbstractEntity.EntityStatus;
+import io.galeb.entity.Environment;
+import io.galeb.entity.Farm;
+import io.galeb.entity.Target;
+import io.galeb.exceptions.BadRequestException;
+import io.galeb.repository.FarmRepository;
+import io.galeb.repository.TargetRepository;
+
+import java.util.Collections;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,15 +27,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
-
-import io.galeb.engine.farm.TargetEngine;
-import io.galeb.entity.AbstractEntity.EntityStatus;
-import io.galeb.entity.Environment;
-import io.galeb.entity.Farm;
-import io.galeb.entity.Target;
-import io.galeb.exceptions.BadRequestException;
-import io.galeb.repository.FarmRepository;
-import io.galeb.repository.TargetRepository;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler {
@@ -43,7 +50,7 @@ public class TargetHandler {
         } else {
             final Environment environment = target.getEnvironment();
             if (environment != null) {
-                final Farm farm = farmRepository.findByEnvironmentAndStatus(environment, EntityStatus.OK)
+                final Farm farm = farmRepository.findByEnvironmentAndStatus(environment, OK)
                         .stream().findFirst().orElse(null);
                 if (farm != null) {
                     farmId = farm.getId();
@@ -78,7 +85,7 @@ public class TargetHandler {
                 throw new BadRequestException(errorMsg);
             }
         }
-        target.setStatus(EntityStatus.PENDING);
+        target.setStatus(PENDING);
     }
 
     @HandleAfterCreate
@@ -91,17 +98,18 @@ public class TargetHandler {
     public void beforeSave(Target target) {
         LOGGER.info("Target: HandleBeforeSave");
         checkAndSetStatus(target);
+        checkAndSetProperties(target);
     }
 
     @HandleAfterSave
     public void afterSave(Target target) {
         LOGGER.info("Target: HandleAfterSave");
-        EntityStatus status = target.getStatus();
-        if (EntityStatus.DISABLED.equals(status)) {
+        final EntityStatus status = target.getStatus();
+        if (DISABLED.equals(status)) {
             jms.convertAndSend(TargetEngine.QUEUE_REMOVE, target);
         } else {
-            if (EntityStatus.ENABLE.equals(status)) {
-                target.setStatus(EntityStatus.PENDING);
+            if (ENABLE.equals(status)) {
+                target.setStatus(PENDING);
                 jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
             } else {
                 jms.convertAndSend(TargetEngine.QUEUE_UPDATE, target);
@@ -121,10 +129,23 @@ public class TargetHandler {
     }
 
     private void checkAndSetStatus(Target target) {
-        if (target.getStatus()==null) {
-            Target targetPersisted = targetRepository.findOne(target.getId());
+        final EntityStatus status = target.getStatus();
+        if (status == null || !DISABLED.equals(status) || !ENABLE.equals(status)) {
+            final Target targetPersisted = targetRepository.findOne(target.getId());
             if (targetPersisted != null) {
                 target.setStatus(targetPersisted.getStatus());
+            }
+        }
+    }
+
+    private void checkAndSetProperties(Target target) {
+        if (target.getProperties().isEmpty()) {
+            final Target targetPersisted = targetRepository.findOne(target.getId());
+            final Map<String, String> map = Collections.unmodifiableMap(targetPersisted.getProperties());
+            if (targetPersisted != null && map != null && !map.isEmpty()) {
+                target.setProperties(map);
+            } else {
+                LOGGER.info("Target: checkAndSetProperties - targetPersisted or targetPersisted.getProperties if NULL");
             }
         }
     }
