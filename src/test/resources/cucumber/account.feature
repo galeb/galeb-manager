@@ -177,11 +177,6 @@ Feature: Account Support
         When send GET /account/1
         Then the response status is 401
 
-    Scenario: Get null Account as anonymous is not permitted
-        Given a REST client unauthenticated
-        When send GET /account/2
-        Then the response status is 401
-
     Scenario: Update Account name as anonymous is not permitted
         Given a REST client unauthenticated
         When request json body has:
@@ -214,10 +209,10 @@ Feature: Account Support
         When send DELETE /account/1
         Then the response status is 401
 
-#    Scenario: Get Account as other account is not permitted
-#        Given a REST client authenticated as other
-#        When send GET /account/1
-#        Then the response status is 403
+    Scenario: Get Account as other account is not permitted
+        Given a REST client authenticated as other
+        When send GET /account/1
+        Then the response status is 404
 
     Scenario: Update Account name as other account is not permitted
         Given a REST client authenticated as other
@@ -249,5 +244,5 @@ Feature: Account Support
     Scenario: Delete Account as other account is not permitted
         Given a REST client authenticated as other
         When send DELETE /account/1
-        Then the response status is 403
+        Then the response status is 404
 
