@@ -5,6 +5,9 @@ import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,6 +25,12 @@ public class Project extends AbstractEntity<Project> {
     @OneToMany(mappedBy = "project", fetch = FetchType.EAGER)
     private final Set<Target> targets = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name="project2teams",
+               joinColumns=@JoinColumn(name="team_id"),
+               inverseJoinColumns=@JoinColumn(name="project_id"))
+    private final Set<Team> teams = new HashSet<>();
+
     public Project(String name) {
         setName(name);
     }
@@ -29,4 +38,17 @@ public class Project extends AbstractEntity<Project> {
     protected Project() {
         //
     }
+
+    public Set<Team> getTeams() {
+        return teams;
+    }
+
+    public Project setTeams(Set<Team> teams) {
+        if (teams != null) {
+            this.teams.clear();
+            this.teams.addAll(teams);
+        }
+        return this;
+    }
+
 }
