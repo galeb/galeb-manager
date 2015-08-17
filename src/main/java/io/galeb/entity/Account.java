@@ -1,5 +1,6 @@
 package io.galeb.entity;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -8,6 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
 @Entity
@@ -21,7 +24,9 @@ public class Account extends AbstractEntity<Account> {
     }
 
     @ManyToMany(fetch = FetchType.EAGER)
-    private Set<Team> teams;
+    @JoinTable(joinColumns=@JoinColumn(name="team_id"),
+               inverseJoinColumns=@JoinColumn(name="account_id"))
+    private final Set<Team> teams = new HashSet<>();
 
     @Column(nullable = false)
     private String email;
@@ -44,7 +49,10 @@ public class Account extends AbstractEntity<Account> {
     }
 
     public Account setTeams(Set<Team> teams) {
-        this.teams = teams;
+        if (teams != null) {
+            this.teams.clear();
+            this.teams.addAll(teams);
+        }
         return this;
     }
 

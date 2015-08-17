@@ -12,7 +12,7 @@ public class Team extends AbstractEntity<Team> {
 
     private static final long serialVersionUID = -4278444359290384175L;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "teams", fetch = FetchType.EAGER)
     private final Set<Account> accounts = new HashSet<>();
 
     @ManyToMany(mappedBy = "teams", fetch = FetchType.EAGER)

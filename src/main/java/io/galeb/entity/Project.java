@@ -26,8 +26,7 @@ public class Project extends AbstractEntity<Project> {
     private final Set<Target> targets = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name="project2teams",
-               joinColumns=@JoinColumn(name="team_id"),
+    @JoinTable(joinColumns=@JoinColumn(name="team_id"),
                inverseJoinColumns=@JoinColumn(name="project_id"))
     private final Set<Team> teams = new HashSet<>();
 
