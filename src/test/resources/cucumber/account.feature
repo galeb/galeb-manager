@@ -113,7 +113,7 @@ Feature: Account Support
     Scenario: Get null Account as its owner
         Given a REST client authenticated as one
         When send GET /account/3
-        Then the response status is 404
+        Then the response status is 403
 
     Scenario: Update Account name as its owner is not permitted
         Given a REST client authenticated as one
@@ -212,7 +212,7 @@ Feature: Account Support
     Scenario: Get Account as other account is not permitted
         Given a REST client authenticated as other
         When send GET /account/1
-        Then the response status is 404
+        Then the response status is 403
 
     Scenario: Update Account name as other account is not permitted
         Given a REST client authenticated as other
@@ -234,6 +234,7 @@ Feature: Account Support
         And send PUT /account/1
         Then the response status is 403
 
+    @account1
     Scenario: Update field name of Account as other account is not permitted
         Given a REST client authenticated as other
         When request json body has:
@@ -244,5 +245,5 @@ Feature: Account Support
     Scenario: Delete Account as other account is not permitted
         Given a REST client authenticated as other
         When send DELETE /account/1
-        Then the response status is 404
+        Then the response status is 403
 

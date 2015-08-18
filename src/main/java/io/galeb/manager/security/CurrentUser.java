@@ -29,6 +29,8 @@ public class CurrentUser extends User {
 
     private static final long serialVersionUID = -403060077273343289L;
 
+    private Long id;
+
     public CurrentUser(Account account) {
         super(account.getName(),
               "password",
@@ -36,6 +38,11 @@ public class CurrentUser extends User {
                       .map(role -> role.toString()).collect(Collectors.toList())
                       .toArray(new String[account.getRoles().size()-1]))
               );
+        id = account.getId();
+    }
+
+    public Long getId() {
+        return id;
     }
 
 }
