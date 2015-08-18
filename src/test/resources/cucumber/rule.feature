@@ -8,22 +8,40 @@ Feature: Rule Support
         When request json body has:
             | name | ruleOne |
         And send POST /ruletype
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name | poolOne |
         And send POST /targettype
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name | envOne |
         And send POST /environment
+        Then the response status is 201
         And a REST client
         When request json body has:
-            | name | projectOne |
+            | name | teamOne |
+        And send POST /team
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name  | accountOne                  |
+            | teams | [ http://localhost/team/1 ] |
+            | email | test@fake.com               |
+        And send POST /account
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name  | projOne                     |
+            | teams | [ http://localhost/team/1 ] |
         And send POST /project
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name | providerOne |
         And send POST /provider
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name        | farmOne                        |
@@ -32,12 +50,14 @@ Feature: Rule Support
             | environment | http://localhost/environment/1 |
             | provider    | http://localhost/provider/1    |
         And send POST /farm
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name        | virtOne                        |
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send POST /virtualhost
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name        | targetOne                      |
@@ -45,6 +65,7 @@ Feature: Rule Support
             | targetType  | http://localhost/targettype/1  |
             | project     | http://localhost/project/1     |
         And send POST /target
+        Then the response status is 201
         And a REST client
         And request json body has:
             | name     | ruleOne                        |

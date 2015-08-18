@@ -8,14 +8,30 @@ Feature: Target Support
         When request json body has:
             | name | tTypeOne |
         And send POST /targettype
+        Then the response status is 201
         And a REST client
         When request json body has:
             | name | envOne |
         And send POST /environment
+        Then the response status is 201
         And a REST client
         When request json body has:
-            | name | projOne |
+            | name | teamOne |
+        And send POST /team
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name  | accountOne                  |
+            | teams | [ http://localhost/team/1 ] |
+            | email | test@fake.com               |
+        And send POST /account
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name  | projOne                     |
+            | teams | [ http://localhost/team/1 ] |
         And send POST /project
+        Then the response status is 201
         And a REST client
         And request json body has:
             | name        | targetOne                      |
@@ -39,8 +55,10 @@ Feature: Target Support
     Scenario: Create Target with Parent and Project inconsistent
         Given a REST client
         When request json body has:
-            | name | projTwo |
+            | name  | projTwo                     |
+            | teams | [ http://localhost/team/1 ] |
         And send POST /project
+        Then the response status is 201
         And a REST client
         And request json body has:
             | name       | newTargetTwo                  |
