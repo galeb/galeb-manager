@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.galeb.entity.AbstractEntity;
+import io.galeb.manager.entity.AbstractEntity;
 
 public class JsonMapper {
 
