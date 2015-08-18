@@ -156,7 +156,7 @@
                       <goal>shade</goal>
                     </goals>
                     <configuration>
-                      <outputFile>target/manager-${project.version}-uber.jar</outputFile>
+                      <outputFile>target/galeb-manager-${project.version}-uber.jar</outputFile>
                     </configuration>
                   </execution>
                 </executions>
@@ -179,7 +179,7 @@
                 <configuration>
                 <archive>
                   <manifest>
-                    <mainClass>io.galeb.Application</mainClass>
+                    <mainClass>io.galeb.manager.Application</mainClass>
                     <addClasspath>true</addClasspath>
                   </manifest>
                 </archive>
