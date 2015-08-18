@@ -54,4 +54,4 @@ Feature: Access policy
         And send POST /project
         And a REST client authenticated as accountTwo
         And send GET /project/1
-        Then the response status is 403
+        Then the response status is 404
