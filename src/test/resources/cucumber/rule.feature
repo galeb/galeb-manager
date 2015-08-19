@@ -6,7 +6,7 @@ Feature: Rule Support
     Background:
         Given a REST client
         When request json body has:
-            | name | ruleOne |
+            | name | urlPath |
         And send POST /ruletype
         Then the response status is 201
         And a REST client
@@ -27,6 +27,7 @@ Feature: Rule Support
         And a REST client
         When request json body has:
             | name  | accountOne                  |
+            | roles | [ ROLE_USER ]               |
             | teams | [ http://localhost/team/1 ] |
             | email | test@fake.com               |
         And send POST /account
@@ -51,7 +52,7 @@ Feature: Rule Support
             | provider    | http://localhost/provider/1    |
         And send POST /farm
         Then the response status is 201
-        And a REST client
+        And a REST client authenticated as accountOne
         When request json body has:
             | name        | virtOne                        |
             | environment | http://localhost/environment/1 |

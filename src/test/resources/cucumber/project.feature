@@ -4,26 +4,39 @@ Feature: Project Support
     to support REST standard
 
     Background:
-        Given a REST client
+        Given a REST client authenticated as admin
         When request json body has:
             | name | teamOne |
         And send POST /team
         Then the response status is 201
-        And a REST client
+        And a REST client authenticated as admin
         When request json body has:
             | name  | accountOne                  |
+            | roles | [ ROLE_USER ]               |
             | teams | [ http://localhost/team/1 ] |
             | email | test@fake.com               |
         And send POST /account
         Then the response status is 201
-        And a REST client
+        And a REST client authenticated as admin
         When request json body has:
             | name  | projOne                     |
             | teams | [ http://localhost/team/1 ] |
         And send POST /project
 
-    Scenario: Create Project
+    Scenario: Create Project authenticated as admin
         Then the response status is 201
+
+    Scenario: Create Project authenticated as accountOne
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | name  | projX                       |
+            | teams | [ http://localhost/team/1 ] |
+        And send POST /project
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When send GET /project/2
+        Then the response status is 200
+        And property name contains projX
 
     Scenario: Create duplicated Project
         Given a REST client

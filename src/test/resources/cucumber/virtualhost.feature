@@ -17,6 +17,7 @@ Feature: VirtualHost Support
         And a REST client
         When request json body has:
             | name  | accountOne                  |
+            | roles | [ ROLE_USER ]               |
             | teams | [ http://localhost/team/1 ] |
             | email | test@fake.com               |
         And send POST /account

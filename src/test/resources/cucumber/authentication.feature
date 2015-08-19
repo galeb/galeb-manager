@@ -16,14 +16,14 @@ Feature: Authentication work
         When request json body has:
             | name  | accountOne                  |
             | email | accOne@fake.local           |
-            | roles | [ USER ]                    |
+            | roles | [ ROLE_USER ]               |
             | teams | [ http://localhost/team/1 ] |
         And send POST /account
         And a REST client authenticated as admin
         When request json body has:
             | name  | accountTwo                  |
             | email | accTwo@fake.local           |
-            | roles | [ USER ]                    |
+            | roles | [ ROLE_USER ]               |
             | teams | [ http://localhost/team/2 ] |
         And send POST /account
 
