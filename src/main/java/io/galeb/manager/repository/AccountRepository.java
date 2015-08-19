@@ -42,6 +42,7 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Override
     Iterable<Account> findAll();
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or #name == principal.username")
     List<Account> findByName(@Param("name") String name);
 
 }
