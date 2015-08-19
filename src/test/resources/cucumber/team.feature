@@ -8,8 +8,14 @@ Feature: Team Support
         When request json body has:
             | name | one |
         And send POST /team
-
-    Scenario: Create Team
+        Then the response status is 201
+        And a REST client
+        When request json body has:
+            | name  | accountOne                  |
+            | email | accOne@fake.com             |
+            | roles | [ ROLE_USER ]               |
+            | teams | [ http://localhost/team/1 ] |
+        And send POST /account
         Then the response status is 201
 
     Scenario: Create duplicated Team
@@ -20,7 +26,7 @@ Feature: Team Support
         Then the response status is 409
 
     Scenario: Get Team
-        Given a REST client
+        Given a REST client authenticated as accountOne
         When send GET /team/1
         Then the response status is 200
         And property name contains one
