@@ -36,7 +36,7 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     Account findOne(@Param("id") Long id);
 
     @Query("SELECT a FROM Account a WHERE "
-            + "1 = ?#{hasRole('ADMIN') ? 1 : 0 } OR "
+            + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0 } OR "
             + "a.createdBy = ?#{principal.username} OR "
             + "a.name = ?#{principal.username}")
     @Override

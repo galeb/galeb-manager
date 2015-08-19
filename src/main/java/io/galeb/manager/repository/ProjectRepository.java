@@ -28,7 +28,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Project;
 
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
 public interface ProjectRepository extends PagingAndSortingRepository<Project, Long> {
 
@@ -36,16 +36,20 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
     @Query("SELECT p FROM Project p "
             + "INNER JOIN p.teams t "
             + "INNER JOIN t.accounts a "
-            + "WHERE p.id = :id AND a.name = ?#{principal.username}")
+            + "WHERE "
+                + "p.id = :id AND "
+                    + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                    + "a.name = ?#{principal.username})")
     Project findOne(@Param("id") Long id);
 
     @Override
     @Query("SELECT p FROM Project p "
             + "INNER JOIN p.teams t "
             + "INNER JOIN t.accounts a "
-            + "WHERE 1=1 AND a.name = ?#{principal.username}")
+            + "WHERE "
+                + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username}")
     List<Project> findAll();
 
     List<Project> findByName(@Param("name") String name);
-
 }

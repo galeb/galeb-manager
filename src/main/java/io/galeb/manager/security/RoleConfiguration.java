@@ -30,7 +30,7 @@ public class RoleConfiguration {
 
     @Bean RoleHierarchy roleHierarchy() {
         final RoleHierarchyImpl roleHierarchyImpl = new RoleHierarchyImpl();
-        roleHierarchyImpl.setHierarchy("ADMIN > USER");
+        roleHierarchyImpl.setHierarchy("ROLE_ADMIN > ROLE_USER");
         return roleHierarchyImpl;
     }
 

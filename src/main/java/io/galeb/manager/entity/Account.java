@@ -37,8 +37,8 @@ public class Account extends AbstractEntity<Account> {
     private static final long serialVersionUID = -2745836665462717899L;
 
     public enum Role {
-        USER,
-        ADMIN
+        ROLE_USER,
+        ROLE_ADMIN
     }
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -51,7 +51,7 @@ public class Account extends AbstractEntity<Account> {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
 
     public String getEmail() {
         return email;
@@ -79,7 +79,10 @@ public class Account extends AbstractEntity<Account> {
     }
 
     public Account setRoles(Set<Role> roles) {
-        this.roles = roles;
+        if (roles != null) {
+            this.roles.clear();
+            this.roles.addAll(roles);
+        }
         return this;
     }
 
