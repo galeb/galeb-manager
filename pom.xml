@@ -192,8 +192,8 @@
                   <executable>java</executable>
                   <arguments>
                     <argument>-server</argument>
-                    <argument>-Xms4096m</argument>
-                    <argument>-Xmx4096m</argument>
+                    <argument>-Xms1024m</argument>
+                    <argument>-Xmx1024m</argument>
                     <argument>-Dlog4j.configurationFile=log4j.xml</argument>
                     <argument>-cp</argument>
                     <argument>target/galeb-manager-${project.version}-uber.jar</argument>
