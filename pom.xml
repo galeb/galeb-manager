@@ -35,16 +35,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-              <exclusion>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-tomcat</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -57,6 +47,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
@@ -92,6 +86,14 @@
             <artifactId>commons-lang3</artifactId>
             <version>${org.apache.commons.commons-lang3.version}</version>
         </dependency>
+        <!-- // See https://github.com/adrianbk/swagger-springmvc-demo/tree/master/spring-boot
+        <dependency>
+          <groupId>com.mangofactory</groupId>
+          <artifactId>swagger-springmvc</artifactId>
+          <version>1.0.2</version>
+          <scope>compile</scope>
+        </dependency>
+        -->
 
         <!--  tests -->
         <dependency>
@@ -133,6 +135,18 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <argLine>-Xmx2048m -Xms2048m</argLine>
+                    <systemPropertyVariables>
+                        <databaseSchema>galeb_${surefire.forkNumber}</databaseSchema>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -192,8 +206,8 @@
                   <executable>java</executable>
                   <arguments>
                     <argument>-server</argument>
-                    <argument>-Xms1024m</argument>
-                    <argument>-Xmx1024m</argument>
+                    <argument>-Xms2048m</argument>
+                    <argument>-Xmx2048m</argument>
                     <argument>-Dlog4j.configurationFile=log4j.xml</argument>
                     <argument>-cp</argument>
                     <argument>target/galeb-manager-${project.version}-uber.jar</argument>
