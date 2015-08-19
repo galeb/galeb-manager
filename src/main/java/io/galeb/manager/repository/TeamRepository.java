@@ -20,15 +20,39 @@ package io.galeb.manager.repository;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Team;
 
+@PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "team", path = "team")
 public interface TeamRepository extends PagingAndSortingRepository<Team, Long> {
 
+    @Override
+    @Query("SELECT t FROM Team t "
+           + "INNER JOIN t.accounts a "
+           + "WHERE t.id = :id AND "
+               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "a.name = ?#{principal.username})")
+    Team findOne(@Param("id") Long id);
+
+    @Query("SELECT t FROM Team t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE t.name = :name AND "
+                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username})")
     List<Team> findByName(@Param("name") String name);
+
+    @Override
+    @Query("SELECT t FROM Team t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE "
+                + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username}")
+    List<Team> findAll();
 
 }
