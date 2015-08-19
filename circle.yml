@@ -2,3 +2,5 @@ machine:
   java:
     version: oraclejdk8
 
+  environment:
+    LOGLEVEL: WARN
