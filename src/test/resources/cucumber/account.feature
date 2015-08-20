@@ -234,7 +234,6 @@ Feature: Account Support
         And send PUT /account/1
         Then the response status is 403
 
-    @account1
     Scenario: Update field name of Account as other account is not permitted
         Given a REST client authenticated as other
         When request json body has:
