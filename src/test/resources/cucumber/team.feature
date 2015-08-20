@@ -62,3 +62,7 @@ Feature: Team Support
         Given a REST client
         When send DELETE /team/1
         Then the response status is 204
+        And a REST client
+        When send GET /account/1
+        Then the response status is 200
+        And property name contains accountOne
