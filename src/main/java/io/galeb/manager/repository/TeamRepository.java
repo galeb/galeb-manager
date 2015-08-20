@@ -34,14 +34,14 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long> {
 
     @Override
     @Query("SELECT t FROM Team t "
-           + "INNER JOIN t.accounts a "
+           + "LEFT JOIN t.accounts a "
            + "WHERE t.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                + "a.name = ?#{principal.username})")
     Team findOne(@Param("id") Long id);
 
     @Query("SELECT t FROM Team t "
-            + "INNER JOIN t.accounts a "
+            + "LEFT JOIN t.accounts a "
             + "WHERE t.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username})")
@@ -49,9 +49,8 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long> {
 
     @Override
     @Query("SELECT t FROM Team t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE "
-                + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+            + "LEFT JOIN t.accounts a "
+            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
     List<Team> findAll();
 
