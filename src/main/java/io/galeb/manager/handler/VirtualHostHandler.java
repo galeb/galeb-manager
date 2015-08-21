@@ -18,13 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.engine.farm.VirtualHostEngine;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +29,16 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.security.core.Authentication;
+
+import io.galeb.manager.engine.farm.VirtualHostEngine;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
@@ -59,8 +62,11 @@ public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
         final Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
-                .stream().findFirst().orElse(null);
+                            .stream().findFirst().orElse(null);
+        SystemUserService.runAs(currentUser);
         if (farm!=null) {
             virtualhost.setFarmId(farm.getId());
         }

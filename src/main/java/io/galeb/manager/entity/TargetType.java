@@ -42,4 +42,12 @@ public class TargetType extends AbstractEntity<TargetType> {
     public Set<Target> getTargets() {
         return targets;
     }
+
+    public TargetType setTargets(Set<Target> targets) {
+        if (targets != null) {
+            targets.clear();
+            targets.addAll(targets);
+        }
+        return this;
+    }
 }

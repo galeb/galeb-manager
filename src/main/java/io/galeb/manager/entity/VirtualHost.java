@@ -21,6 +21,7 @@ package io.galeb.manager.entity;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
@@ -36,13 +37,16 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false)
     @JoinColumn(nullable = false)
     private Environment environment;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false)
     @JoinColumn(nullable = false)
     private Project project;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Set<String> aliases = new HashSet<>();
 
     @JsonIgnore
     private long farmId;
@@ -88,5 +92,17 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
     public VirtualHost setFarmId(long farmId) {
         this.farmId = farmId;
         return this;
+    }
+
+    public Set<String> getAliases() {
+        return aliases;
+    }
+
+    public void setAliases(Set<String> aliases) {
+        if (aliases != null) {
+            aliases.clear();
+            aliases.addAll(aliases);
+        }
+        this.aliases = aliases;
     }
 }
