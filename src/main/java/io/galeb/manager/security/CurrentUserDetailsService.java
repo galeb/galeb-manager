@@ -18,13 +18,8 @@
 
 package io.galeb.manager.security;
 
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -36,39 +31,19 @@ import io.galeb.manager.repository.AccountRepository;
 @Service
 public class CurrentUserDetailsService implements UserDetailsService {
 
-    public static final UsernamePasswordAuthenticationToken SYSTEM_USER =
-                            new UsernamePasswordAuthenticationToken("system", UUID.randomUUID().toString(),
-                                    AuthorityUtils.createAuthorityList("ROLE_ADMIN", "ROLE_USER"));
     @Autowired
     AccountRepository accountRepository;
 
     @Override
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
-        final Authentication originalAuth = getCurrentAuth();
-        runAsSystem();
+        final Authentication originalAuth = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
         Account account = accountRepository.findByName(userName);
-        runAs(originalAuth);
+        SystemUserService.runAs(originalAuth);
         if (account == null) {
             throw new UsernameNotFoundException("Account "+userName+" NOT FOUND");
         }
         return new CurrentUser(account);
-    }
-
-    private Authentication getCurrentAuth() {
-        return SecurityContextHolder.getContext().getAuthentication();
-    }
-
-    private void runAsSystem() {
-        runAs(SYSTEM_USER);
-    }
-
-    private void runAs(final Authentication authentication) {
-        clearContext();
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    private void clearContext() {
-        SecurityContextHolder.clearContext();
     }
 
 }
