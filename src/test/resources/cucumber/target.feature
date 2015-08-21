@@ -40,8 +40,6 @@ Feature: Target Support
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send POST /target
-
-    Scenario: Create Target
         Then the response status is 201
 
     Scenario: Create Target with Parent
@@ -122,3 +120,12 @@ Feature: Target Support
         And a REST client
         When send GET /target/1
         Then the response status is 404
+        And a REST client
+        When send GET /targetType/1
+        Then the response status is 200
+        And a REST client
+        When send GET /environment/1
+        Then the response status is 200
+        And a REST client
+        When send GET /project/1
+        Then the response status is 200
