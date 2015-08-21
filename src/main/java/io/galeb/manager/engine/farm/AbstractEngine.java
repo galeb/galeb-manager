@@ -20,6 +20,8 @@ package io.galeb.manager.engine.farm;
 
 import java.util.Optional;
 
+import org.springframework.security.core.Authentication;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.galeb.manager.common.JsonMapper;
@@ -29,6 +31,9 @@ import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
 
 public abstract class AbstractEngine {
 
@@ -73,5 +78,13 @@ public abstract class AbstractEngine {
         return new Provisioning() {
             // NULL
         };
+    }
+
+    protected Optional<Farm> findFarmById(final FarmRepository farmRepository, long farmId) {
+        final Authentication originalAuth = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        Optional<Farm> farm = Optional.ofNullable(farmRepository.findById(farmId));
+        SystemUserService.runAs(originalAuth);
+        return farm;
     }
 }

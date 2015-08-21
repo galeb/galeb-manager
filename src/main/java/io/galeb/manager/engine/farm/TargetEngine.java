@@ -25,7 +25,6 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.repository.FarmRepository;
-
 import java.util.Optional;
 
 import org.apache.commons.logging.Log;
@@ -54,7 +53,7 @@ public class TargetEngine extends AbstractEngine {
         if (entity instanceof Target) {
             farmId = ((Target)entity).getFarmId();
         }
-        return farmRepository.findById(farmId).stream().findFirst();
+        return findFarmById(farmRepository, farmId);
     }
 
     @JmsListener(destination = QUEUE_CREATE)

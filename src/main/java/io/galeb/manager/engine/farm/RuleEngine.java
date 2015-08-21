@@ -54,7 +54,7 @@ public class RuleEngine extends AbstractEngine {
         if (entity instanceof Rule) {
             farmId = ((Rule)entity).getParent().getFarmId();
         }
-        return farmRepository.findById(farmId).stream().findFirst();
+        return findFarmById(farmRepository, farmId);
     }
 
     @JmsListener(destination = QUEUE_CREATE)

@@ -54,7 +54,7 @@ public class VirtualHostEngine extends AbstractEngine {
         if (entity instanceof VirtualHost) {
             farmId = ((VirtualHost)entity).getFarmId();
         }
-        return farmRepository.findById(farmId).stream().findFirst();
+        return findFarmById(farmRepository, farmId);
     }
 
     @JmsListener(destination = QUEUE_CREATE)
