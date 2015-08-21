@@ -20,7 +20,9 @@ package io.galeb.manager.security;
 
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 
 import io.galeb.manager.entity.Account;
@@ -30,6 +32,10 @@ public class CurrentUser extends User {
     private static final long serialVersionUID = -403060077273343289L;
 
     private Long id;
+
+    public static Authentication getCurrentAuth() {
+        return SecurityContextHolder.getContext().getAuthentication();
+    }
 
     public CurrentUser(Account account) {
         super(account.getName(),
