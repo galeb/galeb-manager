@@ -1,3 +1,9 @@
+general:
+  branches:
+    only:
+      - master
+      - /feature/.*
+
 machine:
   java:
     version: oraclejdk8
