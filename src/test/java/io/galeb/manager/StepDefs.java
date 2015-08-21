@@ -69,9 +69,8 @@ public class StepDefs {
     @Value("${local.server.port}")
     private int port;
 
-
-
     private RequestSpecification request;
+
     private ValidatableResponse response;
 
     @Before
