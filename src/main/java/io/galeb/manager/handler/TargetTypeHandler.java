@@ -29,6 +29,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.TargetType;
 
@@ -37,6 +38,7 @@ public class TargetTypeHandler {
 
     private static Log LOGGER = LogFactory.getLog(TargetTypeHandler.class);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(TargetType targetType) {
         LOGGER.info("TargetType: HandleBeforeCreate");
@@ -48,6 +50,7 @@ public class TargetTypeHandler {
         LOGGER.info("TargetType: HandleAfterCreate");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(TargetType targetType) {
         LOGGER.info("TargetType: HandleBeforeSave");
@@ -58,6 +61,7 @@ public class TargetTypeHandler {
         LOGGER.info("TargetType: HandleAfterSave");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(TargetType targetType) {
         LOGGER.info("TargetType: HandleBeforeDelete");

@@ -26,7 +26,6 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 
 import org.springframework.util.Assert;
 
@@ -37,24 +36,26 @@ public class Target extends AbstractEntity<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
-    @OneToOne
-    @JoinColumn(nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "target_id", nullable = false)
     private TargetType targetType;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
+    @JoinColumn(name = "environment_id")
     private Environment environment;
 
     @JsonIgnore
     private long farmId;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     private Target parent;
 
     @JsonIgnore
     @OneToMany(mappedBy = "target", fetch = FetchType.EAGER)
     private final Set<Rule> rules = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
+    @JoinColumn(name = "project_id")
     private Project project;
 
     public Target(String name, TargetType targetType) {

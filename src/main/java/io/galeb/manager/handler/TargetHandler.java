@@ -18,14 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.engine.farm.TargetEngine;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Target;
-import io.galeb.manager.exceptions.BadRequestException;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.TargetRepository;
-
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
 import org.apache.commons.logging.Log;
@@ -39,6 +31,17 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.security.core.Authentication;
+
+import io.galeb.manager.engine.farm.TargetEngine;
+import io.galeb.manager.entity.Environment;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.TargetRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends RoutableToEngine<Target> {
@@ -69,8 +72,11 @@ public class TargetHandler extends RoutableToEngine<Target> {
         } else {
             final Environment environment = target.getEnvironment();
             if (environment != null) {
+                Authentication currentUser = CurrentUser.getCurrentAuth();
+                SystemUserService.runAs();
                 final Farm farm = farmRepository.findByEnvironmentAndStatus(environment, OK)
-                        .stream().findFirst().orElse(null);
+                                    .stream().findFirst().orElse(null);
+                SystemUserService.runAs(currentUser);
                 if (farm != null) {
                     farmId = farm.getId();
                 }
@@ -88,6 +94,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
         target.setFarmId(-1L);
         beforeCreate(target, LOGGER);
         setProject(target);
+        setEnvironment(target);
     }
 
     @HandleAfterCreate
@@ -129,6 +136,26 @@ public class TargetHandler extends RoutableToEngine<Target> {
         } else {
             if (target.getProject()==null) {
                 final String errorMsg = "Target Project and Parent is null";
+                LOGGER.error(errorMsg);
+                throw new BadRequestException(errorMsg);
+            }
+        }
+    }
+
+    private void setEnvironment(Target target) throws Exception {
+        if (target.getParent() != null) {
+            if (target.getEnvironment() == null) {
+                target.setEnvironment(target.getParent().getEnvironment());
+            } else {
+                if (!target.getEnvironment().equals(target.getParent().getEnvironment())) {
+                    final String errorMsg = "Target Environment is not equal of the Parent Environment";
+                    LOGGER.error(errorMsg);
+                    throw new BadRequestException(errorMsg);
+                }
+            }
+        } else {
+            if (target.getEnvironment()==null) {
+                final String errorMsg = "Target Environment and Parent is null";
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
             }
