@@ -32,11 +32,6 @@ Feature: Authentication work
         And send GET /account/1
         Then the response status is 200
 
-    Scenario: A nonexistent Account can access a non restricted resource
-        Given a REST client authenticated as accountThree
-        And send GET /
-        Then the response status is 200
-
     Scenario: A nonexistent Account can not access any restricted resource
         Given a REST client authenticated as accountThree
         And send GET /account/1
