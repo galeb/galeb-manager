@@ -18,27 +18,50 @@
 
 package io.galeb.manager.security;
 
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import io.galeb.manager.entity.Account;
 
-public class CurrentUser extends User {
+public class CurrentUser implements UserDetails {
 
     private static final long serialVersionUID = -403060077273343289L;
 
     private Long id;
 
+    private final User user;
+
     public static Authentication getCurrentAuth() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 
+    public CurrentUser(String username,
+                       String password,
+                       boolean enabled,
+                       boolean accountNonExpired,
+                       boolean credentialsNonExpired,
+                       boolean accountNonLocked,
+                       Collection<? extends GrantedAuthority> authorities,
+                       Long id) {
+        user = new User(username,
+                        password,
+                        enabled,
+                        accountNonExpired,
+                        credentialsNonExpired,
+                        accountNonLocked,
+                        authorities);
+        this.id = id;
+    }
+
     public CurrentUser(Account account) {
-        super(account.getName(),
+        user = new User(account.getName(),
               "password",
               AuthorityUtils.createAuthorityList(account.getRoles().stream()
                       .map(role -> role.toString()).collect(Collectors.toList())
@@ -49,6 +72,41 @@ public class CurrentUser extends User {
 
     public Long getId() {
         return id;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return user.getAuthorities();
+    }
+
+    @Override
+    public String getPassword() {
+        return user.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return user.getPassword();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return user.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return user.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return user.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return user.isEnabled();
     }
 
 }
