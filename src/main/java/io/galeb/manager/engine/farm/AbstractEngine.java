@@ -83,7 +83,7 @@ public abstract class AbstractEngine {
     protected Optional<Farm> findFarmById(final FarmRepository farmRepository, long farmId) {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Optional<Farm> farm = Optional.ofNullable(farmRepository.findById(farmId));
+        Optional<Farm> farm = Optional.ofNullable(farmRepository.findOne(farmId));
         SystemUserService.runAs(originalAuth);
         return farm;
     }
