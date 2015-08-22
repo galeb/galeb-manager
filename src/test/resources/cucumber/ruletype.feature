@@ -6,6 +6,19 @@ Feature: RuleType Support
     Background:
         Given a REST client authenticated as admin
         When request json body has:
+            | name | teamOne |
+        And send POST /team
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name  | accountOne                  |
+            | roles | [ ROLE_USER ]               |
+            | teams | [ http://localhost/team/1 ] |
+            | email | test@fake.com               |
+        And send POST /account
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
             | name | rTypeOne |
         And send POST /ruletype
 
@@ -20,13 +33,13 @@ Feature: RuleType Support
         Then the response status is 409
 
     Scenario: Get RuleType
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send GET /ruletype/1
         Then the response status is 200
         And property name contains rTypeOne
 
     Scenario: Get null RuleType
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send GET /ruletype/2
         Then the response status is 404
 

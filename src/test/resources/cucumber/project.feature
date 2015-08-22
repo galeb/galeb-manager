@@ -17,36 +17,24 @@ Feature: Project Support
             | email | test@fake.com               |
         And send POST /account
         Then the response status is 201
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When request json body has:
             | name  | projOne                     |
             | teams | [ http://localhost/team/1 ] |
         And send POST /project
 
-    Scenario: Create Project authenticated as admin
+    Scenario: Create Project
         Then the response status is 201
-
-    Scenario: Create Project authenticated as accountOne
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name  | projX                       |
-            | teams | [ http://localhost/team/1 ] |
-        And send POST /project
-        Then the response status is 201
-        And a REST client authenticated as accountOne
-        When send GET /project/2
-        Then the response status is 200
-        And property name contains projX
 
     Scenario: Create duplicated Project
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When request json body has:
             | name | projOne |
         And send POST /project
         Then the response status is 409
 
-    Scenario: Get Project as Admin
-        Given a REST client authenticated as admin
+    Scenario: Get Project
+        Given a REST client authenticated as accountOne
         When send GET /project/1
         Then the response status is 200
         And property name contains projOne
@@ -58,36 +46,36 @@ Feature: Project Support
         And property name contains projOne
 
     Scenario: Get null Project
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send GET /project/2
         Then the response status is 404
 
     Scenario: Update Project
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When request json body has:
             | name | projTwo |
         And send PUT /project/1
         Then the response status is 204
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When send GET /project/1
         Then the response status is 200
         And property name contains projTwo
 
     Scenario: Update one field of Project
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When request json body has:
             | name | projThree |
         And send PATCH /project/1
         Then the response status is 204
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When send GET /project/1
         Then the response status is 200
         And property name contains projThree
 
     Scenario: Delete Project
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send DELETE /project/1
         Then the response status is 204
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When send GET /project/1
         Then the response status is 404

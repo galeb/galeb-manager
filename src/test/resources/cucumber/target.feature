@@ -27,7 +27,7 @@ Feature: Target Support
             | email | test@fake.com               |
         And send POST /account
         Then the response status is 201
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When request json body has:
             | name  | projOne                     |
             | teams | [ http://localhost/team/1 ] |
@@ -78,7 +78,7 @@ Feature: Target Support
         Then the response status is 400
 
     Scenario: Create Target with Parent and Environment inconsistent
-        Given a REST client authenticated as accountOne
+        Given a REST client authenticated as admin
         When request json body has:
             | name  | envTwo |
         And send POST /environment

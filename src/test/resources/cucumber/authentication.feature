@@ -42,11 +42,6 @@ Feature: Authentication work
         And send GET /account/1
         Then the response status is 401
 
-    Scenario: An unauthenticated request can access a non restricted resource
-        Given a REST client unauthenticated
-        And send GET /
-        Then the response status is 200
-
     Scenario: An unauthenticated request can not access any restricted resource
         Given a REST client unauthenticated
         And send GET /account/1

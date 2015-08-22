@@ -6,6 +6,19 @@ Feature: TargetType Support
     Background:
         Given a REST client authenticated as admin
         When request json body has:
+            | name | teamOne |
+        And send POST /team
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name  | accountOne                  |
+            | roles | [ ROLE_USER ]               |
+            | teams | [ http://localhost/team/1 ] |
+            | email | test@fake.com               |
+        And send POST /account
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
             | name | tTypeOne |
         And send POST /targettype
 
@@ -20,13 +33,13 @@ Feature: TargetType Support
         Then the response status is 409
 
     Scenario: Get TargetType
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send GET /targettype/1
         Then the response status is 200
         And property name contains tTypeOne
 
     Scenario: Get null TargetType
-        Given a REST client authenticated as admin
+        Given a REST client authenticated as accountOne
         When send GET /targettype/2
         Then the response status is 404
 

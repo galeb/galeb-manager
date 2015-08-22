@@ -32,7 +32,7 @@ Feature: Rule Support
             | email | test@fake.com               |
         And send POST /account
         Then the response status is 201
-        And a REST client authenticated as admin
+        And a REST client authenticated as accountOne
         When request json body has:
             | name  | projOne                     |
             | teams | [ http://localhost/team/1 ] |
