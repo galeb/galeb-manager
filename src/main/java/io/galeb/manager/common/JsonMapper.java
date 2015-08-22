@@ -95,7 +95,7 @@ public class JsonMapper {
         return "{}";
     }
 
-    protected JsonMapper makeJson(AbstractEntity<?> entity) throws JsonProcessingException {
+    public JsonMapper makeJson(AbstractEntity<?> entity) throws JsonProcessingException {
 
         JsonMapper json = new JsonMapper();
         json.putString("id", entity.getName());
