@@ -36,20 +36,24 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
     @Query("SELECT p FROM Project p "
             + "INNER JOIN p.teams t "
             + "INNER JOIN t.accounts a "
-            + "WHERE "
-                + "p.id = :id AND "
-                    + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                    + "a.name = ?#{principal.username})")
+            + "WHERE p.id = :id AND "
+                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username})")
     Project findOne(@Param("id") Long id);
 
     @Override
     @Query("SELECT p FROM Project p "
             + "INNER JOIN p.teams t "
             + "INNER JOIN t.accounts a "
-            + "WHERE "
-                + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
     List<Project> findAll();
 
+    @Query("SELECT p FROM Project p "
+            + "INNER JOIN p.teams t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE p.name = :name AND "
+                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username})")
     List<Project> findByName(@Param("name") String name);
 }

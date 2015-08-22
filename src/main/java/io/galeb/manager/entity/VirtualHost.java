@@ -37,11 +37,11 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(nullable = false)
     private Environment environment;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(nullable = false)
     private Project project;
 

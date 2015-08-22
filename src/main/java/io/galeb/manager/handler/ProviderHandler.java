@@ -29,6 +29,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.ProvisioningBuilder;
@@ -45,6 +46,7 @@ public class ProviderHandler {
         provider.setProvisioning(ProvisioningBuilder.build(provider.getProvisioning()).toString());
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Provider provider) {
         LOGGER.info("Provider: HandleBeforeCreate");
@@ -56,6 +58,7 @@ public class ProviderHandler {
         LOGGER.info("Provider: HandleAfterCreate");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Provider provider) {
         LOGGER.info("Provider: HandleBeforeSave");
@@ -67,6 +70,7 @@ public class ProviderHandler {
         LOGGER.info("Provider: HandleAfterSave");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Provider provider) {
         LOGGER.info("Provider: HandleBeforeDelete");

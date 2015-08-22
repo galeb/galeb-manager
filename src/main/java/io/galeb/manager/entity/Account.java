@@ -41,7 +41,7 @@ public class Account extends AbstractEntity<Account> {
         ROLE_ADMIN
     }
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(joinColumns=@JoinColumn(name="team_id"),
                inverseJoinColumns=@JoinColumn(name="account_id"))
     private final Set<Team> teams = new HashSet<>();

@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -36,14 +35,14 @@ public class Project extends AbstractEntity<Project> {
     private static final long serialVersionUID = 5596582746795373018L;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "project", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "project")
     private final Set<VirtualHost> virtualhosts = new HashSet<>();
 
     @JsonIgnore
-    @OneToMany(mappedBy = "project", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "project")
     private final Set<Target> targets = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(joinColumns=@JoinColumn(name="team_id"),
                inverseJoinColumns=@JoinColumn(name="project_id"))
     private final Set<Team> teams = new HashSet<>();

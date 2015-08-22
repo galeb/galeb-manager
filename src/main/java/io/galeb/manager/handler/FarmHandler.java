@@ -31,6 +31,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.engine.farm.FarmEngine;
 import io.galeb.manager.entity.Farm;
@@ -58,6 +59,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
         setQueueRemoveName(FarmEngine.QUEUE_REMOVE);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Farm farm) throws Exception {
         beforeCreate(farm, LOGGER);
@@ -69,6 +71,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
         afterCreate(farm, jms, LOGGER);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Farm farm) throws Exception {
         beforeSave(farm, farmRepository, LOGGER);
@@ -79,6 +82,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
         afterSave(farm, jms, LOGGER);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Farm farm) throws Exception {
         beforeDelete(farm, LOGGER);

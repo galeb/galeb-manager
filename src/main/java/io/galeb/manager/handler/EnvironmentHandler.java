@@ -29,6 +29,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Environment;
 
@@ -37,6 +38,7 @@ public class EnvironmentHandler {
 
     private static Log LOGGER = LogFactory.getLog(EnvironmentHandler.class);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
     public void beforeCreate(Environment environment) {
         LOGGER.info("Environment: HandleBeforeCreate");
@@ -48,6 +50,7 @@ public class EnvironmentHandler {
         LOGGER.info("Environment: HandleAfterCreate");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Environment environment) {
         LOGGER.info("Environment: HandleBeforeSave");
@@ -58,6 +61,7 @@ public class EnvironmentHandler {
         LOGGER.info("Environment: HandleAfterSave");
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Environment environment) {
         LOGGER.info("Environment: HandleBeforeDelete");

@@ -19,7 +19,6 @@
 package io.galeb.manager.entity;
 
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
@@ -35,11 +34,11 @@ public class Rule extends AbstractEntity<Rule> {
     @JoinColumn(nullable = false)
     private RuleType ruleType;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(nullable = false)
     private VirtualHost parent;
 
-    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(nullable = false)
     private Target target;
 

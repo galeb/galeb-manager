@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -36,10 +38,9 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
 
     @Query("SELECT a FROM Account a WHERE "
             + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0 } OR "
-            + "a.createdBy = ?#{principal.username} OR "
             + "a.name = ?#{principal.username}")
     @Override
-    Iterable<Account> findAll();
+    List<Account> findAll();
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #name == principal.username")
     Account findByName(@Param("name") String name);

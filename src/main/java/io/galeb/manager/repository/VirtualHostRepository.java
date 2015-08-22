@@ -20,15 +20,41 @@ package io.galeb.manager.repository;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.VirtualHost;
 
+@PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
 public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long> {
 
+    @Override
+    @Query("SELECT v FROM VirtualHost v "
+           + "INNER JOIN v.project.teams t "
+           + "INNER JOIN t.accounts a "
+           + "WHERE v.id = :id AND "
+               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "a.name = ?#{principal.username})")
+    VirtualHost findOne(@Param("id") Long id);
+
+    @Query("SELECT v FROM VirtualHost v "
+            + "INNER JOIN v.project.teams t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE v.name = :name AND "
+                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username})")
     List<VirtualHost> findByName(@Param("name") String name);
+
+    @Override
+    @Query("SELECT v FROM VirtualHost v "
+            + "INNER JOIN v.project.teams t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username}")
+    List<VirtualHost> findAll();
 
 }

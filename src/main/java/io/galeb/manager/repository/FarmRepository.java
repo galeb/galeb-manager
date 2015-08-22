@@ -29,17 +29,10 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 
-@PreAuthorize("isFullyAuthenticated()")
+@PreAuthorize("hasRole('ROLE_ADMIN')")
 @RepositoryRestResource(collectionResourceRel = "farm", path = "farm")
 public interface FarmRepository extends PagingAndSortingRepository<Farm, Long> {
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Farm findByName(@Param("name") String name);
-
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Farm findById(@Param("id") long id);
-
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
     List<Farm> findByEnvironmentAndStatus(@Param("environment") Environment environment,
                                           @Param("status") EntityStatus status);
 
