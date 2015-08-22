@@ -79,12 +79,6 @@ public class StepDefs {
         request = null;
     }
 
-    @Given("^a REST client$")
-    public void givenRestClient() throws Throwable {
-        request = with().contentType("application/json").auth().basic("admin", "password");
-        LOGGER.info("Using "+RestAssured.class.getName());
-    }
-
     @Given("^a REST client unauthenticated$")
     public void givenRestClientUnauthenticated() throws Throwable {
         request = with().contentType("application/json");
