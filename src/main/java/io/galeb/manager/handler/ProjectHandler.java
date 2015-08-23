@@ -31,6 +31,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 
 import io.galeb.manager.entity.Project;
+import io.galeb.manager.exceptions.BadRequestException;
 
 @RepositoryEventHandler(Project.class)
 public class ProjectHandler {
@@ -40,6 +41,11 @@ public class ProjectHandler {
     @HandleBeforeCreate
     public void beforeCreate(Project project) {
         LOGGER.info("Project: HandleBeforeCreate");
+        if (project.getTeams().isEmpty()) {
+            String message = "Project "+project.getName()+" without Teams.";
+            LOGGER.error(message);
+            throw new BadRequestException(message);
+        }
         project.setStatus(OK);
     }
 
