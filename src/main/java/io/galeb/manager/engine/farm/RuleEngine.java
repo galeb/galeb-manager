@@ -81,7 +81,7 @@ public class RuleEngine extends AbstractEngine {
     private Properties makeProperties(Rule rule) {
         String json = "{}";
         try {
-            final JsonMapper jsonMapper = makeJson(rule);
+            final JsonMapper jsonMapper = new JsonMapper().makeJson(rule);
             jsonMapper.putString("parentId", rule.getParent().getName());
             jsonMapper.addToNode("properties", "ruleType", rule.getRuleType().getName());
             jsonMapper.addToNode("properties", "targetType", rule.getTarget().getTargetType().getName());

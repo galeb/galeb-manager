@@ -81,7 +81,7 @@ public class VirtualHostEngine extends AbstractEngine {
     private Properties makeProperties(VirtualHost virtualHost) {
         String json = "{}";
         try {
-            JsonMapper jsonMapper = makeJson(virtualHost);
+            JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);
             json = jsonMapper.toString();
         } catch (JsonProcessingException e) {
             LOGGER.equals(e.getMessage());

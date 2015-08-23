@@ -80,7 +80,7 @@ public class TargetEngine extends AbstractEngine {
     private Properties makeProperties(Target target) {
         String json = "{}";
         try {
-            final JsonMapper jsonMapper = makeJson(target);
+            final JsonMapper jsonMapper = new JsonMapper().makeJson(target);
             if (target.getParent() != null) {
                 jsonMapper.putString("parentId", target.getParent().getName());
             }
