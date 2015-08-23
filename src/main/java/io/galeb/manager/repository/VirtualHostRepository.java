@@ -30,7 +30,7 @@ import io.galeb.manager.entity.VirtualHost;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
-public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long> {
+public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long>, FarmIDable<VirtualHost> {
 
     @Override
     @Query("SELECT v FROM VirtualHost v "
@@ -57,6 +57,7 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
                 + "a.name = ?#{principal.username}")
     List<VirtualHost> findAll();
 
+    @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     List<VirtualHost> findByFarmId(long id);
 

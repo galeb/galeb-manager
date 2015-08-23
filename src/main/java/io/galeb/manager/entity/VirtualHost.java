@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-public class VirtualHost extends AbstractEntity<VirtualHost> {
+public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
@@ -85,10 +85,12 @@ public class VirtualHost extends AbstractEntity<VirtualHost> {
         return this;
     }
 
+    @Override
     public long getFarmId() {
         return farmId;
     }
 
+    @Override
     public VirtualHost setFarmId(long farmId) {
         this.farmId = farmId;
         return this;

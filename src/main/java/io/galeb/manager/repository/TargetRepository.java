@@ -30,7 +30,7 @@ import io.galeb.manager.entity.Target;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
-public interface TargetRepository extends PagingAndSortingRepository<Target, Long> {
+public interface TargetRepository extends PagingAndSortingRepository<Target, Long>, FarmIDable<Target> {
 
     @Override
     @Query("SELECT ta FROM Target ta "
@@ -57,6 +57,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
                 + "a.name = ?#{principal.username}")
     List<Target> findAll();
 
+    @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     List<Target> findByFarmId(long id);
 

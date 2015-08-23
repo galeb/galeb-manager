@@ -32,7 +32,7 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-public class Target extends AbstractEntity<Target> {
+public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
@@ -86,10 +86,12 @@ public class Target extends AbstractEntity<Target> {
         return this;
     }
 
+    @Override
     public long getFarmId() {
         return farmId;
     }
 
+    @Override
     public Target setFarmId(long farmId) {
         this.farmId = farmId;
         return this;
