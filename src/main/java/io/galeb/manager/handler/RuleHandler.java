@@ -56,19 +56,22 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
-        if (rule.getParent() != null && rule.getTarget() != null) {
+        long farmIdVirtualHost = -1L;
+        long farmIdTarget = -1L;
+        if (rule.getParent() != null) {
             final VirtualHost virtualhost = rule.getParent();
-            final Target target           = rule.getTarget();
-
-            final long farmIdVirtualHost = virtualhost.getFarmId();
-            final long farmIdTarget      = target.getFarmId();
-
-            if (farmIdVirtualHost != farmIdTarget) {
-                String errorMsg = "VirtualHost.farmId is not equal Target.farmId";
-                LOGGER.error(errorMsg);
-                throw new BadRequestException(errorMsg);
-            }
+            farmIdVirtualHost = virtualhost.getFarmId();
         }
+        if (rule.getTarget() != null) {
+            final Target target = rule.getTarget();
+            farmIdTarget = target.getFarmId();
+        }
+        if (farmIdVirtualHost > -1L && farmIdTarget > -1L && farmIdVirtualHost != farmIdTarget) {
+            String errorMsg = "VirtualHost.farmId is not equal Target.farmId";
+            LOGGER.error(errorMsg);
+            throw new BadRequestException(errorMsg);
+        }
+        rule.setFarmId(farmIdTarget);
     }
 
     @HandleBeforeCreate

@@ -25,6 +25,8 @@ import javax.persistence.OneToOne;
 
 import org.springframework.util.Assert;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 public class Rule extends AbstractEntity<Rule> {
 
@@ -41,6 +43,9 @@ public class Rule extends AbstractEntity<Rule> {
     @ManyToOne
     @JoinColumn(nullable = false)
     private Target target;
+
+    @JsonIgnore
+    private long farmId;
 
     public Rule(String name, RuleType ruleType, Environment environment, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);
@@ -82,6 +87,15 @@ public class Rule extends AbstractEntity<Rule> {
     public Rule setTarget(Target target) {
         Assert.notNull(target);
         this.target = target;
+        return this;
+    }
+
+    public long getFarmId() {
+        return farmId;
+    }
+
+    public Rule setFarmId(long farmId) {
+        this.farmId = farmId;
         return this;
     }
 
