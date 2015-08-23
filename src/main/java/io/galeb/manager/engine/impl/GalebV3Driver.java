@@ -31,6 +31,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.annotation.NotThreadSafe;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -121,6 +122,26 @@ public class GalebV3Driver implements Driver {
         } catch (IOException e) {
             e.printStackTrace();
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
+        }
+        return result;
+    }
+
+    @Override
+    public boolean reload(Properties properties) {
+        boolean result = false;
+        String api = properties.getOrDefault("api", "NULL").toString();
+        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+        HttpDelete delete = new HttpDelete("/farm");
+        delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
+        String[] apiWithPort = api.split(":");
+        String hostName = apiWithPort[0];
+        int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
+        try {
+            HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
+            result = response.getStatusLine().getStatusCode() < 400;
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOGGER.error("RELOAD "+api+" ("+e.getMessage()+")");
         }
         return result;
     }
