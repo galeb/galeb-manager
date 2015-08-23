@@ -34,6 +34,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 
 import org.springframework.data.annotation.CreatedBy;
@@ -41,6 +42,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.galeb.manager.security.SpringSecurityAuditorAware;
 
@@ -91,12 +94,17 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Column(nullable = false)
     private EntityStatus status;
 
+    @JsonIgnore
+    @Transient
+    private boolean saveOnly = false;
+
     @PrePersist
     private void onCreate() {
         createdDate = new Date();
         createdBy = getCurrentAuditor();
         lastModifiedDate = createdDate;
         lastModifiedBy = createdBy;
+        saveOnly = false;
     }
 
     @PreUpdate
@@ -145,6 +153,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setStatus(EntityStatus aStatus) {
         status = Optional.ofNullable(aStatus).orElse(status);
+        return (T) this;
+    }
+
+    public boolean isSaveOnly() {
+        return saveOnly;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setSaveOnly(boolean saveOnly) {
+        this.saveOnly = saveOnly;
         return (T) this;
     }
 

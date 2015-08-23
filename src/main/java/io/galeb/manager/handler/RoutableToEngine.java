@@ -114,7 +114,12 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     }
 
     public void beforeSave(T entity, PagingAndSortingRepository<T, Long> repository, Log logger) throws Exception {
-        logger.info(entity.getClass().getSimpleName()+": HandleBeforeSave");
+        String entityTypeName = entity.getClass().getSimpleName();
+        logger.info(entityTypeName+": HandleBeforeSave");
+        if (entity.isSaveOnly()) {
+            logger.info(entityTypeName+": SaveOnly enabled");
+            return;
+        }
         setBestFarm(entity);
         try {
             fixStatus(entity, repository);
@@ -125,7 +130,13 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     }
 
     public void afterSave(T entity, JmsTemplate jms, Log logger) throws Exception {
-        logger.info(entity.getClass().getSimpleName()+": HandleAfterSave");
+        String entityTypeName = entity.getClass().getSimpleName();
+        logger.info(entityTypeName+": HandleAfterSave");
+        if (entity.isSaveOnly()) {
+            logger.info(entityTypeName+": SaveOnly enabled");
+            entity.setSaveOnly(false);
+            return;
+        }
         try {
             jmsSend(jms, getQueueUpdateName(), entity);
         } catch (JmsException e) {
