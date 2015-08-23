@@ -35,8 +35,9 @@ public class ReloadController extends RoutableToEngine<Farm> {
         JsonMapper json = new JsonMapper();
         Farm farm = farmRepository.findOne(id);
         if (farm != null) {
+            farm.setStatus(PENDING).setSaveOnly(true);
+            farmRepository.save(farm);
             jmsSend(jms, FarmEngine.QUEUE_RELOAD, farm);
-            farm.setStatus(PENDING);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

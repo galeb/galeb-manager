@@ -24,7 +24,11 @@ import io.galeb.manager.engine.Driver;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
 
 import java.util.Optional;
 
@@ -32,6 +36,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,11 +48,18 @@ public class RuleEngine extends AbstractEngine {
     public static final String QUEUE_CREATE = "queue-rule-create";
     public static final String QUEUE_UPDATE = "queue-rule-update";
     public static final String QUEUE_REMOVE = "queue-rule-remove";
+    public static final String QUEUE_CALLBK = "queue-rule-callback";
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 
     @Autowired
-    private FarmRepository farmRepository;
+    FarmRepository farmRepository;
+
+    @Autowired
+    JmsTemplate jms;
+
+    @Autowired
+    private RuleRepository ruleRepository;
 
     @Override
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
@@ -54,28 +67,73 @@ public class RuleEngine extends AbstractEngine {
         if (entity instanceof Rule) {
             farmId = ((Rule)entity).getParent().getFarmId();
         }
-        return findFarmById(farmRepository, farmId);
+        return findFarmById(farmId);
     }
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = getDriver(rule);
-        driver.create(makeProperties(rule));
+        boolean isOk = false;
+        try {
+            isOk = driver.create(makeProperties(rule));
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+            jms.convertAndSend(QUEUE_CALLBK, rule);
+        }
     }
 
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = getDriver(rule);
-        driver.update(makeProperties(rule));
+        boolean isOk = false;
+        try {
+            isOk = driver.update(makeProperties(rule));
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+            jms.convertAndSend(QUEUE_CALLBK, rule);
+        }
     }
 
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Rule rule) {
         LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = getDriver(rule);
-        driver.remove(makeProperties(rule));
+        boolean isOk = false;
+        try {
+            isOk = driver.remove(makeProperties(rule));
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+            jms.convertAndSend(QUEUE_CALLBK, rule);
+        }
+    }
+
+    @JmsListener(destination = QUEUE_CALLBK)
+    public void callBack(Rule rule) {
+        rule.setSaveOnly(true);
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        ruleRepository.save(rule);
+        setFarmStatusOnError(rule);
+        SystemUserService.runAs(currentUser);
+        rule.setSaveOnly(false);
+    }
+
+    @Override
+    protected FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Override
+    protected JmsTemplate getJmsTemplate() {
+        return jms;
     }
 
     private Properties makeProperties(Rule rule) {

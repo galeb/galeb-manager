@@ -20,6 +20,7 @@ package io.galeb.manager.engine.farm;
 
 import java.util.Optional;
 
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
@@ -28,6 +29,7 @@ import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
@@ -35,6 +37,10 @@ import io.galeb.manager.security.SystemUserService;
 public abstract class AbstractEngine {
 
     protected abstract Optional<Farm> findFarm(AbstractEntity<?> entity);
+
+    protected abstract FarmRepository getFarmRepository();
+
+    protected abstract JmsTemplate getJmsTemplate();
 
     protected Properties fromEntity(AbstractEntity<?> entity) {
         Properties properties = new Properties();
@@ -62,11 +68,21 @@ public abstract class AbstractEngine {
         };
     }
 
-    protected Optional<Farm> findFarmById(final FarmRepository farmRepository, long farmId) {
+    protected Optional<Farm> findFarmById(long farmId) {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Optional<Farm> farm = Optional.ofNullable(farmRepository.findOne(farmId));
+        Optional<Farm> farm = Optional.ofNullable(getFarmRepository().findOne(farmId));
         SystemUserService.runAs(originalAuth);
         return farm;
+    }
+
+    protected void setFarmStatusOnError(AbstractEntity<?> entity) {
+        if (entity.getStatus().equals(EntityStatus.ERROR)) {
+            Optional<Farm> farm = findFarm(entity);
+            if (farm.isPresent()) {
+                farm.get().setStatus(EntityStatus.ERROR);
+                getJmsTemplate().convertAndSend(FarmEngine.QUEUE_CALLBK, farm.get());
+            }
+        }
     }
 }
