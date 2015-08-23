@@ -18,8 +18,6 @@
 
 package io.galeb.manager.engine.farm;
 
-import java.util.Optional;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +31,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
@@ -60,15 +56,6 @@ public class VirtualHostEngine extends AbstractEngine {
 
     @Autowired
     private VirtualHostRepository virtualHostRepository;
-
-    @Override
-    protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
-        long farmId = -1L;
-        if (entity instanceof VirtualHost) {
-            farmId = ((VirtualHost)entity).getFarmId();
-        }
-        return findFarmById(farmId);
-    }
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {

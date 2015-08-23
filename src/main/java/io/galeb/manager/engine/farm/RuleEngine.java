@@ -21,16 +21,12 @@ package io.galeb.manager.engine.farm;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
-
-import java.util.Optional;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -60,15 +56,6 @@ public class RuleEngine extends AbstractEngine {
 
     @Autowired
     private RuleRepository ruleRepository;
-
-    @Override
-    protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
-        long farmId = -1L;
-        if (entity instanceof Rule) {
-            farmId = ((Rule)entity).getParent().getFarmId();
-        }
-        return findFarmById(farmId);
-    }
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Rule rule) {

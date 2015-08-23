@@ -29,6 +29,7 @@ import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.CurrentUser;
@@ -36,11 +37,20 @@ import io.galeb.manager.security.SystemUserService;
 
 public abstract class AbstractEngine {
 
-    protected abstract Optional<Farm> findFarm(AbstractEntity<?> entity);
-
     protected abstract FarmRepository getFarmRepository();
 
     protected abstract JmsTemplate getJmsTemplate();
+
+    protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
+        if (entity instanceof Farm) {
+            return Optional.ofNullable((Farm)entity);
+        }
+        long farmId = -1L;
+        if (entity instanceof WithFarmID) {
+            farmId = ((WithFarmID<?>)entity).getFarmId();
+        }
+        return findFarmById(farmId);
+    }
 
     protected Properties fromEntity(AbstractEntity<?> entity) {
         Properties properties = new Properties();

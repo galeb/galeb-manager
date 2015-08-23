@@ -19,8 +19,6 @@
 package io.galeb.manager.engine.farm;
 
 import java.util.List;
-import java.util.Optional;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +30,6 @@ import org.springframework.stereotype.Component;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.Provisioning;
-import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
@@ -70,11 +67,6 @@ public class FarmEngine extends AbstractEngine {
 
     @Autowired
     JmsTemplate jms;
-
-    @Override
-    protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
-        return Optional.ofNullable((Farm)entity);
-    }
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Farm farm) {
