@@ -57,4 +57,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
                 + "a.name = ?#{principal.username}")
     List<Target> findAll();
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    List<Target> findByFarmId(long id);
+
 }

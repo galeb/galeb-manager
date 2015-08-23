@@ -56,4 +56,8 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long> {
             + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
     List<Rule> findAll();
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    List<Rule> findByFarmId(long id);
+
 }
