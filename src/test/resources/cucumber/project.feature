@@ -29,7 +29,8 @@ Feature: Project Support
     Scenario: Create duplicated Project
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name | projOne |
+            | name  | projOne                     |
+            | teams | [ http://localhost/team/1 ] |
         And send POST /project
         Then the response status is 409
 
