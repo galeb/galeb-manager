@@ -101,7 +101,7 @@ public class FarmEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_RELOAD)
     public void reload(Farm farm) {
-        LOGGER.info("Reloading "+farm.getClass().getSimpleName()+" "+farm.getName());
+        LOGGER.warn("Reloading "+farm.getClass().getSimpleName()+" "+farm.getName());
         Driver driver = DriverBuilder.getDriver(farm);
         boolean isOk = false;
         try {

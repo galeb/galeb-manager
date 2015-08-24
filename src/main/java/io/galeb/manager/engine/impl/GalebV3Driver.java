@@ -183,7 +183,7 @@ public class GalebV3Driver implements Driver {
             if (!result) {
                 LOGGER.warn("STATUS FAIL: "+uriPath+"/"+name);
             } else {
-                LOGGER.info("STATUS OK: "+uriPath+"/"+name);
+                LOGGER.debug("STATUS OK: "+uriPath+"/"+name);
             }
         } catch (RuntimeException | IOException | URISyntaxException e) {
             result = false;

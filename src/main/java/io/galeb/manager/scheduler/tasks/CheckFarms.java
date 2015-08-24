@@ -101,6 +101,8 @@ public class CheckFarms {
             farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
             if (!isOk.get()) {
                 jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+            } else {
+                LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
             }
         });
         SystemUserService.runAs(currentUser);
