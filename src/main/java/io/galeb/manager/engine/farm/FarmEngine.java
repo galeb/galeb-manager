@@ -29,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
@@ -101,7 +102,7 @@ public class FarmEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_RELOAD)
     public void reload(Farm farm) {
         LOGGER.info("Reloading "+farm.getClass().getSimpleName()+" "+farm.getName());
-        Driver driver = getDriver(farm);
+        Driver driver = DriverBuilder.getDriver(farm);
         boolean isOk = false;
         try {
             isOk = driver.reload(makeProperties(farm));

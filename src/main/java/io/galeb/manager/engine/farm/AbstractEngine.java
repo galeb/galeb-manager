@@ -24,8 +24,6 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
@@ -63,22 +61,13 @@ public abstract class AbstractEngine {
         return farm.isPresent() ? farm.get().getApi() : "UNDEF";
     }
 
-    protected Driver getDriver(AbstractEntity<?> entity) {
-        String driverName = Driver.DEFAULT_DRIVER_NAME;
-        Optional<Farm> farm = findFarm(entity);
-        if (farm.isPresent()) {
-            driverName = farm.get().getProvider().getDriver();
-        }
-        return DriverBuilder.build(driverName);
-    }
-
     protected Provisioning getProvisioning(AbstractEntity<?> entity) {
         return new Provisioning() {
             // NULL
         };
     }
 
-    protected Optional<Farm> findFarmById(long farmId) {
+    private Optional<Farm> findFarmById(long farmId) {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         Optional<Farm> farm = Optional.ofNullable(getFarmRepository().findOne(farmId));

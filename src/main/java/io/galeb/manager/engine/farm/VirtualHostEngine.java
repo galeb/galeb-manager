@@ -31,6 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
@@ -60,7 +61,7 @@ public class VirtualHostEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        Driver driver = getDriver(virtualHost);
+        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
             isOk = driver.create(makeProperties(virtualHost));
@@ -75,7 +76,7 @@ public class VirtualHostEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(VirtualHost virtualHost) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        Driver driver = getDriver(virtualHost);
+        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
             isOk = driver.update(makeProperties(virtualHost));
@@ -90,7 +91,7 @@ public class VirtualHostEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(VirtualHost virtualHost) {
         LOGGER.info("Removing "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        Driver driver = getDriver(virtualHost);
+        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
             isOk = driver.remove(makeProperties(virtualHost));

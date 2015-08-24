@@ -23,6 +23,7 @@ import java.util.Map;
 
 import io.galeb.manager.engine.impl.GalebV3Driver;
 import io.galeb.manager.engine.impl.NullDriver;
+import io.galeb.manager.entity.Farm;
 
 public class DriverBuilder {
 
@@ -38,6 +39,12 @@ public class DriverBuilder {
             return drivers.get(Driver.DEFAULT_DRIVER_NAME);
         }
         return driver;
+    }
+
+    public static Driver getDriver(Farm farm) {
+        String driverName = Driver.DEFAULT_DRIVER_NAME;
+        driverName = farm.getProvider().getDriver();
+        return build(driverName);
     }
 
 }

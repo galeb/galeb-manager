@@ -21,6 +21,7 @@ package io.galeb.manager.engine.farm;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
@@ -60,7 +61,7 @@ public class RuleEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        final Driver driver = getDriver(rule);
+        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         boolean isOk = false;
         try {
             isOk = driver.create(makeProperties(rule));
@@ -75,7 +76,7 @@ public class RuleEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        final Driver driver = getDriver(rule);
+        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         boolean isOk = false;
         try {
             isOk = driver.update(makeProperties(rule));
@@ -90,7 +91,7 @@ public class RuleEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Rule rule) {
         LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
-        final Driver driver = getDriver(rule);
+        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         boolean isOk = false;
         try {
             isOk = driver.remove(makeProperties(rule));

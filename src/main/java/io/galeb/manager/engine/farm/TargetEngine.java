@@ -21,6 +21,7 @@ package io.galeb.manager.engine.farm;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
@@ -60,7 +61,7 @@ public class TargetEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Target target) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = getDriver(target);
+        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
         boolean isOk = false;
         try {
             isOk = driver.create(makeProperties(target));
@@ -75,7 +76,7 @@ public class TargetEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_UPDATE)
     public void update(Target target) {
         LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = getDriver(target);
+        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
         boolean isOk = false;
         try {
             isOk = driver.update(makeProperties(target));
@@ -90,7 +91,7 @@ public class TargetEngine extends AbstractEngine {
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Target target) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = getDriver(target);
+        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
         boolean isOk = false;
         try {
             isOk = driver.remove(makeProperties(target));
