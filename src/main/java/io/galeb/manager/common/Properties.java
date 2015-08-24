@@ -38,6 +38,11 @@ public class Properties {
         return value == null ? obj : value;
     }
 
+    public int getOrDefault(String key, Integer def) {
+        Object value = properties.get(key);
+        return value == null ? def : Integer.parseInt(String.valueOf(value));
+    }
+
     public Object remove(String key) {
         return properties.remove(key);
     }
