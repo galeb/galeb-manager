@@ -1,4 +1,4 @@
-package io.galeb.manager.scheduler;
+package io.galeb.manager.scheduler.tasks;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,9 +24,9 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
 @Component
-public class SchedulerTasks {
+public class CheckFarms {
 
-    private static final Log LOGGER = LogFactory.getLog(SchedulerTasks.class);
+    private static final Log LOGGER = LogFactory.getLog(CheckFarms.class);
 
     @Autowired
     FarmRepository farmRepository;
@@ -44,7 +44,7 @@ public class SchedulerTasks {
     JmsTemplate jms;
 
     @Scheduled(fixedRate = 10000)
-    private void checkFarms() {
+    private void run() {
         LOGGER.debug("TASK checkFarm executing");
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
