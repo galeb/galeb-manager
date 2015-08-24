@@ -36,4 +36,7 @@ public interface FarmRepository extends PagingAndSortingRepository<Farm, Long> {
     List<Farm> findByEnvironmentAndStatus(@Param("environment") Environment environment,
                                           @Param("status") EntityStatus status);
 
+    @Override
+    List<Farm> findAll();
+
 }
