@@ -18,6 +18,8 @@
 
 package io.galeb.manager.engine;
 
+import java.io.IOException;
+
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.farm.EntityFarm;
 
@@ -47,7 +49,7 @@ public interface Driver {
         return true;
     }
 
-    default boolean reload(Properties properties) {
+    default boolean reload(Properties properties) throws IOException {
         return true;
     }
 

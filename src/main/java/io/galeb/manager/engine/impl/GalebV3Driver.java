@@ -42,8 +42,9 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.galeb.core.model.Entity;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.handler.VirtualHostHandler;
@@ -54,6 +55,8 @@ public class GalebV3Driver implements Driver {
                                                                 .replaceAll("Driver", "");
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
+
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public String toString() {
@@ -127,23 +130,67 @@ public class GalebV3Driver implements Driver {
     }
 
     @Override
-    public boolean reload(Properties properties) {
+    public boolean reload(Properties properties) throws IOException {
         boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
-        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-        HttpDelete delete = new HttpDelete("/farm");
-        delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
         String[] apiWithPort = api.split(":");
         String hostName = apiWithPort[0];
         int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
-        try {
-            HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
-            result = response.getStatusLine().getStatusCode() < 400;
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("RELOAD "+api+" ("+e.getMessage()+")");
-        }
+        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+
+        HttpDelete delete = new HttpDelete("/farm");
+        delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
+        HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
+
+        result = response.getStatusLine().getStatusCode() < 400;
+        httpClient.close();
+
         return result;
+    }
+
+    @Override
+    public StatusFarm status(Properties properties) {
+        String api = properties.getOrDefault("api", "NULL").toString();
+        String path = properties.getOrDefault("path", "").toString();
+        String name = properties.getOrDefault("name", "").toString();
+        int expectedId = properties.getOrDefault("id", -1);
+        String uriPath = "http://" + api + "/" + path;
+        RestTemplate restTemplate = new RestTemplate();
+        boolean result = false;
+
+        try {
+            URI uri = new URI(uriPath);
+            RequestEntity<Void> request = RequestEntity.get(uri).build();
+            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+            result = response.getStatusCode().value() < 400;
+            if (result) {
+                JsonNode json = mapper.readTree(response.getBody());
+                final Entity entity = new Entity();
+                entity.setVersion(-1);
+
+                if (json != null && json.isArray()) {
+                    json.forEach(element -> {
+                        if (element != null &&
+                                element.isObject() &&
+                                element.get("id") != null &&
+                                element.get("id").asText("UNDEF").equals(name)) {
+                            entity.setVersion(element.get("version").asInt(-1));
+                        }
+                    });
+                }
+                result = expectedId == entity.getVersion();
+            }
+            if (!result) {
+                LOGGER.warn("STATUS FAIL: "+uriPath+"/"+name);
+            } else {
+                LOGGER.info("STATUS OK: "+uriPath+"/"+name);
+            }
+        } catch (RuntimeException | IOException | URISyntaxException e) {
+            result = false;
+            LOGGER.error("STATUS FAIL: "+uriPath+"/"+name);
+            LOGGER.error(e);
+        }
+        return result ? StatusFarm.OK : StatusFarm.FAIL;
     }
 
     @NotThreadSafe
@@ -173,4 +220,5 @@ public class GalebV3Driver implements Driver {
             return "";
         }
     }
+
 }
