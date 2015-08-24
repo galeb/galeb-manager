@@ -27,8 +27,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
 import org.springframework.jms.annotation.EnableJms;
-import org.springframework.scheduling.annotation.EnableScheduling;
-
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
@@ -42,7 +40,6 @@ import io.galeb.manager.entity.VirtualHost;
 
 @SpringBootApplication
 @EnableJms
-@EnableScheduling
 @Import(RepositoryRestMvcConfiguration.class)
 public class Application {
 
