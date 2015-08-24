@@ -4,9 +4,11 @@
     <Property name="LOGLEVEL">INFO</Property>
   </Properties>
   <Appenders>
+<Console name="SlowConsole" target="SYSTEM_OUT">
+</Console>
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
-        <Pattern>%d %p %c{1.} [%t] %m %ex%n</Pattern>
+          <Pattern>%highlight{%d %p %c{1.} [%t] %m %ex%n}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=blue, DEBUG=green bold, TRACE=gray}</Pattern>
       </PatternLayout>
     </Console>
     <Async name="AsyncSystem">
