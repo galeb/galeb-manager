@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Bean;
@@ -67,9 +69,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private Environment env;
 
+    private AuthMethod authMethod;
+
+    @PostConstruct
+    public void init() {
+        authMethod = AuthMethod.valueOf(env.getRequiredProperty("auth_method"));
+    }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        AuthMethod authMethod = AuthMethod.valueOf(env.getRequiredProperty("auth_method"));
 
         auth.inMemoryAuthentication()
             .withUser("admin").roles("ADMIN", "USER").password("password");

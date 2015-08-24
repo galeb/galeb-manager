@@ -34,7 +34,7 @@ public class CurrentUser implements UserDetails {
 
     private static final long serialVersionUID = -403060077273343289L;
 
-    private Long id;
+    private final Long id;
 
     private final User user;
 
@@ -62,10 +62,10 @@ public class CurrentUser implements UserDetails {
 
     public CurrentUser(Account account) {
         user = new User(account.getName(),
-              "password",
-              AuthorityUtils.createAuthorityList(account.getRoles().stream()
-                      .map(role -> role.toString()).collect(Collectors.toList())
-                      .toArray(new String[account.getRoles().size()-1]))
+                        "password",
+                        AuthorityUtils.createAuthorityList(account.getRoles().stream()
+                                          .map(role -> role.toString()).collect(Collectors.toList())
+                                          .toArray(new String[account.getRoles().size()-1]))
               );
         id = account.getId();
     }
@@ -86,7 +86,7 @@ public class CurrentUser implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getPassword();
+        return user.getUsername();
     }
 
     @Override
@@ -107,6 +107,25 @@ public class CurrentUser implements UserDetails {
     @Override
     public boolean isEnabled() {
         return user.isEnabled();
+    }
+
+    public void eraseCredentials() {
+        user.eraseCredentials();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return user.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return user.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return user.toString();
     }
 
 }
