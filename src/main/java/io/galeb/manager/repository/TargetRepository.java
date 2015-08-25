@@ -59,4 +59,11 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Iterable<Target> findByFarmId(long id);
 
+    @Query("SELECT ta FROM Target ta "
+            + "INNER JOIN ta.project.teams t "
+            + "INNER JOIN t.accounts a "
+            + "WHERE ta.targetType.name = :name AND "
+                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "a.name = ?#{principal.username})")
+    Iterable<Target> findByTargetTypeName(@Param("name") String name);
 }
