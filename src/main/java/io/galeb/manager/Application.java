@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
 import org.springframework.jms.annotation.EnableJms;
+
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;

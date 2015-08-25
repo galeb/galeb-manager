@@ -21,6 +21,7 @@ package io.galeb.manager;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.Matchers.hasToString;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,9 +39,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.config.RedirectConfig;
+import com.jayway.restassured.config.RestAssuredConfig;
+import com.jayway.restassured.response.Response;
 import com.jayway.restassured.response.ValidatableResponse;
 import com.jayway.restassured.specification.RequestSpecification;
 
+import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
@@ -48,7 +53,6 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import gherkin.deps.com.google.gson.Gson;
 import gherkin.deps.com.google.gson.GsonBuilder;
-import io.galeb.manager.Application;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(
@@ -62,7 +66,6 @@ import io.galeb.manager.Application;
 public class StepDefs {
 
     private static Log LOGGER = LogFactory.getLog(StepDefs.class);
-    private static Object[] PARAMS = new Object[0];
     private static final Gson jsonParser = new GsonBuilder().setPrettyPrinting()
                                                             .create();
 
@@ -73,21 +76,40 @@ public class StepDefs {
 
     private ValidatableResponse response;
 
+    private String sessionId;
+
+    private RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(false);
+
+    private RestAssuredConfig restAssuredConfig = RestAssuredConfig.config().redirect(redirectConfig);
+
     @Before
     public void setUp() {
         response = null;
         request = null;
+        sessionId = null;
+    }
+
+    @After
+    public void cleanUp() {
+        final URI logoutUrl = URI.create("http://127.0.0.1:"+port+"/logout");
+        with().sessionId(sessionId).post(logoutUrl).andReturn();
     }
 
     @Given("^a REST client unauthenticated$")
     public void givenRestClientUnauthenticated() throws Throwable {
-        request = with().contentType("application/json");
+        request = with().config(restAssuredConfig).contentType("application/json");
         LOGGER.info("Using "+RestAssured.class.getName()+" unauthenticated");
     }
 
     @Given("^a REST client authenticated as (.*)$")
     public void givenRestClientAuthenticatedAs(String login) throws Throwable {
-        request = with().contentType("application/json").auth().basic(login, "password");
+        final URI loginUrl = URI.create("http://127.0.0.1:"+port+"/login");
+        Response result = with().param("username", login).and()
+                                .param("password", "password")
+                                .post(loginUrl).thenReturn();
+
+        sessionId = result.getSessionId();
+        request = with().config(restAssuredConfig).contentType("application/json").sessionId(sessionId);
         LOGGER.info("Using "+RestAssured.class.getName()+" authenticated as "+login);
     }
 
@@ -118,22 +140,23 @@ public class StepDefs {
 
     @And("^send (.+) (.+)$")
     public void sendMethodPath(String method, String path) throws Throwable {
-        final String fullUrl="http://127.0.0.1:"+port+path;
+        final String fullUrlStr="http://127.0.0.1:"+port+path;
+        URI fullUrl = URI.create(fullUrlStr);
         switch (method) {
         case "GET":
-            response = request.get(fullUrl, PARAMS).then();
+            response = request.get(fullUrl).then();
             break;
         case "POST":
-            response = request.post(fullUrl, PARAMS).then();
+            response = request.post(fullUrl).then();
             break;
         case "PUT":
-            response = request.put(fullUrl, PARAMS).then();
+            response = request.put(fullUrl).then();
             break;
         case "PATCH":
-            response = request.patch(fullUrl, PARAMS).then();
+            response = request.patch(fullUrl).then();
             break;
         case "DELETE":
-            response = request.delete(fullUrl, PARAMS).then();
+            response = request.delete(fullUrl).then();
             break;
         default:
             break;
@@ -148,7 +171,7 @@ public class StepDefs {
     @And("^property (.*) contains (.*)$")
     public void andPropertyContains(String property, String value) throws Throwable {
         if (property!=null && !"".equals(property)) {
-            response.body(property,  hasToString(value));
+            response.body(property, hasToString(value));
         }
     }
 

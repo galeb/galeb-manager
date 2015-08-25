@@ -185,12 +185,12 @@ Feature: Account Support
             | roles    | [ ROLE_USER ]               |
             | teams    | [ http://localhost/team/1 ] |
         And send POST /account
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Get Account as anonymous is not permitted
         Given a REST client unauthenticated
         When send GET /account/2
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Update Account name as anonymous is not permitted
         Given a REST client unauthenticated
@@ -201,7 +201,7 @@ Feature: Account Support
             | roles    | [ ROLE_USER ]               |
             | teams    | [ http://localhost/team/1 ] |
         And send PUT /account/2
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Update Account email as anonymous is not permitted
         Given a REST client unauthenticated
@@ -212,19 +212,19 @@ Feature: Account Support
             | roles    | [ ROLE_USER ]               |
             | teams    | [ http://localhost/team/1 ] |
         And send PUT /account/2
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Update field name of Account as anonymous is not permitted
         Given a REST client unauthenticated
         When request json body has:
             | name | accountTwo |
         And send PATCH /account/2
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Delete Account as anonymous is not permitted
         Given a REST client unauthenticated
         When send DELETE /account/2
-        Then the response status is 401
+        Then the response status is 302
 
     Scenario: Get Account as accountTwo account is not permitted
         Given a REST client authenticated as accountTwo

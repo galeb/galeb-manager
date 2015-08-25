@@ -54,6 +54,10 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-data</artifactId>
             <version>4.0.2.RELEASE</version>
@@ -156,13 +160,13 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
+                    <argLine>-server</argLine>
                     <argLine>-Xmx2048m -Xms2048m</argLine>
-                    <!--
-                    <argLine>-Dauth_method=SIMPLE</argLine>
-                    <argLine>-Dldap.url=""</argLine>
-                    <argLine>-Dldap.user=""</argLine>
-                    <argLine>-Dldap.password=""</argLine>
-                    -->
+                    <argLine>-Dspring.datasource.url=jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</argLine>
+                    <argLine>-Dspring.datasource.driver-class-name=org.h2.Driver</argLine>
+                    <argLine>-Dspring.datasource.username=root</argLine>
+                    <argLine>-Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect</argLine>
+                    <argLine>-Dauth_method=LDAP_TEST</argLine>
                     <systemPropertyVariables>
                         <databaseSchema>galeb_${surefire.forkNumber}</databaseSchema>
                     </systemPropertyVariables>
@@ -229,12 +233,17 @@
                     <argument>-server</argument>
                     <argument>-Xms2048m</argument>
                     <argument>-Xmx2048m</argument>
-                    <argument>-Dlog4j.configurationFile=log4j.xml</argument>
                     <argument>-cp</argument>
                     <argument>target/galeb-manager-${project.version}-uber.jar</argument>
+                    <argument>-Dlog4j.configurationFile=log4j.xml</argument>
+                    <argument>-Dserver.port=8000</argument>
+                    <argument>-Dauth_method=DEFAULT</argument>
+                    <argLine>-Dspring.datasource.url=jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</argLine>
+                    <argLine>-Dspring.datasource.driver-class-name=org.h2.Driver</argLine>
+                    <argLine>-Dspring.datasource.username=root</argLine>
+                    <argLine>-Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect</argLine>
                     <argument>-jar</argument>
                     <argument>target/galeb-manager-${project.version}.jar</argument>
-                    <argument>--server.port=8000</argument>
                   </arguments>
                 </configuration>
               </plugin>

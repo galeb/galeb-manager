@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Bean;
@@ -45,6 +45,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.repository.AccountRepository;
@@ -54,6 +55,8 @@ import io.galeb.manager.repository.AccountRepository;
 @Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+    private static final Log LOGGER = LogFactory.getLog(SecurityConfiguration.class);
 
     enum AuthMethod {
         LDAP,
@@ -74,14 +77,18 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private AuthMethod authMethod;
 
-    @PostConstruct
-    public void init() {
-        authMethod = AuthMethod.valueOf(env.getRequiredProperty("auth_method"));
-    }
-
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
+        if (authMethod==null) {
+            try {
+                authMethod = AuthMethod.valueOf(System.getProperty("auth_method"));
+                LOGGER.info("Using "+authMethod.toString()+" Authentication Method.......");
+            } catch (Exception e) {
+                LOGGER.error(e);
+                e.printStackTrace();
+            }
+        }
         auth.inMemoryAuthentication()
             .withUser("admin").roles("ADMIN", "USER").password("password");
 
@@ -135,9 +142,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-            .anyRequest().fullyAuthenticated().and()
-            .httpBasic().and()
+        http.authorizeRequests().anyRequest().fullyAuthenticated()
+            .and()
+            .formLogin().loginPage("/login").failureUrl("/login?error").permitAll()
+            .and()
+            .logout().deleteCookies("JSESSIONID","SPRING_SECURITY_REMEMBER_ME_COOKIE")
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout")).logoutSuccessUrl("/login")
+            .and()
+            .httpBasic()
+            .and()
             .csrf().disable();
     }
 
