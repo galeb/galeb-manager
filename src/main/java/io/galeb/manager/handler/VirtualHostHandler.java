@@ -18,6 +18,8 @@
 
 package io.galeb.manager.handler;
 
+import java.util.Iterator;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,8 +66,8 @@ public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
     protected void setBestFarm(final VirtualHost virtualhost) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        final Farm farm = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK)
-                            .stream().findFirst().orElse(null);
+        final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK).iterator();
+        final Farm farm = farmIterable.hasNext() ? farmIterable.next() : null;
         SystemUserService.runAs(currentUser);
         if (farm!=null) {
             virtualhost.setFarmId(farm.getId());

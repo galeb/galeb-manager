@@ -18,8 +18,6 @@
 
 package io.galeb.manager.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -47,7 +45,7 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
             + "WHERE v.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username})")
-    List<VirtualHost> findByName(@Param("name") String name);
+    Iterable<VirtualHost> findByName(@Param("name") String name);
 
     @Override
     @Query("SELECT v FROM VirtualHost v "
@@ -55,10 +53,10 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
             + "INNER JOIN t.accounts a "
             + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
-    List<VirtualHost> findAll();
+    Iterable<VirtualHost> findAll();
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    List<VirtualHost> findByFarmId(long id);
+    Iterable<VirtualHost> findByFarmId(long id);
 
 }

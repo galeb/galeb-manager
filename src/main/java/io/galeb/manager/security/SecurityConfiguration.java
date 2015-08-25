@@ -41,6 +41,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
@@ -59,6 +60,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         LDAP_TEST,
         DEFAULT
     }
+
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
 
     @Autowired
     private UserDetailsService userDetailsService;
@@ -82,16 +85,36 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         auth.inMemoryAuthentication()
             .withUser("admin").roles("ADMIN", "USER").password("password");
 
+        String userDnPatternsEnv = System.getProperty("io.galeb.manager.ldap.user_dn_patterns.env", "GALEB_LDAP_DN");
+        String userDnPatterns = System.getenv(userDnPatternsEnv);
+        userDnPatterns = userDnPatterns != null ? userDnPatterns : "uid={0},ou=people";
+
+        String groupSearchBaseEnv = System.getProperty("io.galeb.manager.ldap.group_search_base.env", "GALEB_LDAP_GROUP_SEARCH");
+        String groupSearchBase = System.getenv(groupSearchBaseEnv);
+        groupSearchBase = groupSearchBase != null ? groupSearchBase : "ou=groups";
+
+        String urlEnv = System.getProperty("io.galeb.manager.ldap.url.env", "GALEB_LDAP_URL");
+        String url = System.getenv(urlEnv);
+        url = url != null ? url : "ldap://localhost:389";
+
+        String usernameEnvName = System.getProperty("io.galeb.manager.ldap.username.env", "GALEB_LDAP_USER");
+        String username = System.getenv(usernameEnvName);
+        username = username != null ? username : "root";
+
+        String passwordEnvName = System.getProperty("io.galeb.manager.ldap.password.env", "GALEB_LDAP_PASS");
+        String password = System.getenv(passwordEnvName);
+        password = password != null ? password : "";
+
         switch (authMethod) {
         case LDAP:
             auth.ldapAuthentication()
                 .userDetailsContextMapper(userDetailsContextMapper())
-                .userDnPatterns(env.getRequiredProperty("ldap.user_dn_patterns"))
-                .groupSearchBase(env.getRequiredProperty("ldap.group_search_base"))
+                .userDnPatterns(env.getProperty("ldap.user_dn_patterns", userDnPatterns))
+                .groupSearchBase(env.getProperty("ldap.group_search_base", groupSearchBase))
                 .contextSource()
-                .url(env.getRequiredProperty("ldap.url"))
-                .managerDn(env.getRequiredProperty("ldap.user"))
-                .managerPassword(env.getRequiredProperty("ldap.password"));
+                .url(env.getProperty("ldap.url", url))
+                .managerDn(env.getProperty("ldap.user", username))
+                .managerPassword(env.getProperty("ldap.password", password));
             break;
 
         case LDAP_TEST:
@@ -104,7 +127,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             break;
 
         default:
-            auth.userDetailsService(userDetailsService);
+            auth.userDetailsService(userDetailsService).passwordEncoder(ENCODER);
             break;
         }
 
@@ -125,8 +148,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             public UserDetails mapUserFromContext(DirContextOperations ctx, String username,
                                                   Collection<? extends GrantedAuthority> authorities) {
                 final UserDetails details = super.mapUserFromContext(ctx, username, authorities);
-                final Authentication originalAuth = CurrentUser.getCurrentAuth();
 
+                final Authentication originalAuth = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
                 final Account account = accountRepository.findByName(username);
                 SystemUserService.runAs(originalAuth);

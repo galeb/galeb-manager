@@ -27,6 +27,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import io.galeb.manager.entity.Account;
 
@@ -37,6 +38,9 @@ public class CurrentUser implements UserDetails {
     private final Long id;
 
     private final User user;
+
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
+
 
     public static Authentication getCurrentAuth() {
         return SecurityContextHolder.getContext().getAuthentication();
@@ -51,7 +55,7 @@ public class CurrentUser implements UserDetails {
                        Collection<? extends GrantedAuthority> authorities,
                        Long id) {
         user = new User(username,
-                        password,
+                        ENCODER.encode(password),
                         enabled,
                         accountNonExpired,
                         credentialsNonExpired,
@@ -61,8 +65,9 @@ public class CurrentUser implements UserDetails {
     }
 
     public CurrentUser(Account account) {
+
         user = new User(account.getName(),
-                        "password",
+                        account.getPassword(),
                         AuthorityUtils.createAuthorityList(account.getRoles().stream()
                                           .map(role -> role.toString()).collect(Collectors.toList())
                                           .toArray(new String[account.getRoles().size()-1]))

@@ -1,6 +1,7 @@
 package io.galeb.manager.scheduler.tasks;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -12,8 +13,8 @@ import org.springframework.stereotype.Component;
 
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Driver.StatusFarm;
+import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.farm.FarmEngine;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
@@ -49,7 +50,7 @@ public class CheckFarms {
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        farmRepository.findAll().stream()
+        StreamSupport.stream(farmRepository.findAll().spliterator(), false)
                                 .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
                                 .forEach(farm -> {
 
@@ -58,7 +59,7 @@ public class CheckFarms {
 
             if (!farm.getStatus().equals(EntityStatus.ERROR)) {
 
-                virtualHostRepository.findByFarmId(farm.getId()).stream().forEach(virtualhost -> {
+                virtualHostRepository.findByFarmId(farm.getId()).forEach(virtualhost -> {
 
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());
@@ -70,7 +71,7 @@ public class CheckFarms {
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
 
-                ruleRepository.findByFarmId(farm.getId()).stream().forEach(rule -> {
+                ruleRepository.findByFarmId(farm.getId()).forEach(rule -> {
 
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());
@@ -82,7 +83,7 @@ public class CheckFarms {
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
 
-                targetRepository.findByFarmId(farm.getId()).stream().forEach(target -> {
+                targetRepository.findByFarmId(farm.getId()).forEach(target -> {
 
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());

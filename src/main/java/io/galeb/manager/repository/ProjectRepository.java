@@ -18,8 +18,6 @@
 
 package io.galeb.manager.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -47,7 +45,7 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
             + "INNER JOIN t.accounts a "
             + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
-    List<Project> findAll();
+    Iterable<Project> findAll();
 
     @Query("SELECT p FROM Project p "
             + "INNER JOIN p.teams t "
@@ -55,5 +53,5 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
             + "WHERE p.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username})")
-    List<Project> findByName(@Param("name") String name);
+    Iterable<Project> findByName(@Param("name") String name);
 }

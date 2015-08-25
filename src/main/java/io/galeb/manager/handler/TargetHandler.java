@@ -20,6 +20,8 @@ package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
+import java.util.Iterator;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,8 +76,8 @@ public class TargetHandler extends RoutableToEngine<Target> {
             if (environment != null) {
                 Authentication currentUser = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Farm farm = farmRepository.findByEnvironmentAndStatus(environment, OK)
-                                    .stream().findFirst().orElse(null);
+                final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(environment, OK).iterator();
+                final Farm farm = farmIterable.hasNext() ? farmIterable.next() : null;
                 SystemUserService.runAs(currentUser);
                 if (farm != null) {
                     farmId = farm.getId();

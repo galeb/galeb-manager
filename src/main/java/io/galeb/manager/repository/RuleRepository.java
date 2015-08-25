@@ -18,8 +18,6 @@
 
 package io.galeb.manager.repository;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -47,7 +45,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
             + "WHERE r.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username})")
-    List<Rule> findByName(@Param("name") String name);
+    Iterable<Rule> findByName(@Param("name") String name);
 
     @Override
     @Query("SELECT r FROM Rule r "
@@ -55,10 +53,10 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
             + "INNER JOIN t.accounts a "
             + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "a.name = ?#{principal.username}")
-    List<Rule> findAll();
+    Iterable<Rule> findAll();
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    List<Rule> findByFarmId(long id);
+    Iterable<Rule> findByFarmId(long id);
 
 }

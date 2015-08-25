@@ -31,10 +31,18 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.util.Assert;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 public class Account extends AbstractEntity<Account> {
 
     private static final long serialVersionUID = -2745836665462717899L;
+
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
 
     public enum Role {
         ROLE_USER,
@@ -45,6 +53,9 @@ public class Account extends AbstractEntity<Account> {
     @JoinTable(joinColumns=@JoinColumn(name="team_id"),
                inverseJoinColumns=@JoinColumn(name="account_id"))
     private final Set<Team> teams = new HashSet<>();
+
+    @Column(nullable = false)
+    private String password;
 
     @Column(nullable = false)
     private String email;
@@ -58,6 +69,7 @@ public class Account extends AbstractEntity<Account> {
     }
 
     public Account setEmail(String email) {
+        Assert.hasText(email);
         this.email = email;
         return this;
     }
@@ -83,6 +95,18 @@ public class Account extends AbstractEntity<Account> {
             this.roles.clear();
             this.roles.addAll(roles);
         }
+        return this;
+    }
+
+    @JsonIgnore
+    public String getPassword() {
+        return password;
+    }
+
+    @JsonProperty("password")
+    public Account setPassword(String password) {
+        Assert.hasText(password);
+        this.password = ENCODER.encode(password);
         return this;
     }
 

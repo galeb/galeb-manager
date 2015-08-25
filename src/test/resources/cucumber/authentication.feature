@@ -14,17 +14,19 @@ Feature: Authentication work
         And send POST /team
         And a REST client authenticated as admin
         When request json body has:
-            | name  | accountOne                  |
-            | email | accOne@fake.local           |
-            | roles | [ ROLE_USER ]               |
-            | teams | [ http://localhost/team/1 ] |
+            | name     | accountOne                  |
+            | password | password                    |
+            | email    | accOne@fake.local           |
+            | roles    | [ ROLE_USER ]               |
+            | teams    | [ http://localhost/team/1 ] |
         And send POST /account
         And a REST client authenticated as admin
         When request json body has:
-            | name  | accountTwo                  |
-            | email | accTwo@fake.local           |
-            | roles | [ ROLE_USER ]               |
-            | teams | [ http://localhost/team/2 ] |
+            | name     | accountTwo                  |
+            | password | password                    |
+            | email    | accTwo@fake.local           |
+            | roles    | [ ROLE_USER ]               |
+            | teams    | [ http://localhost/team/2 ] |
         And send POST /account
 
     Scenario: AccountOne can access your own account

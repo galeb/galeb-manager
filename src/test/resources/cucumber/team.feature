@@ -11,10 +11,11 @@ Feature: Team Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name  | accountOne                  |
-            | email | accOne@fake.com             |
-            | roles | [ ROLE_USER ]               |
-            | teams | [ http://localhost/team/1 ] |
+            | name     | accountOne                  |
+            | password | password                    |
+            | email    | accOne@fake.com             |
+            | roles    | [ ROLE_USER ]               |
+            | teams    | [ http://localhost/team/1 ] |
         And send POST /account
         Then the response status is 201
 

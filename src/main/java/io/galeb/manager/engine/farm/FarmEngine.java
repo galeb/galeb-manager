@@ -18,7 +18,6 @@
 
 package io.galeb.manager.engine.farm;
 
-import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +30,11 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.Provisioning;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
@@ -116,26 +115,26 @@ public class FarmEngine extends AbstractEngine {
             long farmId = farm.getId();
             Authentication currentUser = CurrentUser.getCurrentAuth();
             SystemUserService.runAs();
-            List<Target> targets = targetRepository.findByFarmId(farmId);
-            List<Rule> rules = ruleRepository.findByFarmId(farmId);
-            List<VirtualHost> virtualhosts = virtualHostRepository.findByFarmId(farmId);
+            Iterable<Target> targets = targetRepository.findByFarmId(farmId);
+            Iterable<Rule> rules = ruleRepository.findByFarmId(farmId);
+            Iterable<VirtualHost> virtualhosts = virtualHostRepository.findByFarmId(farmId);
             SystemUserService.runAs(currentUser);
             if (targets != null) {
-                targets.stream().forEach(target -> {
+                targets.forEach(target -> {
                     jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
                 });
             } else {
                 LOGGER.warn("targets is null");
             }
             if (rules != null) {
-                rules.stream().forEach(rule -> {
+                rules.forEach(rule -> {
                     jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
                 });
             } else {
                 LOGGER.warn("rules is null");
             }
             if (virtualhosts != null) {
-                virtualhosts.stream().forEach(virtualhost -> {
+                virtualhosts.forEach(virtualhost -> {
                     jms.convertAndSend(VirtualHostEngine.QUEUE_CREATE, virtualhost);
                 });
             } else {

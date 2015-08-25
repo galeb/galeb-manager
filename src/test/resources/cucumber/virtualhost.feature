@@ -16,10 +16,11 @@ Feature: VirtualHost Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name  | accountOne                  |
-            | roles | [ ROLE_USER ]               |
-            | teams | [ http://localhost/team/1 ] |
-            | email | test@fake.com               |
+            | name     | accountOne                  |
+            | password | password                    |
+            | roles    | [ ROLE_USER ]               |
+            | teams    | [ http://localhost/team/1 ] |
+            | email    | test@fake.com               |
         And send POST /account
         Then the response status is 201
         And a REST client authenticated as admin
