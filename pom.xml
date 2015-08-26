@@ -247,6 +247,33 @@
                    </arguments>
                </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>git</executable>
+                    <arguments>
+                        <argument>log</argument>
+                        <argument>--pretty=format:commit.hash=%H</argument>
+                        <argument>-n1</argument>
+                    </arguments>
+                    <outputFile>${project.build.directory}/git.commit</outputFile>
+                    <successCodes>
+                        <successCode>0</successCode>
+                        <successCode>1</successCode>
+                        <successCode>127</successCode>
+                        <successCode>128</successCode>
+                    </successCodes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
