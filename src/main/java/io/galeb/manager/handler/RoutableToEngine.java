@@ -106,7 +106,9 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     public void afterCreate(T entity, JmsTemplate jms, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleAfterCreate");
         try {
-            jmsSend(jms, getQueueCreateName(), entity);
+            if (jms != null) {
+                jmsSend(jms, getQueueCreateName(), entity);
+            }
         } catch (JmsException e) {
             logger.error(e);
             throw e;
@@ -138,7 +140,9 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
             return;
         }
         try {
-            jmsSend(jms, getQueueUpdateName(), entity);
+            if (jms != null) {
+                jmsSend(jms, getQueueUpdateName(), entity);
+            }
         } catch (JmsException e) {
             logger.error(e);
             throw e;
@@ -152,7 +156,9 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     public void afterDelete(T entity, JmsTemplate jms, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleAfterDelete");
         try {
-            jmsSend(jms, getQueueRemoveName(), entity);
+            if (jms != null) {
+                jmsSend(jms, getQueueRemoveName(), entity);
+            }
         } catch (JmsException e) {
             logger.error(e);
             throw e;

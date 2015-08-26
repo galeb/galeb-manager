@@ -55,6 +55,11 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
     private final Set<Rule> rules = new HashSet<>();
 
+    @Override
+    protected Set<String> readOnlyFields() {
+        return AbstractEntity.defaultReadOnlyFields;
+    }
+
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);
         Assert.notNull(project);
@@ -107,4 +112,5 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
         }
         this.aliases = aliases;
     }
+
 }

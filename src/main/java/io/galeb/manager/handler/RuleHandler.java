@@ -81,7 +81,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
-        afterCreate(rule, jms, LOGGER);
+        afterCreate(rule, rule.getParent() != null ? jms : null, LOGGER);
     }
 
     @HandleBeforeSave
@@ -91,7 +91,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
-        afterSave(rule, jms, LOGGER);
+        afterSave(rule, rule.getParent() != null ? jms : null, LOGGER);
     }
 
     @HandleBeforeDelete
@@ -101,7 +101,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterDelete
     public void afterDelete(Rule rule) throws Exception {
-        afterDelete(rule, jms, LOGGER);
+        afterDelete(rule, rule.getParent() != null ? jms : null, LOGGER);
     }
 
 }

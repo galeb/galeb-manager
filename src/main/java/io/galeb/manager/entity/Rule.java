@@ -18,6 +18,8 @@
 
 package io.galeb.manager.entity;
 
+import java.util.Set;
+
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -37,7 +39,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     private RuleType ruleType;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
     private VirtualHost parent;
 
     @ManyToOne
@@ -46,6 +47,11 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @JsonIgnore
     private long farmId;
+
+    @Override
+    protected Set<String> readOnlyFields() {
+        return AbstractEntity.defaultReadOnlyFields;
+    }
 
     public Rule(String name, RuleType ruleType, Environment environment, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);

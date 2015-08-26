@@ -58,6 +58,11 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JoinColumn(name = "project_id")
     private Project project;
 
+    @Override
+    protected Set<String> readOnlyFields() {
+        return AbstractEntity.defaultReadOnlyFields;
+    }
+
     public Target(String name, TargetType targetType) {
         Assert.notNull(targetType);
         setName(name);
