@@ -18,23 +18,25 @@
 
 package io.galeb.manager.entity;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
 import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @Entity
+@JsonInclude(NON_NULL)
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     private static final long serialVersionUID = 5596582746795373020L;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(nullable = false)
     private RuleType ruleType;
 

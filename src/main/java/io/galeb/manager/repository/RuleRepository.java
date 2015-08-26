@@ -36,6 +36,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
            + "INNER JOIN t.accounts a "
            + "WHERE r.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "r.parent IS NULL OR "
                + "a.name = ?#{principal.username})")
     Rule findOne(@Param("id") Long id);
 
@@ -44,6 +45,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
             + "INNER JOIN t.accounts a "
             + "WHERE r.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "r.parent IS NULL OR "
                 + "a.name = ?#{principal.username})")
     Iterable<Rule> findByName(@Param("name") String name);
 
@@ -52,6 +54,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
             + "INNER JOIN r.target.project.teams t "
             + "INNER JOIN t.accounts a "
             + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "r.parent IS NULL OR "
                 + "a.name = ?#{principal.username}")
     Iterable<Rule> findAll();
 
