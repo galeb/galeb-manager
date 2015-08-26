@@ -8,18 +8,18 @@
     <body>
         <div class="wrapper">
             <div class="container">
-                <div th:if="${param.error}">
-                    Invalid username and password.
-                </div>
+                <h1>Galeb Manager API</h1>
                 <div th:if="${param.logout}">
                     You have been logged out.
                 </div>
-                 <h1>Galeb Manager API</h1>
                 <form th:action="@{/login}" class="form" method="post">
                     <input type="text" name="username" placeholder="Username"/>
                     <input type="password" name="password" placeholder="Password"/>
                     <button type="submit" id="login-button">Sign In</button>
                 </form>
+                <div th:if="${param.error}" class="error">
+                    Invalid username and password.
+                </div>
             </div>
             <ul class="bg-bubbles">
                <li></li>

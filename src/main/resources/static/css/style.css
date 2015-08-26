@@ -68,6 +68,14 @@ body :-ms-input-placeholder {
           transition-timing-function: ease-in-put;
   font-weight: 200;
 }
+.container .error {
+  background: #e51616;
+  background: -webkit-linear-gradient(-45deg,  #e51616 19%,#ad0303 100%);
+  background: linear-gradient(135deg,  #e51616 19%,#ad0303 100%);
+  width: 250px;
+  margin: auto;
+  border-radius: 3px;
+}
 form {
   padding: 20px 0;
   position: relative;
