@@ -193,9 +193,6 @@
                     <argLine>
                       -server
                       -Xmx2048m -Xms2048m
-                      -Dspring.datasource.url=jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-                      -Dspring.datasource.driver-class-name=org.h2.Driver
-                      -Dspring.datasource.username=root
                       -Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect
                       -Dauth_method=LDAP_TEST
                     </argLine>
@@ -213,6 +210,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                  <jvmArguments>
+                      -server
+                      -Xmx2048m -Xms2048m
+                      -Dlog4j.configurationFile=log4j.xml
+                      -Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+                      -Dauth_method=DEFAULT
+                  </jvmArguments>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -224,27 +230,6 @@
                     <addClasspath>true</addClasspath>
                   </manifest>
                 </archive>
-               </configuration>
-            </plugin>
-            <plugin>
-               <groupId>org.codehaus.mojo</groupId>
-               <artifactId>exec-maven-plugin</artifactId>
-               <configuration>
-                   <executable>java</executable>
-                   <arguments>
-                       <argument>-server</argument>
-                       <argument>-Xms2048m</argument>
-                       <argument>-Xmx2048m</argument>
-                       <argument>-Dlog4j.configurationFile=log4j.xml</argument>
-                       <argument>-Dserver.port=8000</argument>
-                       <argument>-Dauth_method=DEFAULT</argument>
-                       <argument>-Dspring.datasource.url=jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE</argument>
-                       <argument>-Dspring.datasource.driver-class-name=org.h2.Driver</argument>
-                       <argument>-Dspring.datasource.username=root</argument>
-                       <argument>-Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect</argument>
-                       <argument>-jar</argument>
-                       <argument>target/galeb-manager-${project.version}.jar</argument>
-                   </arguments>
                </configuration>
             </plugin>
             <plugin>
@@ -265,7 +250,7 @@
                         <argument>--pretty=format:commit.hash=%H</argument>
                         <argument>-n1</argument>
                     </arguments>
-                    <outputFile>${project.build.directory}/git.commit</outputFile>
+                    <outputFile>${project.build.directory}/classes/git.commit</outputFile>
                     <successCodes>
                         <successCode>0</successCode>
                         <successCode>1</successCode>
