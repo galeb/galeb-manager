@@ -18,6 +18,8 @@
 
 package io.galeb.manager.entity;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,14 +32,16 @@ import javax.persistence.OneToMany;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @Entity
+@JsonInclude(NON_NULL)
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
     @ManyToOne
-    @JoinColumn(name = "target_id", nullable = false)
+    @JoinColumn(name = "targettype_id", nullable = false)
     private TargetType targetType;
 
     @ManyToOne
@@ -57,6 +61,10 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @ManyToOne
     @JoinColumn(name = "project_id")
     private Project project;
+
+    @ManyToOne
+    @JoinColumn(name = "balancepolicy_id")
+    private BalancePolicy balancePolicy;
 
     @Override
     protected Set<String> readOnlyFields() {
@@ -117,6 +125,15 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     public Target setProject(Project project) {
         this.project = project;
+        return this;
+    }
+
+    public BalancePolicy getBalancePolicy() {
+        return balancePolicy;
+    }
+
+    public Target setBalancePolicy(BalancePolicy balancePolicy) {
+        this.balancePolicy = balancePolicy;
         return this;
     }
 

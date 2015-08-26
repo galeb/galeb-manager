@@ -22,6 +22,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import io.galeb.manager.handler.AccountHandler;
+import io.galeb.manager.handler.BalancePolicyHandler;
+import io.galeb.manager.handler.BalancePolicyTypeHandler;
 import io.galeb.manager.handler.EnvironmentHandler;
 import io.galeb.manager.handler.FarmHandler;
 import io.galeb.manager.handler.ProjectHandler;
@@ -89,6 +91,16 @@ public class RepositoryConfiguration {
     @Bean
     public TeamHandler teamHandler() {
         return new TeamHandler();
+    }
+
+    @Bean
+    public BalancePolicyTypeHandler balancePolicyTypeHandler() {
+        return new BalancePolicyTypeHandler();
+    }
+
+    @Bean
+    public BalancePolicyHandler balancePolicyHandler() {
+        return new BalancePolicyHandler();
     }
 
 }
