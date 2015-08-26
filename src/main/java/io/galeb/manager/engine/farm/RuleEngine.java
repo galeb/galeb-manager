@@ -32,6 +32,7 @@ import io.galeb.manager.security.SystemUserService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
@@ -108,7 +109,7 @@ public class RuleEngine extends AbstractEngine {
         rule.setSaveOnly(true);
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        ruleRepository.save(rule);
+        ((CrudRepository<Rule, Long>)ruleRepository).save(rule);
         setFarmStatusOnError(rule);
         SystemUserService.runAs(currentUser);
         rule.setSaveOnly(false);
