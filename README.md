@@ -28,7 +28,7 @@ Using
 -----
 
 <code>
-$ mvn exec:exec
+$ mvn spring-boot:run
 </code><br/>
 
 # License

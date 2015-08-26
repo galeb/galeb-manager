@@ -217,6 +217,7 @@
                       -Dlog4j.configurationFile=log4j.xml
                       -Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect
                       -Dauth_method=DEFAULT
+                      -Dserver.port=8000
                   </jvmArguments>
                 </configuration>
             </plugin>
