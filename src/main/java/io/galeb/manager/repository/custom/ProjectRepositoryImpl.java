@@ -10,29 +10,30 @@ import org.springframework.data.jpa.repository.support.JpaEntityInformation;
 import org.springframework.data.jpa.repository.support.JpaEntityInformationSupport;
 import org.springframework.stereotype.Repository;
 
-import io.galeb.manager.entity.Account;
+import io.galeb.manager.entity.Project;
 
 @Repository
-public class AccountRepositoryImpl extends AbstractRepositoryCustom<Account>
-                                   implements AccountRepositoryCustom {
+public class ProjectRepositoryImpl extends AbstractRepositoryCustom<Project>
+                                   implements ProjectRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT a FROM Account a WHERE "
-                                           + "1 = :hasRoleAdmin OR "
+    private static final String FIND_ALL = "SELECT p FROM Project p "
+                                           + "INNER JOIN p.teams t "
+                                           + "INNER JOIN t.accounts a "
+                                           + "WHERE 1 = :hasRoleAdmin OR "
                                            + "a.name = :principalName";
 
-
     @SuppressWarnings("unused")
-    private static final Log LOGGER = LogFactory.getLog(AccountRepositoryImpl.class);
+    private static final Log LOGGER = LogFactory.getLog(ProjectRepositoryImpl.class);
 
     @PersistenceContext
     private EntityManager em;
 
     @SuppressWarnings("unused")
-    private JpaEntityInformation<Account, ?> entityInformation;
+    private JpaEntityInformation<Project, ?> entityInformation;
 
     @PostConstruct
     public void init() {
-        entityInformation = JpaEntityInformationSupport.getMetadata(Account.class, em);
+        entityInformation = JpaEntityInformationSupport.getMetadata(Project.class, em);
     }
 
     @Override

@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +27,12 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Project;
+import io.galeb.manager.repository.custom.ProjectRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
-public interface ProjectRepository extends PagingAndSortingRepository<Project, Long> {
+public interface ProjectRepository extends PagingAndSortingRepository<Project, Long>,
+                                           ProjectRepositoryCustom {
 
     @Override
     @Query("SELECT p FROM Project p "
@@ -40,18 +44,14 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
     Project findOne(@Param("id") Long id);
 
     @Override
-    @Query("SELECT p FROM Project p "
-            + "INNER JOIN p.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username}")
+    @Query
     Iterable<Project> findAll();
 
-    @Query("SELECT p FROM Project p "
-            + "INNER JOIN p.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE p.name = :name AND "
-                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username})")
-    Iterable<Project> findByName(@Param("name") String name);
+    @Override
+    @Query
+    Page<Project> findAll(Pageable pageable);
+
+    @Override
+    @Query
+    Project findByName(@Param("name") String name);
 }
