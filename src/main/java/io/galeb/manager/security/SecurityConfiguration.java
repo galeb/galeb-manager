@@ -45,6 +45,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
+import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import io.galeb.manager.entity.Account;
@@ -148,6 +149,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .and()
             .logout().deleteCookies("JSESSIONID","SPRING_SECURITY_REMEMBER_ME_COOKIE")
                 .logoutRequestMatcher(new AntPathRequestMatcher("/logout")).logoutSuccessUrl("/login")
+            .and()
+            .requestCache().requestCache(new NullRequestCache())
             .and()
             .httpBasic()
             .and()
