@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
@@ -26,22 +28,25 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Account;
+import io.galeb.manager.repository.custom.AccountRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
-public interface AccountRepository extends PagingAndSortingRepository<Account, Long> {
+public interface AccountRepository extends PagingAndSortingRepository<Account, Long>,
+                                           AccountRepositoryCustom {
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     Account findOne(@Param("id") Long id);
 
-    @Query("SELECT a FROM Account a WHERE "
-            + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0 } OR "
-            + "a.name = ?#{principal.username}")
     @Override
     Iterable<Account> findAll(Sort sort);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or #name == principal.username")
+    @Override
+    Page<Account> findAll(Pageable pageable);
+
+    @Override
+    @Query
     Account findByName(@Param("name") String name);
 
 }
