@@ -8,6 +8,10 @@ Feature: Rule Support
         When request json body has:
             | name | urlPath |
         And send POST /ruletype
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | cookie |
+        And send POST /ruletype
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
@@ -129,7 +133,7 @@ Feature: Rule Support
         When send GET /rule/2
         Then the response status is 404
 
-    Scenario: Update Rule
+    Scenario: Update Rule (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name     | ruleTwo                        |
@@ -141,9 +145,9 @@ Feature: Rule Support
         And a REST client authenticated as accountOne
         When send GET /rule/1
         Then the response status is 200
-        And property name contains ruleTwo
+        And property name contains ruleOne
 
-    Scenario: Update one field of Rule
+    Scenario: Update name field of Rule (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name | ruleThree |
@@ -152,7 +156,18 @@ Feature: Rule Support
         And a REST client authenticated as accountOne
         When send GET /rule/1
         Then the response status is 200
-        And property name contains ruleThree
+        And property name contains ruleOne
+
+    Scenario: Update ruleType field of Rule (name update is ignored)
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | ruleType | http://localhost/ruletype/2 |
+        And send PATCH /rule/1
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /rule/1
+        Then the response status is 200
+        And property name contains ruleOne
 
     Scenario: Delete Rule
         Given a REST client authenticated as accountOne

@@ -43,6 +43,11 @@ public class Properties {
         return value == null ? def : Integer.parseInt(String.valueOf(value));
     }
 
+    public long getOrDefault(String key, Long def) {
+        Object value = properties.get(key);
+        return value == null ? def : Long.parseLong(String.valueOf(value));
+    }
+
     public Object remove(String key) {
         return properties.remove(key);
     }

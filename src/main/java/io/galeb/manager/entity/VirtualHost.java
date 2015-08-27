@@ -26,12 +26,19 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+@NamedQuery(name="VirtualHost.findAll", query=
+"SELECT v FROM VirtualHost v "
+        + "INNER JOIN v.project.teams t "
+        + "INNER JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+        + "a.name = :principalName")
 @Entity
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
@@ -54,6 +61,11 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     @JsonIgnore
     @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
     private final Set<Rule> rules = new HashSet<>();
+
+    @Override
+    protected Set<String> readOnlyFields() {
+        return AbstractEntity.defaultReadOnlyFields;
+    }
 
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);
@@ -107,4 +119,5 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
         }
         this.aliases = aliases;
     }
+
 }

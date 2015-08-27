@@ -18,38 +18,61 @@
 
 package io.galeb.manager.entity;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+
+import java.util.Set;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
+import javax.persistence.NamedQuery;
 
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+@NamedQuery(name="Rule.findAll", query =
+"SELECT r FROM Rule r "
+        + "INNER JOIN r.target.project.teams t "
+        + "INNER JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+             + "r.parent IS NULL OR "
+             + "a.name = :principalName")
 @Entity
+@JsonInclude(NON_NULL)
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     private static final long serialVersionUID = 5596582746795373020L;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(nullable = false)
     private RuleType ruleType;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
     private VirtualHost parent;
 
     @ManyToOne
     @JoinColumn(nullable = false)
     private Target target;
 
+    @Column
+    private int ruleOrder = 0;
+
+    @Column
+    private boolean ruleDefault = false;
+
     @JsonIgnore
     private long farmId;
 
-    public Rule(String name, RuleType ruleType, Environment environment, VirtualHost parent, Target target) {
+    @Override
+    protected Set<String> readOnlyFields() {
+        return AbstractEntity.defaultReadOnlyFields;
+    }
+
+    public Rule(String name, RuleType ruleType, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);
-        Assert.notNull(parent);
         Assert.notNull(target);
         setName(name);
         this.ruleType = ruleType;
@@ -75,7 +98,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     }
 
     public Rule setParent(VirtualHost parent) {
-        Assert.notNull(parent);
         this.parent = parent;
         return this;
     }
@@ -98,6 +120,24 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     @Override
     public Rule setFarmId(long farmId) {
         this.farmId = farmId;
+        return this;
+    }
+
+    public int getRuleOrder() {
+        return ruleOrder;
+    }
+
+    public Rule setRuleOrder(int ruleOrder) {
+        this.ruleOrder = ruleOrder;
+        return this;
+    }
+
+    public boolean isRuleDefault() {
+        return ruleDefault;
+    }
+
+    public Rule setRuleDefault(boolean ruleDefault) {
+        this.ruleDefault = ruleDefault;
         return this;
     }
 

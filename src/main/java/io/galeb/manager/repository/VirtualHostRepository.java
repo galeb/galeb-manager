@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +27,13 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
-public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long>, FarmIDable<VirtualHost> {
+public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long>,
+                                               FarmIDable<VirtualHost>,
+                                               VirtualHostRepositoryCustom {
 
     @Override
     @Query("SELECT v FROM VirtualHost v "
@@ -39,21 +44,17 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
                + "a.name = ?#{principal.username})")
     VirtualHost findOne(@Param("id") Long id);
 
-    @Query("SELECT v FROM VirtualHost v "
-            + "INNER JOIN v.project.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE v.name = :name AND "
-                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username})")
-    Iterable<VirtualHost> findByName(@Param("name") String name);
+    @Override
+    @Query
+    VirtualHost findByName(@Param("name") String name);
 
     @Override
-    @Query("SELECT v FROM VirtualHost v "
-            + "INNER JOIN v.project.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username}")
+    @Query
     Iterable<VirtualHost> findAll();
+
+    @Override
+    @Query
+    Page<VirtualHost> findAll(Pageable pageable);
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")

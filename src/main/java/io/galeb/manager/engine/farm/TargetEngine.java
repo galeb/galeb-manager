@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
@@ -127,6 +128,10 @@ public class TargetEngine extends AbstractEngine {
     private Properties makeProperties(Target target) {
         String json = "{}";
         try {
+            if (target.getBalancePolicy() != null) {
+                target.getProperties().put(BackendPool.PROP_LOADBALANCE_POLICY, target.getBalancePolicy().getBalancePolicyType().getName());
+                target.getProperties().putAll(target.getBalancePolicy().getProperties());
+            }
             final JsonMapper jsonMapper = new JsonMapper().makeJson(target);
             if (target.getParent() != null) {
                 jsonMapper.putString("parentId", target.getParent().getName());

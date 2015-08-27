@@ -132,6 +132,8 @@ public class RuleEngine extends AbstractEngine {
             jsonMapper.addToNode("properties", "ruleType", rule.getRuleType().getName());
             jsonMapper.addToNode("properties", "targetType", rule.getTarget().getTargetType().getName());
             jsonMapper.addToNode("properties", "targetId", rule.getTarget().getName());
+            jsonMapper.addToNode("properties", "order", String.valueOf(rule.getRuleOrder()));
+            jsonMapper.addToNode("properties", "default", String.valueOf(rule.isRuleDefault()));
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
             LOGGER.equals(e.getMessage());

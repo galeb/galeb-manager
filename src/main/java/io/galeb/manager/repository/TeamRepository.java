@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +27,12 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Team;
+import io.galeb.manager.repository.custom.TeamRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "team", path = "team")
-public interface TeamRepository extends PagingAndSortingRepository<Team, Long> {
+public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
+                                        TeamRepositoryCustom {
 
     @Override
     @Query("SELECT t FROM Team t "
@@ -38,18 +42,16 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long> {
                + "a.name = ?#{principal.username})")
     Team findOne(@Param("id") Long id);
 
-    @Query("SELECT t FROM Team t "
-            + "LEFT JOIN t.accounts a "
-            + "WHERE t.name = :name AND "
-                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username})")
-    Iterable<Team> findByName(@Param("name") String name);
+    @Override
+    @Query
+    Team findByName(@Param("name") String name);
 
     @Override
-    @Query("SELECT t FROM Team t "
-            + "LEFT JOIN t.accounts a "
-            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username}")
+    @Query
     Iterable<Team> findAll();
+
+    @Override
+    @Query
+    Page<Team> findAll(Pageable pageable);
 
 }

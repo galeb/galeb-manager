@@ -166,10 +166,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 SystemUserService.runAs();
                 final Account account = accountRepository.findByName(username);
                 SystemUserService.runAs(originalAuth);
+                if (account == null) {
+                    return null;
+                }
 
                 final List<String> localRoles = account.getRoles().stream()
                         .map(role -> role.toString())
                         .collect(Collectors.toList());
+
                 long id = account.getId();
 
                 final Collection<GrantedAuthority> localAuthorities =
