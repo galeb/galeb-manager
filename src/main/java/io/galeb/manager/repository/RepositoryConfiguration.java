@@ -20,6 +20,7 @@ package io.galeb.manager.repository;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import io.galeb.manager.handler.AccountHandler;
 import io.galeb.manager.handler.BalancePolicyHandler;
@@ -36,6 +37,7 @@ import io.galeb.manager.handler.TeamHandler;
 import io.galeb.manager.handler.VirtualHostHandler;
 
 @Configuration
+@EnableTransactionManagement
 public class RepositoryConfiguration {
 
     @Bean
