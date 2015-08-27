@@ -104,6 +104,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Transient
     private boolean saveOnly = false;
 
+    @JsonIgnore
+    @Transient
+    private boolean forceRename = false;
+
     @PrePersist
     private void onCreate() {
         createdDate = new Date();
@@ -155,7 +159,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setName(String name) {
         Assert.hasText(name);
-        if (this.name != null && readOnlyFields().contains("name")) {
+        if (!forceRename && this.name != null && readOnlyFields().contains("name")) {
             return (T) this;
         }
         this.name = name;
@@ -197,6 +201,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     protected Set<String> readOnlyFields() {
         return Collections.emptySet();
+    }
+
+    public boolean isForceRename() {
+        return forceRename;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setForceRename(boolean forceRename) {
+        this.forceRename = forceRename;
+        return (T) this;
     }
 
 }
