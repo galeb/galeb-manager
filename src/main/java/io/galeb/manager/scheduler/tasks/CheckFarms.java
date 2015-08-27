@@ -1,6 +1,9 @@
 package io.galeb.manager.scheduler.tasks;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.logging.Log;
@@ -17,6 +20,10 @@ import io.galeb.manager.engine.Driver.StatusFarm;
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.farm.FarmEngine;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
@@ -59,37 +66,46 @@ public class CheckFarms {
 
             if (!farm.getStatus().equals(EntityStatus.ERROR)) {
 
-                virtualHostRepository.findByFarmId(farm.getId()).forEach(virtualhost -> {
+               final long virtualhostCount = getVirtualhosts(farm).count();
 
+               getVirtualhosts(farm).forEach(virtualhost -> {
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());
                     properties.put("name", virtualhost.getName());
                     properties.put("path", "virtualhost");
                     properties.put("id", virtualhost.getId());
+                    properties.put("numElements", virtualhostCount);
 
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
 
-                ruleRepository.findByFarmId(farm.getId()).forEach(rule -> {
+                final long ruleCount = getRules(farm).count();
 
+                getRules(farm).forEach(rule -> {
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());
                     properties.put("name", rule.getName());
                     properties.put("path", "rule");
                     properties.put("id", rule.getId());
+                    properties.put("numElements", ruleCount);
 
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
 
-                targetRepository.findByFarmId(farm.getId()).forEach(target -> {
+                Map<String, Long> targetsCountMap = getTargets(farm).parallel().collect(
+                                Collectors.groupingBy(target -> target.getTargetType().getName(),
+                                                      Collectors.counting()));
 
+                getTargets(farm).forEach(target -> {
+                    String targetTypeName = target.getTargetType().getName();
                     Properties properties = new Properties();
                     properties.put("api", farm.getApi());
                     properties.put("name", target.getName());
                     properties.put("path", target.getTargetType().getName().toLowerCase());
                     properties.put("id", target.getId());
+                    properties.put("numElements", targetsCountMap.get(targetTypeName));
 
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
@@ -110,4 +126,21 @@ public class CheckFarms {
 
         LOGGER.debug("TASK checkFarm finished");
     }
+
+    private Stream<Target> getTargets(Farm farm) {
+        return StreamSupport.stream(
+                targetRepository.findByFarmId(farm.getId()).spliterator(), false);
+    }
+
+    private Stream<Rule> getRules(Farm farm) {
+        return StreamSupport.stream(
+                ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
+                .filter(rule -> rule.getParent() != null);
+    }
+
+    private Stream<VirtualHost> getVirtualhosts(Farm farm) {
+        return StreamSupport.stream(
+                virtualHostRepository.findByFarmId(farm.getId()).spliterator(), false);
+    }
+
 }
