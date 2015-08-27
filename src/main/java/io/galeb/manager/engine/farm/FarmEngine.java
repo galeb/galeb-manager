@@ -128,7 +128,9 @@ public class FarmEngine extends AbstractEngine {
             }
             if (rules != null) {
                 rules.forEach(rule -> {
-                    jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
+                    if (rule.getParent() != null) {
+                        jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
+                    }
                 });
             } else {
                 LOGGER.warn("rules is null");
