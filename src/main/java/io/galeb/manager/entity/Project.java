@@ -25,10 +25,17 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+@NamedQuery(name="Project.findAll", query =
+"SELECT p FROM Project p "
+        + "INNER JOIN p.teams t "
+        + "INNER JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+        + "a.name = :principalName")
 @Entity
 public class Project extends AbstractEntity<Project> {
 

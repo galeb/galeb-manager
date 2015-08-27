@@ -26,11 +26,20 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
+
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+@NamedQuery(name="Rule.findAll", query =
+"SELECT r FROM Rule r "
+        + "INNER JOIN r.target.project.teams t "
+        + "INNER JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+             + "r.parent IS NULL OR "
+             + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {

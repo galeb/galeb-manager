@@ -10,19 +10,21 @@ import javax.persistence.Query;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.security.CurrentUser;
 
-@NoRepositoryBean
-public abstract class AbstractRepositoryCustom<T extends AbstractEntity<?>> {
+public abstract class AbstractRepositoryImplementation<T extends AbstractEntity<?>> {
 
     protected abstract String getFindAllStr();
 
     protected abstract EntityManager getEntityManager();
+
+    public AbstractRepositoryImplementation() {
+        super();
+    }
 
     @SuppressWarnings("unchecked")
     public Iterable<T> findAll() {

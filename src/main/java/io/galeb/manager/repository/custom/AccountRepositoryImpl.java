@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.Account;
 
 @Repository
-public class AccountRepositoryImpl extends AbstractRepositoryCustom<Account>
+public class AccountRepositoryImpl extends AbstractRepositoryImplementation<Account>
                                    implements AccountRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT a FROM Account a WHERE "

@@ -23,7 +23,13 @@ import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
+import javax.persistence.NamedQuery;
 
+@NamedQuery(name="Team.findAll", query=
+"SELECT t FROM Team t "
+        + "LEFT JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+        + "a.name = :principalName")
 @Entity
 public class Team extends AbstractEntity<Team> {
 

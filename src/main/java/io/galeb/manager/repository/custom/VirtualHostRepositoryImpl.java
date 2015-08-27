@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.VirtualHost;
 
 @Repository
-public class VirtualHostRepositoryImpl extends AbstractRepositoryCustom<VirtualHost>
+public class VirtualHostRepositoryImpl extends AbstractRepositoryImplementation<VirtualHost>
                                        implements VirtualHostRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT v FROM VirtualHost v "

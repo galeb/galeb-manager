@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.Target;
 
 @Repository
-public class TargetRepositoryImpl extends AbstractRepositoryCustom<Target>
+public class TargetRepositoryImpl extends AbstractRepositoryImplementation<Target>
                                   implements TargetRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT ta FROM Target ta "

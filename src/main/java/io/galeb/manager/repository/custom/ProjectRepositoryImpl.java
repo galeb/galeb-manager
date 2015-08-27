@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.Project;
 
 @Repository
-public class ProjectRepositoryImpl extends AbstractRepositoryCustom<Project>
+public class ProjectRepositoryImpl extends AbstractRepositoryImplementation<Project>
                                    implements ProjectRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT p FROM Project p "

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.Rule;
 
 @Repository
-public class RuleRepositoryImpl extends AbstractRepositoryCustom<Rule>
+public class RuleRepositoryImpl extends AbstractRepositoryImplementation<Rule>
                                 implements RuleRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT r FROM Rule r "

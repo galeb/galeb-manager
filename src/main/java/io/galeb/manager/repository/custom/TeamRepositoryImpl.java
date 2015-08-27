@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 import io.galeb.manager.entity.Team;
 
 @Repository
-public class TeamRepositoryImpl extends AbstractRepositoryCustom<Team>
+public class TeamRepositoryImpl extends AbstractRepositoryImplementation<Team>
                                 implements TeamRepositoryCustom {
 
     private static final String FIND_ALL = "SELECT t FROM Team t "

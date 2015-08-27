@@ -27,6 +27,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 
 import org.springframework.util.Assert;
@@ -34,6 +35,12 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+@NamedQuery(name="Target.findAll", query =
+"SELECT ta FROM Target ta "
+        + "INNER JOIN ta.project.teams t "
+        + "INNER JOIN t.accounts a "
+        + "WHERE 1 = :hasRoleAdmin OR "
+        + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
