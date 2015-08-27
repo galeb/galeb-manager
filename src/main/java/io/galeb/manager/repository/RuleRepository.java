@@ -29,7 +29,8 @@ import io.galeb.manager.repository.custom.RuleRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
-public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, FarmIDable<Rule>,
+public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
+                                        FarmIDable<Rule>,
                                         RuleRepositoryCustom {
 
     @Override
@@ -63,5 +64,9 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Iterable<Rule> findByFarmId(long id);
+
+    @SuppressWarnings("unchecked")
+    @Override
+    Rule save(Rule rule);
 
 }
