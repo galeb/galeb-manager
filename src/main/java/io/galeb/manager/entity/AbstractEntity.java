@@ -128,6 +128,26 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return id;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public Date getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
     public String getName() {
         return name;
     }
