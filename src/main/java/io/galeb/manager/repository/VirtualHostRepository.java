@@ -50,10 +50,6 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
 
     @Override
     @Query
-    Iterable<VirtualHost> findAll();
-
-    @Override
-    @Query
     Page<VirtualHost> findAll(Pageable pageable);
 
     @Override

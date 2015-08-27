@@ -50,10 +50,6 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     @Override
     @Query
-    Iterable<Target> findAll();
-
-    @Override
-    @Query
     Page<Target> findAll(Pageable pageable);
 
     @Override

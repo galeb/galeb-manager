@@ -7,8 +7,6 @@ import io.galeb.manager.entity.Account;
 
 public interface AccountRepositoryCustom {
 
-    Iterable<Account> findAll();
-
     Page<Account> findAll(Pageable pageable);
 
     Account findByName(String name);

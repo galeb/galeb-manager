@@ -7,8 +7,6 @@ import io.galeb.manager.entity.Rule;
 
 public interface RuleRepositoryCustom {
 
-    Iterable<Rule> findAll();
-
     Page<Rule> findAll(Pageable pageable);
 
     Rule findByName(String name);

@@ -27,7 +27,7 @@ public abstract class AbstractRepositoryImplementation<T extends AbstractEntity<
     }
 
     @SuppressWarnings("unchecked")
-    public Iterable<T> findAll() {
+    private Iterable<T> findAll() {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         int hasRoleAdmin = currentUser.getAuthorities().contains(
                 AuthorityUtils.createAuthorityList("ROLE_ADMIN").get(0)) ? 1 : 0;

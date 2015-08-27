@@ -7,8 +7,6 @@ import io.galeb.manager.entity.Team;
 
 public interface TeamRepositoryCustom {
 
-    Iterable<Team> findAll();
-
     Page<Team> findAll(Pageable pageable);
 
     Team findByName(String name);

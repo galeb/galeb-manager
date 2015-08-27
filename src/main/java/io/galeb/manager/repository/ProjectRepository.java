@@ -45,10 +45,6 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
 
     @Override
     @Query
-    Iterable<Project> findAll();
-
-    @Override
-    @Query
     Page<Project> findAll(Pageable pageable);
 
     @Override

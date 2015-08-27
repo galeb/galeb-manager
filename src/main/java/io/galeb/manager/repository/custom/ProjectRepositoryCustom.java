@@ -7,8 +7,6 @@ import io.galeb.manager.entity.Project;
 
 public interface ProjectRepositoryCustom {
 
-    Iterable<Project> findAll();
-
     Page<Project> findAll(Pageable pageable);
 
     Project findByName(String name);

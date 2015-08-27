@@ -48,10 +48,6 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
 
     @Override
     @Query
-    Iterable<Team> findAll();
-
-    @Override
-    @Query
     Page<Team> findAll(Pageable pageable);
 
 }

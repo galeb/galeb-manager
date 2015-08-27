@@ -51,10 +51,6 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
 
     @Override
     @Query
-    Iterable<Rule> findAll();
-
-    @Override
-    @Query
     Page<Rule> findAll(Pageable pageable);
 
     @Override
