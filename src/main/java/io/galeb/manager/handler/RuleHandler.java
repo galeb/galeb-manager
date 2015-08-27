@@ -31,6 +31,7 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.manager.engine.farm.RuleEngine;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
@@ -77,15 +78,33 @@ public class RuleHandler extends RoutableToEngine<Rule> {
     @HandleBeforeCreate
     public void beforeCreate(Rule rule) throws Exception {
         beforeCreate(rule, LOGGER);
+        if (rule.getParent() == null) {
+            rule.setForceRename(true);
+            rule.setName("#"+rule.getName());
+            rule.setStatus(EntityStatus.OK);
+        }
     }
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
         afterCreate(rule, rule.getParent() != null ? jms : null, LOGGER);
+        rule.setForceRename(false);
     }
 
     @HandleBeforeSave
     public void beforeSave(Rule rule) throws Exception {
+        if (rule.getName().startsWith("#") && (rule.getParent() != null)) {
+            VirtualHost virtualHost = rule.getParent();
+            rule.setParent(null);
+            String newName= rule.getName().replaceAll("^#", "")+"@"+virtualHost.getName();
+            Rule newRule = new Rule(newName, rule.getRuleType(), virtualHost, rule.getTarget());
+            newRule.setProperties(rule.getProperties());
+            newRule.setStatus(EntityStatus.PENDING);
+            beforeSave(newRule);
+            ruleRepository.save(newRule);
+            afterSave(newRule);
+            LOGGER.info("Rule "+rule.getName()+" copied to new Rule "+newName);
+        }
         beforeSave(rule, ruleRepository, LOGGER);
     }
 
