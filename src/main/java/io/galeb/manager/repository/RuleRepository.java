@@ -25,13 +25,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
-import io.galeb.manager.repository.custom.RuleRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
 public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
-                                        FarmIDable<Rule>,
-                                        RuleRepositoryCustom {
+                                        FarmIDable<Rule> {
 
     @Override
     @Query("SELECT r FROM Rule r "
@@ -64,9 +62,5 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Iterable<Rule> findByFarmId(long id);
-
-    @SuppressWarnings("unchecked")
-    @Override
-    Rule save(Rule rule);
 
 }
