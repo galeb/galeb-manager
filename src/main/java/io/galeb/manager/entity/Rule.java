@@ -55,7 +55,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
         return AbstractEntity.defaultReadOnlyFields;
     }
 
-    public Rule(String name, RuleType ruleType, Environment environment, VirtualHost parent, Target target) {
+    public Rule(String name, RuleType ruleType, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);
         Assert.notNull(parent);
         Assert.notNull(target);
