@@ -22,6 +22,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -47,6 +48,12 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     @JoinColumn(nullable = false)
     private Target target;
 
+    @Column
+    private int ruleOrder = 0;
+
+    @Column
+    private boolean ruleDefault = false;
+
     @JsonIgnore
     private long farmId;
 
@@ -57,7 +64,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     public Rule(String name, RuleType ruleType, VirtualHost parent, Target target) {
         Assert.notNull(ruleType);
-        Assert.notNull(parent);
         Assert.notNull(target);
         setName(name);
         this.ruleType = ruleType;
@@ -83,7 +89,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     }
 
     public Rule setParent(VirtualHost parent) {
-        Assert.notNull(parent);
         this.parent = parent;
         return this;
     }
@@ -106,6 +111,24 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     @Override
     public Rule setFarmId(long farmId) {
         this.farmId = farmId;
+        return this;
+    }
+
+    public int getRuleOrder() {
+        return ruleOrder;
+    }
+
+    public Rule setRuleOrder(int ruleOrder) {
+        this.ruleOrder = ruleOrder;
+        return this;
+    }
+
+    public boolean isRuleDefault() {
+        return ruleDefault;
+    }
+
+    public Rule setRuleDefault(boolean ruleDefault) {
+        this.ruleDefault = ruleDefault;
         return this;
     }
 
