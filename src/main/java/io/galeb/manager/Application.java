@@ -34,6 +34,7 @@ import io.galeb.manager.entity.BalancePolicyType;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
+import io.galeb.manager.entity.Provider;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleType;
 import io.galeb.manager.entity.Target;
@@ -68,6 +69,7 @@ public class Application {
                                                  TargetType.class,
                                                  VirtualHost.class,
                                                  Account.class,
+                                                 Provider.class,
                                                  Team.class,
                                                  BalancePolicyType.class,
                                                  BalancePolicy.class);
