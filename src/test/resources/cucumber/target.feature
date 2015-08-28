@@ -11,6 +11,11 @@ Feature: Target Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
+            | name | tTypeTwo |
+        And send POST /targettype
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
             | name | envOne |
         And send POST /environment
         Then the response status is 201
@@ -114,7 +119,7 @@ Feature: Target Support
         When send GET /target/3
         Then the response status is 404
 
-    Scenario: Update Target
+    Scenario: Update Target (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | targetTwo                      |
@@ -126,9 +131,9 @@ Feature: Target Support
         And a REST client authenticated as accountOne
         When send GET /target/1
         Then the response status is 200
-        And property name contains targetTwo
+        And property name contains targetOne
 
-    Scenario: Update one field of Target
+    Scenario: Update name field of Target (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name | targetThree |
@@ -137,7 +142,18 @@ Feature: Target Support
         And a REST client authenticated as accountOne
         When send GET /target/1
         Then the response status is 200
-        And property name contains targetThree
+        And property name contains targetOne
+
+    Scenario: Update targetType field of Target (name update is ignored)
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | targetType  | http://localhost/targettype/2 |
+        And send PATCH /target/1
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /target/1
+        Then the response status is 200
+        And property name contains targetOne
 
     Scenario: Delete Target
         Given a REST client authenticated as accountOne

@@ -18,36 +18,17 @@
 
 package io.galeb.manager.repository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.manager.entity.Team;
-import io.galeb.manager.repository.custom.TeamRepositoryCustom;
+import io.galeb.manager.entity.BalancePolicyType;
 
 @PreAuthorize("isFullyAuthenticated()")
-@RepositoryRestResource(collectionResourceRel = "team", path = "team")
-public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
-                                        TeamRepositoryCustom {
+@RepositoryRestResource(collectionResourceRel = "balancepolicytype", path = "balancepolicytype")
+public interface BalancePolicyTypeRepository extends PagingAndSortingRepository<BalancePolicyType, Long> {
 
-    @Override
-    @Query("SELECT t FROM Team t "
-           + "LEFT JOIN t.accounts a "
-           + "WHERE t.id = :id AND "
-               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "a.name = ?#{principal.username})")
-    Team findOne(@Param("id") Long id);
-
-    @Override
-    @Query
-    Team findByName(@Param("name") String name);
-
-    @Override
-    @Query
-    Page<Team> findAll(Pageable pageable);
+    Iterable<BalancePolicyType> findByName(@Param("name") String name);
 
 }

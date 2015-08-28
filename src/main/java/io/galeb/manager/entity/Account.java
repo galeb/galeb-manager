@@ -30,6 +30,7 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.NamedQuery;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.Assert;
@@ -37,6 +38,10 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@NamedQuery(name="Account.findAll", query =
+"SELECT a FROM Account a WHERE "
+        + "1 = :hasRoleAdmin OR "
+        + "a.name = :principalName")
 @Entity
 public class Account extends AbstractEntity<Account> {
 

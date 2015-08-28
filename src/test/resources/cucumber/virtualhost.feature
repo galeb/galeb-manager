@@ -29,6 +29,26 @@ Feature: VirtualHost Support
             | teams | [ http://localhost/team/1 ] |
         And send POST /project
         Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name  | projTwo                     |
+            | teams | [ http://localhost/team/1 ] |
+        And send POST /project
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | providerOne |
+        And send POST /provider
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name        | farmOne                        |
+            | domain      | domain                         |
+            | api         | api                            |
+            | environment | http://localhost/environment/1 |
+            | provider    | http://localhost/provider/1    |
+        And send POST /farm
+        Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
             | name        | one                            |
@@ -39,7 +59,7 @@ Feature: VirtualHost Support
     Scenario: Create VirtualHost
         Then the response status is 201
 
-    Scenario: Create duplicated Environment
+    Scenario: Create duplicated Virtualhost
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | one                            |
@@ -59,7 +79,7 @@ Feature: VirtualHost Support
         When send GET /virtualhost/2
         Then the response status is 404
 
-    Scenario: Update VirtualHost
+    Scenario: Update VirtualHost (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | two                            |
@@ -70,9 +90,9 @@ Feature: VirtualHost Support
         And a REST client authenticated as accountOne
         When send GET /virtualhost/1
         Then the response status is 200
-        And property name contains two
+        And property name contains one
 
-    Scenario: Update one field of Environment
+    Scenario: Update name field of VirtualHost (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
             | name | two |
@@ -81,9 +101,20 @@ Feature: VirtualHost Support
         And a REST client authenticated as accountOne
         When send GET /virtualhost/1
         Then the response status is 200
-        And property name contains two
+        And property name contains one
 
-    Scenario: Delete Environment
+    Scenario: Update project field of VirtualHost (name update is ignored)
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | project     | http://localhost/project/2 |
+        And send PATCH /virtualhost/1
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/1
+        Then the response status is 200
+        And property name contains one
+
+    Scenario: Delete VirtualHost
         Given a REST client authenticated as accountOne
         When send DELETE /virtualhost/1
         Then the response status is 204

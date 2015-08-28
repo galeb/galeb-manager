@@ -18,6 +18,7 @@
 
 package io.galeb.manager.security;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -167,11 +168,16 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 final Account account = accountRepository.findByName(username);
                 SystemUserService.runAs(originalAuth);
 
-                final List<String> localRoles = account.getRoles().stream()
-                        .map(role -> role.toString())
-                        .collect(Collectors.toList());
-                long id = account.getId();
-
+                List<String> localRoles = new ArrayList<>();
+                long id = Long.MAX_VALUE;
+                if (account != null) {
+                    localRoles = account.getRoles().stream()
+                            .map(role -> role.toString())
+                            .collect(Collectors.toList());
+                    id = account.getId();
+                } else {
+                    localRoles.add("ROLE_USER");
+                }
                 final Collection<GrantedAuthority> localAuthorities =
                         AuthorityUtils.createAuthorityList(localRoles.toArray(new String[localRoles.size()-1]));
                 return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id);

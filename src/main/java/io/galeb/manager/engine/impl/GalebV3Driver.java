@@ -154,7 +154,9 @@ public class GalebV3Driver implements Driver {
         String path = properties.getOrDefault("path", "").toString();
         String name = properties.getOrDefault("name", "").toString();
         int expectedId = properties.getOrDefault("id", -1);
+        long expectedNumElements = properties.getOrDefault("numElements", -1L);
         String uriPath = "http://" + api + "/" + path;
+        String fullPath = uriPath+"/"+name;
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
 
@@ -168,26 +170,37 @@ public class GalebV3Driver implements Driver {
                 final Entity entity = new Entity();
                 entity.setVersion(-1);
 
+                int numElements = 0;
                 if (json != null && json.isArray()) {
+                    numElements = json.size();
                     json.forEach(element -> {
                         if (element != null &&
                                 element.isObject() &&
                                 element.get("id") != null &&
-                                element.get("id").asText("UNDEF").equals(name)) {
+                                element.get("id").asText("defaultTextIfAbsent").equals(name)) {
                             entity.setVersion(element.get("version").asInt(-1));
                         }
                     });
                 }
-                result = expectedId == entity.getVersion();
+                int entityVersion = entity.getVersion();
+                boolean resultVersion = expectedId == entityVersion;
+                if (!resultVersion) {
+                    LOGGER.error(fullPath+" : VERSION NOT MATCH (manager:"+expectedId+" != farm:"+entityVersion+")");
+                }
+                boolean resultCount = expectedNumElements == numElements;
+                if (!resultCount) {
+                    LOGGER.error(fullPath+" : COUNT NOT MATCH (manager:"+expectedNumElements+" != farm:"+numElements+")");
+                }
+                result = resultVersion && resultCount;
             }
             if (!result) {
-                LOGGER.warn("STATUS FAIL: "+uriPath+"/"+name);
+                LOGGER.warn("STATUS FAIL: "+fullPath);
             } else {
-                LOGGER.debug("STATUS OK: "+uriPath+"/"+name);
+                LOGGER.debug("STATUS OK: "+fullPath);
             }
         } catch (RuntimeException | IOException | URISyntaxException e) {
             result = false;
-            LOGGER.error("STATUS FAIL: "+uriPath+"/"+name);
+            LOGGER.error("STATUS FAIL: "+fullPath);
             LOGGER.error(e);
         }
         return result ? StatusFarm.OK : StatusFarm.FAIL;

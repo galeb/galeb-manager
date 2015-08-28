@@ -2,16 +2,21 @@ package io.galeb.manager.repository;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 @Configuration
 public class DatabaseConfiguration {
 
+    @Autowired
+    private Environment env;
+
     @Bean
-    public DataSource dataSource(Environment env) {
+    public DataSource dataSource() {
 
         String driverEnvName = System.getProperty("io.galeb.manager.datasource.driver.env", "GALEB_DB_DRIVER");
         String driver = System.getenv(driverEnvName);
@@ -29,12 +34,14 @@ public class DatabaseConfiguration {
         String password = System.getenv(passwordEnvName);
         password = password != null ? password : "";
 
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        HikariDataSource dataSource = new HikariDataSource();
         dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", driver));
-        dataSource.setUrl(env.getProperty("spring.datasource.url", url));
+        dataSource.setJdbcUrl(env.getProperty("spring.datasource.url", url));
         dataSource.setUsername(env.getProperty("spring.datasource.username", username));
         dataSource.setPassword(env.getProperty("spring.datasource.password", password));
+        dataSource.setConnectionTimeout(60000);
 
         return dataSource;
     }
+
 }

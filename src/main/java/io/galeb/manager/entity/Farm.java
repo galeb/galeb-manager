@@ -45,6 +45,9 @@ public class Farm extends AbstractEntity<Farm> {
     @JoinColumn(nullable = false)
     private Provider provider;
 
+    @Column
+    private boolean autoReload = true;
+
     public Farm(String name,String domain, String api, Environment environment, Provider provider) {
         Assert.hasText(domain);
         Assert.hasText(api);
@@ -94,6 +97,15 @@ public class Farm extends AbstractEntity<Farm> {
 
     public Farm setProvider(Provider provider) {
         this.provider = provider;
+        return this;
+    }
+
+    public boolean isAutoReload() {
+        return autoReload;
+    }
+
+    public Farm setAutoReload(boolean autoReload) {
+        this.autoReload = autoReload;
         return this;
     }
 }

@@ -18,6 +18,8 @@
 
 package io.galeb.manager.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
@@ -25,10 +27,13 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.repository.custom.RuleRepositoryCustom;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
-public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, FarmIDable<Rule> {
+public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
+                                        FarmIDable<Rule>,
+                                        RuleRepositoryCustom {
 
     @Override
     @Query("SELECT r FROM Rule r "
@@ -36,24 +41,17 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>, 
            + "INNER JOIN t.accounts a "
            + "WHERE r.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "r.parent IS NULL OR "
                + "a.name = ?#{principal.username})")
     Rule findOne(@Param("id") Long id);
 
-    @Query("SELECT r FROM Rule r "
-            + "INNER JOIN r.target.project.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE r.name = :name AND "
-                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username})")
-    Iterable<Rule> findByName(@Param("name") String name);
+    @Override
+    @Query
+    Rule findByName(@Param("name") String name);
 
     @Override
-    @Query("SELECT r FROM Rule r "
-            + "INNER JOIN r.target.project.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE 1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username}")
-    Iterable<Rule> findAll();
+    @Query
+    Page<Rule> findAll(Pageable pageable);
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")

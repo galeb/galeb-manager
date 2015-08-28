@@ -29,9 +29,12 @@ import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguratio
 import org.springframework.jms.annotation.EnableJms;
 
 import io.galeb.manager.entity.Account;
+import io.galeb.manager.entity.BalancePolicy;
+import io.galeb.manager.entity.BalancePolicyType;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
+import io.galeb.manager.entity.Provider;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleType;
 import io.galeb.manager.entity.Target;
@@ -66,7 +69,10 @@ public class Application {
                                                  TargetType.class,
                                                  VirtualHost.class,
                                                  Account.class,
-                                                 Team.class);
+                                                 Provider.class,
+                                                 Team.class,
+                                                 BalancePolicyType.class,
+                                                 BalancePolicy.class);
     }
 
 }

@@ -19,10 +19,13 @@
 package io.galeb.manager.entity;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -37,6 +40,7 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import org.jboss.weld.util.collections.ArraySet;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -52,6 +56,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final long serialVersionUID = 4521414292400791447L;
 
+    protected static Set<String> defaultReadOnlyFields = new ArraySet<>(Arrays.asList("name"));
+
     public enum EntityStatus {
         PENDING,
         OK,
@@ -66,23 +72,23 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private long id;
 
     @Version
-    public Long version;
+    private Long version;
 
     @CreatedBy
     @Column(nullable = false, updatable = false)
-    public String createdBy;
+    private String createdBy;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    public Date createdDate;
+    private Date createdDate;
 
     @LastModifiedDate
     @Column(nullable = false)
-    public Date lastModifiedDate;
+    private Date lastModifiedDate;
 
     @LastModifiedBy
     @Column(nullable = false)
-    public String lastModifiedBy;
+    private String lastModifiedBy;
 
     @Column(unique = true, nullable = false)
     private String name;
@@ -97,6 +103,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JsonIgnore
     @Transient
     private boolean saveOnly = false;
+
+    @JsonIgnore
+    @Transient
+    private boolean forceRename = false;
 
     @PrePersist
     private void onCreate() {
@@ -122,6 +132,26 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return id;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public Date getCreatedDate() {
+        return createdDate;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public Date getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
     public String getName() {
         return name;
     }
@@ -129,6 +159,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setName(String name) {
         Assert.hasText(name);
+        if (!forceRename && this.name != null && readOnlyFields().contains("name")) {
+            return (T) this;
+        }
         this.name = name;
         return (T) this;
     }
@@ -163,6 +196,20 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setSaveOnly(boolean saveOnly) {
         this.saveOnly = saveOnly;
+        return (T) this;
+    }
+
+    protected Set<String> readOnlyFields() {
+        return Collections.emptySet();
+    }
+
+    public boolean isForceRename() {
+        return forceRename;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setForceRename(boolean forceRename) {
+        this.forceRename = forceRename;
         return (T) this;
     }
 

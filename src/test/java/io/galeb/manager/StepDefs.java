@@ -92,7 +92,11 @@ public class StepDefs {
     @After
     public void cleanUp() {
         final URI logoutUrl = URI.create("http://127.0.0.1:"+port+"/logout");
-        with().sessionId(sessionId).post(logoutUrl).andReturn();
+        try {
+            with().sessionId(sessionId).post(logoutUrl).andReturn();
+        } catch (Exception e) {
+            LOGGER.warn(e);
+        }
     }
 
     @Given("^a REST client unauthenticated$")
@@ -109,7 +113,12 @@ public class StepDefs {
                                 .post(loginUrl).thenReturn();
 
         sessionId = result.getSessionId();
-        request = with().config(restAssuredConfig).contentType("application/json").sessionId(sessionId);
+        try {
+            request = with().config(restAssuredConfig).contentType("application/json").sessionId(sessionId);
+        } catch (Exception e) {
+            request = with().config(restAssuredConfig).contentType("application/json");
+            LOGGER.warn(e);
+        }
         LOGGER.info("Using "+RestAssured.class.getName()+" authenticated as "+login);
     }
 
