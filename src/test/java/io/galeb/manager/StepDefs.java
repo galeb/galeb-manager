@@ -76,7 +76,7 @@ public class StepDefs {
 
     private ValidatableResponse response;
 
-    private String sessionId;
+    private String token;
 
     private RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(false);
 
@@ -86,14 +86,14 @@ public class StepDefs {
     public void setUp() {
         response = null;
         request = null;
-        sessionId = null;
+        token = null;
     }
 
     @After
     public void cleanUp() {
         final URI logoutUrl = URI.create("http://127.0.0.1:"+port+"/logout");
         try {
-            with().sessionId(sessionId).post(logoutUrl).andReturn();
+            with().header("x-auth-token", token).get(logoutUrl).andReturn();
         } catch (Exception e) {
             LOGGER.warn(e);
         }
@@ -112,9 +112,11 @@ public class StepDefs {
                                 .param("password", "password")
                                 .post(loginUrl).thenReturn();
 
-        sessionId = result.getSessionId();
+        token = result.header("x-auth-token");
+
         try {
-            request = with().config(restAssuredConfig).contentType("application/json").sessionId(sessionId);
+            request = with().config(restAssuredConfig).contentType("application/json")
+                                                      .header("x-auth-token", token);
         } catch (Exception e) {
             request = with().config(restAssuredConfig).contentType("application/json");
             LOGGER.warn(e);
