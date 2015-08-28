@@ -1,31 +1,23 @@
 package io.galeb.manager.security;
 
-import java.util.Arrays;
-
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
-import org.springframework.session.web.http.SessionRepositoryFilter;
-import org.springframework.web.filter.DelegatingFilterProxy;
+import org.springframework.session.web.http.HeaderHttpSessionStrategy;
+import org.springframework.session.web.http.HttpSessionStrategy;
 
 @Configuration
 @EnableRedisHttpSession
 public class SessionRepositoryConfig {
 
     @Bean
-    @Order(value=0)
-    public FilterRegistrationBean sessionRepositoryFilterRegistration(SessionRepositoryFilter<?> springSessionRepositoryFilter) {
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
-        filterRegistrationBean.setFilter(new DelegatingFilterProxy(springSessionRepositoryFilter));
-        filterRegistrationBean.setUrlPatterns(Arrays.asList("/*"));
-        return filterRegistrationBean;
+    public JedisConnectionFactory connectionFactory() {
+        return new JedisConnectionFactory();
     }
 
     @Bean
-    public JedisConnectionFactory connectionFactory() {
-        return new JedisConnectionFactory();
+    public HttpSessionStrategy httpSessionStrategy() {
+        return new HeaderHttpSessionStrategy(); // <3>
     }
 }
