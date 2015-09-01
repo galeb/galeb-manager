@@ -21,14 +21,18 @@ package io.galeb.manager.entity;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
@@ -43,22 +47,27 @@ import com.fasterxml.jackson.annotation.JsonInclude;
         + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
+@Table(uniqueConstraints = {
+        @UniqueConstraint(name = "UK_prefix_name_target",
+                          columnNames = { "prefix", "name" })
+        })
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
     @ManyToOne
-    @JoinColumn(name = "targettype_id", nullable = false)
+    @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
     private TargetType targetType;
 
     @ManyToOne
-    @JoinColumn(name = "environment_id")
+    @JoinColumn(name = "environment_id", foreignKey = @ForeignKey(name="FK_target_environment"))
     private Environment environment;
 
     @JsonIgnore
     private long farmId;
 
     @ManyToOne
+    @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
     private Target parent;
 
     @JsonIgnore
@@ -66,11 +75,11 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     private final Set<Rule> rules = new HashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "project_id")
+    @JoinColumn(name = "project_id", foreignKey = @ForeignKey(name="FK_target_project"))
     private Project project;
 
     @ManyToOne
-    @JoinColumn(name = "balancepolicy_id")
+    @JoinColumn(name = "balancepolicy_id", foreignKey = @ForeignKey(name="FK_target_balancepolicy"))
     private BalancePolicy balancePolicy;
 
     @Override
@@ -86,6 +95,12 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     protected Target() {
         //
+    }
+
+    @Override
+    @JoinColumn(foreignKey=@ForeignKey(name="FK_target_properties"))
+    public Map<String, String> getProperties() {
+        return super.getProperties();
     }
 
     public TargetType getTargetType() {

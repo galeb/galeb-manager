@@ -20,13 +20,17 @@ package io.galeb.manager.entity;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
@@ -42,19 +46,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
              + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_rule", columnNames = { "name" }) })
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     private static final long serialVersionUID = 5596582746795373020L;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "ruletype", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
     private RuleType ruleType;
 
     @ManyToOne
+    @JoinColumn(name = "parent", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent"))
     private VirtualHost parent;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "target", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
     private Target target;
 
     @Column
@@ -82,6 +88,12 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     protected Rule() {
         //
+    }
+
+    @Override
+    @JoinColumn(foreignKey=@ForeignKey(name="FK_rule_properties"))
+    public Map<String, String> getProperties() {
+        return super.getProperties();
     }
 
     public RuleType getRuleType() {

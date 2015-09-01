@@ -19,14 +19,20 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_environment", columnNames = { "name" }) })
 public class Environment extends AbstractEntity<Environment> {
 
     private static final long serialVersionUID = 5596582746795373016L;
@@ -49,6 +55,12 @@ public class Environment extends AbstractEntity<Environment> {
 
     protected Environment() {
         //
+    }
+
+    @Override
+    @JoinColumn(foreignKey=@ForeignKey(name="FK_environment_properties"))
+    public Map<String, String> getProperties() {
+        return super.getProperties();
     }
 
 }

@@ -18,15 +18,21 @@
 
 package io.galeb.manager.entity;
 
+import java.util.Map;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
 @Entity
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;
@@ -38,11 +44,11 @@ public class Farm extends AbstractEntity<Farm> {
     private String api;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "environment", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
     private Environment environment;
 
     @OneToOne
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "provider", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
     private Provider provider;
 
     @Column
@@ -62,6 +68,12 @@ public class Farm extends AbstractEntity<Farm> {
 
     protected Farm() {
         //
+    }
+
+    @Override
+    @JoinColumn(foreignKey=@ForeignKey(name="FK_farm_properties"))
+    public Map<String, String> getProperties() {
+        return super.getProperties();
     }
 
     public String getDomain() {

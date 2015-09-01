@@ -48,6 +48,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.galeb.manager.security.SpringSecurityAuditorAware;
 
@@ -90,7 +91,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Column(nullable = false)
     private String lastModifiedBy;
 
-    @Column(unique = true, nullable = false)
+    @Column(name="prefix", nullable = false)
+    private String prefix = "default";
+
+    @Column(name="name", nullable = false)
     private String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -163,6 +167,20 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
             return (T) this;
         }
         this.name = name;
+        return (T) this;
+    }
+
+    @JsonIgnore
+    public String getPrefix() {
+        return prefix;
+    }
+
+    @JsonProperty("prefix")
+    @SuppressWarnings("unchecked")
+    public T setPrefix(String prefix) {
+        if (prefix != null) {
+            this.prefix = prefix;
+        }
         return (T) this;
     }
 
