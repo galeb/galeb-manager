@@ -25,7 +25,6 @@ import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -47,7 +46,7 @@ public class Farm extends AbstractEntity<Farm> {
     @JoinColumn(name = "environment", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
     private Environment environment;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "provider", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
     private Provider provider;
 
