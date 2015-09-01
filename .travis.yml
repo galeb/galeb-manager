@@ -1,6 +1,23 @@
 language: java
+
 jdk:
   - oraclejdk8
+
 branches:
   only:
     - master
+
+services:
+  - redis-server
+
+before_script:
+  - mysql -e 'create database galeb;'
+
+env:
+  - LOGLEVEL=WARN
+  - GALEB_DB_USER=root
+  - GALEB_DB_URL=jdbc:mysql://localhost/galeb
+  - GALEB_DB_SHOWSQL=false
+  - GALEB_DB_DRIVER=com.mysql.jdbc.Driver
+  - GALEB_DB_DIALECT=org.hibernate.dialect.MySQL5Dialect
+  - GALEB_DB_DDL_AUTO=validate
