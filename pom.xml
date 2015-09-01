@@ -151,6 +151,10 @@
             <artifactId>galeb-core</artifactId>
             <version>${galeb.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
         <!-- // See https://github.com/adrianbk/swagger-springmvc-demo/tree/master/spring-boot
         <dependency>
           <groupId>com.mangofactory</groupId>
@@ -207,7 +211,6 @@
                     <argLine>
                       -server
                       -Xmx2048m -Xms2048m
-                      -Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect
                       -Dauth_method=LDAP_TEST
                     </argLine>
                 </configuration>
@@ -229,7 +232,6 @@
                       -server
                       -Xmx2048m -Xms2048m
                       -Dlog4j.configurationFile=log4j.xml
-                      -Dspring.jpa.database-platform=org.hibernate.dialect.H2Dialect
                       -Dauth_method=DEFAULT
                       -Dserver.port=8000
                   </jvmArguments>
@@ -273,6 +275,11 @@
                         <successCode>128</successCode>
                     </successCodes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>3.2.1</version>
             </plugin>
         </plugins>
     </build>
