@@ -18,24 +18,35 @@
 
 package io.galeb.manager.entity;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 @Entity
+@Table(uniqueConstraints = {@UniqueConstraint(name = "UK_name_balancepolicytype", columnNames = { "name" })})
 public class BalancePolicy extends AbstractEntity<BalancePolicy> {
 
     private static final long serialVersionUID = 5596582746795373030L;
 
     @ManyToOne
-    @JoinColumn(name = "balancepolicytype_id", nullable = false)
+    @JoinColumn(name = "balancepolicytype_id", nullable = false, foreignKey=@ForeignKey(name="FK_balancepolicy_balancepolicytype"))
     private BalancePolicyType balancePolicyType;
 
     @OneToMany(mappedBy = "balancePolicy")
     private Set<Target> targets;
+
+    @Override
+    @JoinColumn(foreignKey=@ForeignKey(name="FK_balancepolicy_properties"))
+    public Map<String, String> getProperties() {
+        return super.getProperties();
+    }
 
     public BalancePolicyType getBalancePolicyType() {
         return balancePolicyType;
