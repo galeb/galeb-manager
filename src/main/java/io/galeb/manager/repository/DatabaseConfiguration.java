@@ -40,6 +40,7 @@ public class DatabaseConfiguration {
         dataSource.setUsername(env.getProperty("spring.datasource.username", username));
         dataSource.setPassword(env.getProperty("spring.datasource.password", password));
         dataSource.setConnectionTimeout(60000);
+        dataSource.setConnectionTestQuery("SELECT 1");
 
         return dataSource;
     }
