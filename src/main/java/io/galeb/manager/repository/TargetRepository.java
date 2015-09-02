@@ -48,6 +48,10 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
     @Query
     Target findByName(@Param("name") String name);
 
+    Page<Target>findByParent(Pageable pageable, @Param("parent") Target parent);
+
+    Page<Target>findByRef(Pageable pageable, @Param("ref") String ref);
+
     @Override
     @Query
     Page<Target> findAll(Pageable pageable);

@@ -48,8 +48,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @Entity
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = {
-        @UniqueConstraint(name = "UK_prefix_name_target",
-                          columnNames = { "prefix", "name" })
+        @UniqueConstraint(name = "UK_ref_name_target",
+                          columnNames = { "ref", "name" })
         })
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 

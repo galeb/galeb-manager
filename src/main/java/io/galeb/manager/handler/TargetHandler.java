@@ -96,7 +96,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
         target.setFarmId(-1L);
         beforeCreate(target, LOGGER);
         if (target.getParent() != null) {
-            target.setPrefix(target.getParent().getName());
+            target.setRef(target.getParent().getName());
         }
         setProject(target);
         setEnvironment(target);

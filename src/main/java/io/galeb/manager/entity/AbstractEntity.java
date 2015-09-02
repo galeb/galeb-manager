@@ -91,8 +91,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @Column(nullable = false)
     private String lastModifiedBy;
 
-    @Column(name="prefix", nullable = false)
-    private String prefix = "default";
+    @Column(name="ref", nullable = false)
+    private String ref = "self";
 
     @Column(name="name", nullable = false)
     private String name;
@@ -171,15 +171,15 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     @JsonIgnore
-    public String getPrefix() {
-        return prefix;
+    public String getRef() {
+        return ref;
     }
 
-    @JsonProperty("prefix")
+    @JsonProperty("ref")
     @SuppressWarnings("unchecked")
-    public T setPrefix(String prefix) {
-        if (prefix != null) {
-            this.prefix = prefix;
+    public T setRef(String ref) {
+        if (ref != null) {
+            this.ref = ref;
         }
         return (T) this;
     }
