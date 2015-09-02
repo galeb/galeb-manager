@@ -43,6 +43,7 @@
         <spring-security-data.version>4.0.2.RELEASE</spring-security-data.version>
         <info-cukes.version>1.2.4</info-cukes.version>
         <com.jayway.restassured.version>2.4.1</com.jayway.restassured.version>
+        <jackson-module-jsonSchema.version>2.6.1</jackson-module-jsonSchema.version>
     </properties>
 
     <parent>
@@ -154,6 +155,11 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-jsonSchema</artifactId>
+            <version>${jackson-module-jsonSchema.version}</version>
         </dependency>
         <!-- // See https://github.com/adrianbk/swagger-springmvc-demo/tree/master/spring-boot
         <dependency>
