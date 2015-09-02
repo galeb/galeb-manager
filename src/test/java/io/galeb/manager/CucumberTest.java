@@ -26,7 +26,7 @@ import cucumber.api.junit.Cucumber;
 @RunWith(Cucumber.class)
 @CucumberOptions(
         monochrome = true,
-        plugin= {"pretty"},
+        plugin= {"pretty", "json:target/cucumber.json"},
         glue = {"io.galeb"},
         features= {"classpath:cucumber"}
         )
