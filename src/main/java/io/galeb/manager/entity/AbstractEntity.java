@@ -50,9 +50,11 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.galeb.manager.common.JsonCustomProperties;
 import io.galeb.manager.security.SpringSecurityAuditorAware;
 
 @MappedSuperclass
+@JsonCustomProperties
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
