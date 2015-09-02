@@ -10,6 +10,7 @@ machine:
 
   environment:
     LOGLEVEL: WARN
+    GALEB_DISABLE_SCHED: true
     GALEB_DB_USER: ubuntu
     GALEB_DB_URL: jdbc:mysql://localhost/circle_test
     GALEB_DB_SHOWSQL: false

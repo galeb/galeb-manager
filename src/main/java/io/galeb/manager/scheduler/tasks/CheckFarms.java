@@ -1,5 +1,7 @@
 package io.galeb.manager.scheduler.tasks;
 
+import static io.galeb.manager.scheduler.SchedulerConfiguration.GALEB_DISABLE_SCHED;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -53,6 +55,13 @@ public class CheckFarms {
 
     @Scheduled(fixedRate = 10000)
     private void run() {
+
+        String disableSchedulerStr = System.getenv(GALEB_DISABLE_SCHED);
+        if (disableSchedulerStr != null && Boolean.parseBoolean(disableSchedulerStr)) {
+            LOGGER.warn(GALEB_DISABLE_SCHED+" is true");
+            return;
+        }
+
         LOGGER.debug("TASK checkFarm executing");
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
