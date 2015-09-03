@@ -73,6 +73,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-rest</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -151,6 +157,12 @@
             <groupId>io.galeb</groupId>
             <artifactId>galeb-core</artifactId>
             <version>${galeb.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -161,14 +173,27 @@
             <artifactId>jackson-module-jsonSchema</artifactId>
             <version>${jackson-module-jsonSchema.version}</version>
         </dependency>
-        <!-- // See https://github.com/adrianbk/swagger-springmvc-demo/tree/master/spring-boot
         <dependency>
-          <groupId>com.mangofactory</groupId>
-          <artifactId>swagger-springmvc</artifactId>
-          <version>1.0.2</version>
-          <scope>compile</scope>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+            <version>2.1.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-        -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>18.0</version>
+        </dependency>
 
         <!--  tests -->
         <dependency>
@@ -199,6 +224,12 @@
             <artifactId>json-schema-validator</artifactId>
             <version>${com.jayway.restassured.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.jayway.restassured</groupId>
