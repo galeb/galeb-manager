@@ -18,8 +18,6 @@
 
 package io.galeb.manager.entity;
 
-import java.util.Map;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -43,11 +41,11 @@ public class Farm extends AbstractEntity<Farm> {
     private String api;
 
     @ManyToOne
-    @JoinColumn(name = "environment", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
+    @JoinColumn(name = "environment_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
     private Environment environment;
 
     @ManyToOne
-    @JoinColumn(name = "provider", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
+    @JoinColumn(name = "provider_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
     private Provider provider;
 
     @Column
@@ -67,12 +65,6 @@ public class Farm extends AbstractEntity<Farm> {
 
     protected Farm() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_farm_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public String getDomain() {

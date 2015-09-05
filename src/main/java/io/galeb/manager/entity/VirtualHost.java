@@ -26,7 +26,6 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
@@ -37,31 +36,27 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-@NamedQuery(name="VirtualHost.findAll", query=
+@NamedQuery(name = "VirtualHost.findAll", query =
 "SELECT v FROM VirtualHost v "
         + "INNER JOIN v.project.teams t "
         + "INNER JOIN t.accounts a "
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
+@Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
     @ManyToOne
-    @JoinColumn(name = "environment",  nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_environment"))
+    @JoinColumn(name = "environment_id",  nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_environment"))
     private Environment environment;
 
     @ManyToOne
-    @JoinColumn(name = "project", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_project"))
+    @JoinColumn(name = "project_id", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_project"))
     private Project project;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @JoinTable(joinColumns = {
-            @JoinColumn(name = "virtualhost_id",
-                        foreignKey = @ForeignKey(name="FK_virtualhost_aliases_virtualhost_id"))
-    })
     private Set<String> aliases = new HashSet<>();
 
     @JsonIgnore

@@ -19,11 +19,9 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -55,9 +53,8 @@ public class Project extends AbstractEntity<Project> {
     private final Set<Target> targets = new HashSet<>();
 
     @ManyToMany
-    @JoinTable(joinColumns=@JoinColumn(name="team_id"),
-               inverseJoinColumns=@JoinColumn(name="project_id"),
-               foreignKey=@ForeignKey(name="FK_project_teams"))
+    @JoinTable(joinColumns=@JoinColumn(name="project_id"),
+               inverseJoinColumns=@JoinColumn(name="team_id"))
     private final Set<Team> teams = new HashSet<>();
 
     public Project(String name) {
@@ -66,12 +63,6 @@ public class Project extends AbstractEntity<Project> {
 
     protected Project() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_project_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public Set<Team> getTeams() {

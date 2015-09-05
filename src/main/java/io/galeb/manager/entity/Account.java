@@ -59,8 +59,10 @@ public class Account extends AbstractEntity<Account> {
     }
 
     @ManyToMany
-    @JoinTable(joinColumns=@JoinColumn(name="team_id", foreignKey=@ForeignKey(name="FK_account_teams_team_id")),
-               inverseJoinColumns=@JoinColumn(name="account_id", foreignKey=@ForeignKey(name="FK_account_teams_account_id")))
+    @JoinTable(joinColumns = @JoinColumn(name = "account_id",
+                                         foreignKey = @ForeignKey(name = "FK_account_teams_account_id")),
+               inverseJoinColumns = @JoinColumn(name = "team_id",
+                                       foreignKey = @ForeignKey(name = "FK_account_teams_team_id")))
     private final Set<Team> teams = new HashSet<>();
 
     @Column(nullable = false)

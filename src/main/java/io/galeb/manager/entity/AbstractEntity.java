@@ -75,35 +75,36 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private long id;
 
     @Version
+    @Column(name = "_version")
     private Long version;
 
     @CreatedBy
-    @Column(nullable = false, updatable = false)
+    @Column(name = "_created_by", nullable = false, updatable = false)
     private String createdBy;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private Date createdDate;
+    @Column(name = "_created_at", nullable = false, updatable = false)
+    private Date createdAt;
 
     @LastModifiedDate
-    @Column(nullable = false)
-    private Date lastModifiedDate;
+    @Column(name = "_lastmodified_at", nullable = false)
+    private Date lastModifiedAt;
 
     @LastModifiedBy
-    @Column(nullable = false)
+    @Column(name = "_lastmodified_by", nullable = false)
     private String lastModifiedBy;
 
-    @Column(name="ref", nullable = false)
+    @Column(name = "_ref", nullable = false)
     private String ref = "self";
 
-    @Column(name="name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @JoinColumn(nullable = false)
     private final Map<String, String> properties = new HashMap<>();
 
-    @Column(nullable = false)
+    @Column(name = "_status", nullable = false)
     private EntityStatus status;
 
     @JsonIgnore
@@ -116,16 +117,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @PrePersist
     private void onCreate() {
-        createdDate = new Date();
+        createdAt = new Date();
         createdBy = getCurrentAuditor();
-        lastModifiedDate = createdDate;
+        lastModifiedAt = createdAt;
         lastModifiedBy = createdBy;
         saveOnly = false;
     }
 
     @PreUpdate
     private void onUpdate() {
-        lastModifiedDate = new Date();
+        lastModifiedAt = new Date();
         lastModifiedBy = getCurrentAuditor();
     }
 
@@ -142,16 +143,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return createdBy;
     }
 
-    public Date getCreatedDate() {
-        return createdDate;
+    public Date getCreatedAt() {
+        return createdAt;
     }
 
     public String getLastModifiedBy() {
         return lastModifiedBy;
     }
 
-    public Date getLastModifiedDate() {
-        return lastModifiedDate;
+    public Date getLastModifiedAt() {
+        return lastModifiedAt;
     }
 
     public Long getVersion() {
