@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @NamedQuery(name="Rule.findAll", query =
 "SELECT r FROM Rule r "
@@ -52,6 +53,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @ManyToOne
     @JoinColumn(name = "ruletype_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
+    @JsonProperty(required = true)
     private RuleType ruleType;
 
     @ManyToOne
@@ -60,6 +62,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @ManyToOne
     @JoinColumn(name = "target_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JsonProperty(required = true)
     private Target target;
 
     @Column

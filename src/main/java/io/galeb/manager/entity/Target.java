@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @NamedQuery(name = "Target.findAll", query =
 "SELECT ta FROM Target ta "
@@ -56,6 +57,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
+    @JsonProperty(required = true)
     private TargetType targetType;
 
     @ManyToOne

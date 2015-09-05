@@ -35,6 +35,7 @@ import javax.persistence.UniqueConstraint;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @NamedQuery(name = "VirtualHost.findAll", query =
 "SELECT v FROM VirtualHost v "
@@ -50,10 +51,12 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @ManyToOne
     @JoinColumn(name = "environment_id",  nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_environment"))
+    @JsonProperty(required = true)
     private Environment environment;
 
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_project"))
+    @JsonProperty(required = true)
     private Project project;
 
     @ElementCollection(fetch = FetchType.EAGER)

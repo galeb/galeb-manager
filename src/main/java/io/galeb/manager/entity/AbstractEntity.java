@@ -76,28 +76,35 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @Version
     @Column(name = "_version")
+    @JsonProperty("_version")
     private Long version;
 
     @CreatedBy
     @Column(name = "_created_by", nullable = false, updatable = false)
+    @JsonProperty("_created_by")
     private String createdBy;
 
     @CreatedDate
     @Column(name = "_created_at", nullable = false, updatable = false)
+    @JsonProperty("_created_at")
     private Date createdAt;
 
     @LastModifiedDate
     @Column(name = "_lastmodified_at", nullable = false)
+    @JsonProperty("_lastmodified_at")
     private Date lastModifiedAt;
 
     @LastModifiedBy
     @Column(name = "_lastmodified_by", nullable = false)
+    @JsonProperty("_lastmodified_by")
     private String lastModifiedBy;
 
     @Column(name = "_ref", nullable = false)
+    @JsonProperty("_ref")
     private String ref = "self";
 
     @Column(name = "name", nullable = false)
+    @JsonProperty(required = true)
     private String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -105,6 +112,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private final Map<String, String> properties = new HashMap<>();
 
     @Column(name = "_status", nullable = false)
+    @JsonProperty("_status")
     private EntityStatus status;
 
     @JsonIgnore

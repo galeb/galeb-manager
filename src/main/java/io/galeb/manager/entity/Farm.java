@@ -28,6 +28,8 @@ import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
@@ -35,17 +37,21 @@ public class Farm extends AbstractEntity<Farm> {
     private static final long serialVersionUID = 5596582746795373017L;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String domain;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String api;
 
     @ManyToOne
     @JoinColumn(name = "environment_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
+    @JsonProperty(required = true)
     private Environment environment;
 
     @ManyToOne
     @JoinColumn(name = "provider_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
+    @JsonProperty(required = true)
     private Provider provider;
 
     @Column

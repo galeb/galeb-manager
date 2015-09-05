@@ -28,6 +28,8 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(name = "balancepolicy", uniqueConstraints = {@UniqueConstraint(name = "UK_name_balancepolicytype", columnNames = { "name" })})
 public class BalancePolicy extends AbstractEntity<BalancePolicy> {
@@ -36,6 +38,7 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
 
     @ManyToOne
     @JoinColumn(name = "balancepolicytype_id", nullable = false, foreignKey=@ForeignKey(name="FK_balancepolicy_balancepolicytype"))
+    @JsonProperty(required = true)
     private BalancePolicyType balancePolicyType;
 
     @OneToMany(mappedBy = "balancePolicy")

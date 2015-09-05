@@ -69,6 +69,7 @@ public class Account extends AbstractEntity<Account> {
     private String password;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String email;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -115,7 +116,7 @@ public class Account extends AbstractEntity<Account> {
         return password;
     }
 
-    @JsonProperty("password")
+    @JsonProperty(value = "password", required = true)
     public Account setPassword(String password) {
         Assert.hasText(password);
         this.password = ENCODER.encode(password);
