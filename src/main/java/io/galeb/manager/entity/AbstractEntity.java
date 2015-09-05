@@ -100,7 +100,6 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private String lastModifiedBy;
 
     @Column(name = "_ref", nullable = false)
-    @JsonProperty("_ref")
     private String ref = "self";
 
     @Column(name = "name", nullable = false)
@@ -186,7 +185,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return ref;
     }
 
-    @JsonProperty("ref")
+    @JsonProperty("_ref")
     @SuppressWarnings("unchecked")
     public T setRef(String ref) {
         if (ref != null) {
