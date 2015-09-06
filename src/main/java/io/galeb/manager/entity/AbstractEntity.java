@@ -57,6 +57,8 @@ import io.galeb.manager.security.SpringSecurityAuditorAware;
 @JsonCustomProperties
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
+    public static final String DEFAULT_REFERENCE = "self";
+
     private static final long serialVersionUID = 4521414292400791447L;
 
     protected static Set<String> defaultReadOnlyFields = new ArraySet<>(Arrays.asList("name"));
@@ -100,7 +102,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private String lastModifiedBy;
 
     @Column(name = "_ref", nullable = false)
-    private String ref = "self";
+    private String ref = DEFAULT_REFERENCE;
 
     @Column(name = "name", nullable = false)
     @JsonProperty(required = true)

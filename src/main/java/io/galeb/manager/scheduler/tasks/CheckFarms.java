@@ -21,6 +21,7 @@ import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.Driver.StatusFarm;
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.farm.FarmEngine;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
@@ -53,6 +54,18 @@ public class CheckFarms {
     @Autowired
     JmsTemplate jms;
 
+    private Properties getProperties(final Farm farm, final AbstractEntity<?> entity,
+                                     String path, long numElements) {
+        Properties properties = new Properties();
+        properties.put("api", farm.getApi());
+        properties.put("name", entity.getName());
+        properties.put("path", path);
+        properties.put("id", entity.getId());
+        properties.put("ref", entity.getRef());
+        properties.put("numElements", numElements);
+        return properties;
+    }
+
     @Scheduled(fixedRate = 10000)
     private void run() {
 
@@ -78,13 +91,7 @@ public class CheckFarms {
                final long virtualhostCount = getVirtualhosts(farm).count();
 
                getVirtualhosts(farm).forEach(virtualhost -> {
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", virtualhost.getName());
-                    properties.put("path", "virtualhost");
-                    properties.put("id", virtualhost.getId());
-                    properties.put("numElements", virtualhostCount);
-
+                    Properties properties = getProperties(farm, virtualhost, "virtualhost", virtualhostCount);
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
@@ -92,13 +99,7 @@ public class CheckFarms {
                 final long ruleCount = getRules(farm).count();
 
                 getRules(farm).forEach(rule -> {
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", rule.getName());
-                    properties.put("path", "rule");
-                    properties.put("id", rule.getId());
-                    properties.put("numElements", ruleCount);
-
+                    Properties properties = getProperties(farm, rule, "rule", ruleCount);
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
@@ -109,13 +110,9 @@ public class CheckFarms {
 
                 getTargets(farm).forEach(target -> {
                     String targetTypeName = target.getTargetType().getName();
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", target.getName());
-                    properties.put("path", target.getTargetType().getName().toLowerCase());
-                    properties.put("id", target.getId());
-                    properties.put("numElements", targetsCountMap.get(targetTypeName));
-
+                    Properties properties = getProperties(farm, target,
+                            target.getTargetType().getName().toLowerCase(),
+                            targetsCountMap.get(targetTypeName));
                     boolean lastStatus = isOk.get();
                     isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                 });
