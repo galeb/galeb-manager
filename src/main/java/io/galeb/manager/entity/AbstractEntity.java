@@ -243,4 +243,41 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return (T) this;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (id ^ (id >>> 32));
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((ref == null) ? 0 : ref.hashCode());
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        T other = (T) obj;
+        if (id != other.getId())
+            return false;
+        if (name == null) {
+            if (other.getName() != null)
+                return false;
+        } else if (!name.equals(other.getName()))
+            return false;
+        if (ref == null) {
+            if (other.getRef() != null)
+                return false;
+        } else if (!ref.equals(other.getRef()))
+            return false;
+        return true;
+    }
+
+
+
 }
