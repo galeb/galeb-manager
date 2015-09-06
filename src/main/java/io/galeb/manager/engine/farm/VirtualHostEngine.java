@@ -105,6 +105,10 @@ public class VirtualHostEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(VirtualHost virtualHost) {
+        if (virtualHostRepository.findOne(virtualHost.getId()) == null) {
+            // virtualHost removed?
+            return;
+        }
         virtualHost.setSaveOnly(true);
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();

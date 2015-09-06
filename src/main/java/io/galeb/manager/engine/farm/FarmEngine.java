@@ -147,6 +147,10 @@ public class FarmEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Farm farm) {
+        if (farmRepository.findOne(farm.getId()) == null) {
+            // farm removed?
+            return;
+        }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         farm.setSaveOnly(true);

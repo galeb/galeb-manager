@@ -105,6 +105,10 @@ public class RuleEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Rule rule) {
+        if (ruleRepository.findOne(rule.getId()) == null) {
+            // rule removed?
+            return;
+        }
         rule.setSaveOnly(true);
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
