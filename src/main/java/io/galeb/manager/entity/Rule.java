@@ -66,9 +66,11 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     private Target target;
 
     @Column
+    @JsonProperty("order")
     private int ruleOrder = 0;
 
     @Column
+    @JsonProperty("default")
     private boolean ruleDefault = false;
 
     @JsonIgnore
