@@ -106,13 +106,14 @@ public class TargetEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Target target) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
         if (targetRepository.findOne(target.getId()) == null) {
             // target removed?
+            SystemUserService.runAs(currentUser);
             return;
         }
         target.setSaveOnly(true);
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
         targetRepository.save(target);
         setFarmStatusOnError(target);
         SystemUserService.runAs(currentUser);
