@@ -28,8 +28,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
-import org.springframework.jms.annotation.EnableJms;
-
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.entity.BalancePolicy;
 import io.galeb.manager.entity.BalancePolicyType;
@@ -45,7 +43,6 @@ import io.galeb.manager.entity.Team;
 import io.galeb.manager.entity.VirtualHost;
 
 @SpringBootApplication
-@EnableJms
 @Import(RepositoryRestMvcConfiguration.class)
 public class Application {
 
