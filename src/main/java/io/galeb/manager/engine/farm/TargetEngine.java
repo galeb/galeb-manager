@@ -29,7 +29,7 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
-
+import io.galeb.manager.service.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,10 +54,13 @@ public class TargetEngine extends AbstractEngine {
     private FarmRepository farmRepository;
 
     @Autowired
-    JmsTemplate jms;
+    private JmsTemplate jms;
 
     @Autowired
     private TargetRepository targetRepository;
+
+    @Autowired
+    private GenericEntityService genericEntityService;
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Target target) {
@@ -106,13 +109,12 @@ public class TargetEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Target target) {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        if (targetRepository.findOne(target.getId()) == null) {
+        if (genericEntityService.isNew(target)) {
             // target removed?
-            SystemUserService.runAs(currentUser);
             return;
         }
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
         target.setSaveOnly(true);
         targetRepository.save(target);
         setFarmStatusOnError(target);
