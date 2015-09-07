@@ -18,9 +18,18 @@
 
 package io.galeb.manager.security;
 
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
@@ -57,6 +66,8 @@ import io.galeb.manager.repository.AccountRepository;
 @EnableWebSecurity
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
+    private static final String INTERNAL_PASSWORD = "INTERNAL_PASSWORD";
+
     private static final Log LOGGER = LogFactory.getLog(SecurityConfiguration.class);
 
     enum AuthMethod {
@@ -90,8 +101,21 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 e.printStackTrace();
             }
         }
+        String internalPass = System.getProperty(INTERNAL_PASSWORD, System.getenv(INTERNAL_PASSWORD));
+        internalPass = internalPass == null ? UUID.randomUUID().toString() : internalPass;
         auth.inMemoryAuthentication()
-            .withUser("admin").roles("ADMIN", "USER").password("password");
+            .withUser("admin").roles("ADMIN", "USER").password(internalPass);
+        if (Files.isWritable(Paths.get("./"))) {
+            try {
+                Path secret = Files.write(Paths.get("./secret.txt"), internalPass.getBytes());
+                Files.setPosixFilePermissions(secret, new HashSet<>(Arrays.asList(OWNER_READ, OWNER_WRITE)));
+            } catch (Exception e) {
+                LOGGER.info("secret: " + internalPass);
+                LOGGER.error(e);
+            }
+        } else {
+            LOGGER.info("secret: " + internalPass);
+        }
 
         String userDnPatternsEnv = System.getProperty("io.galeb.manager.ldap.user_dn_patterns.env", "GALEB_LDAP_DN");
         String userDnPatterns = System.getenv(userDnPatternsEnv);
