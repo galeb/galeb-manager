@@ -107,7 +107,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             .withUser("admin").roles("ADMIN", "USER").password(internalPass);
         if (Files.isWritable(Paths.get("./"))) {
             try {
-                Path secret = Files.write(Paths.get("./secret.txt"), internalPass.getBytes());
+                Path secret = Files.write(Paths.get("./.secret.txt"), internalPass.getBytes());
                 Files.setPosixFilePermissions(secret, new HashSet<>(Arrays.asList(OWNER_READ, OWNER_WRITE)));
             } catch (Exception e) {
                 LOGGER.info("secret: " + internalPass);
