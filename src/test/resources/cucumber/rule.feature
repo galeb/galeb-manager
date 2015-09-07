@@ -78,6 +78,8 @@ Feature: Rule Support
             | ruleType | http://localhost/ruletype/1    |
             | parent   | http://localhost/virtualhost/1 |
             | target   | http://localhost/target/1      |
+            | default  | true                           |
+            | order    | 0                              |
         And send POST /rule
 
     Scenario: Create Rule
