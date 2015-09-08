@@ -25,15 +25,15 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.flywaydb.core.Flyway;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationContextLoader;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -53,17 +53,19 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import gherkin.deps.com.google.gson.Gson;
 import gherkin.deps.com.google.gson.GsonBuilder;
+import io.galeb.manager.repository.DatabaseConfiguration;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(
         classes = { Application.class },
         loader = SpringApplicationContextLoader.class
 )
-@DirtiesContext(classMode = ClassMode.AFTER_CLASS)
 @WebAppConfiguration
 @IntegrationTest({"server.port=0"})
 @Ignore
 public class StepDefs {
+
+    private static Flyway flyway = new Flyway();
 
     private static Log LOGGER = LogFactory.getLog(StepDefs.class);
     private static final Gson jsonParser = new GsonBuilder().setPrettyPrinting()
@@ -82,11 +84,19 @@ public class StepDefs {
 
     private RestAssuredConfig restAssuredConfig = RestAssuredConfig.config().redirect(redirectConfig);
 
+    @PostConstruct
+    public void init() {
+        flyway.setDataSource(DatabaseConfiguration.getUrl(),
+                             DatabaseConfiguration.getUsername(),
+                             DatabaseConfiguration.getPassword());
+    }
+
     @Before
     public void setUp() {
         response = null;
         request = null;
         sessionId = null;
+        flyway.migrate();
     }
 
     @After
@@ -97,6 +107,7 @@ public class StepDefs {
         } catch (Exception e) {
             LOGGER.warn(e);
         }
+        flyway.clean();
     }
 
     @Given("^a REST client unauthenticated$")
