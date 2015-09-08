@@ -413,11 +413,11 @@ login /tmp/cookiestorage2 '(new admin)' $ADMIN_LOGIN
 # CREATE A TEAM
 createTeam /tmp/cookiestorage2 $TEAM_NAME
 
-if [ "x$USER_LOGIN" != "x$ADMIN_LOGIN "]; then
+if [ "x$USER_LOGIN" != "x$ADMIN_LOGIN" ]; then
   # CREATE A ACCOUNT WITH USER ROLE ONLY
   echo -n 'Enter a login with user role (it will be created, if it does not exist): '
   read USER_LOGIN
-  createAccount /tmp/cookiestorage1 '"ROLE_USER"' $TEAM_NAME $USER_LOGIN
+  createAccount /tmp/cookiestorage2 '"ROLE_USER"' $TEAM_NAME $USER_LOGIN
   USER_ACCOUNT_ID="$(getId /tmp/cookiestorage2 account $USER_LOGIN)"
 else
   # MODIFY ADMIN ACCOUNT TEAMS
