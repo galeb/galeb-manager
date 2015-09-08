@@ -60,7 +60,7 @@ if ! (hasJq && hasCurl); then
   showPreRequisite
 fi
 
-if [ "x$1" == "x-h" || "x$1" == "x--help" ]; then
+if [ "x$1" == "x-h" -o "x$1" == "x--help" ]; then
   usage
 fi
 
@@ -107,7 +107,7 @@ createTeam() {
   local NAME=$2
 
   curl -k -v -XPOST -b $COOKIE -H $HEADER \
-    -d '{ "name":"'$ADMIN_TEAM_NAME'" }' $PROTOCOL://$SERVER/team
+    -d '{ "name":"'$NAME'" }' $PROTOCOL://$SERVER/team
   echo
 }
 
@@ -421,6 +421,8 @@ if [ "x$USER_LOGIN" != "x$ADMIN_LOGIN "]; then
   USER_ACCOUNT_ID="$(getId /tmp/cookiestorage2 account $USER_LOGIN)"
 else
   # MODIFY ADMIN ACCOUNT TEAMS
+  ADMIN_TEAM_ID="$(getId /tmp/cookiestorage2 team $ADMIN_TEAM_NAME)"
+  TEAM_ID="$(getId /tmp/cookiestorage2 team $TEAM_NAME)"
   curl -k -v -XPATCH -H $HEADER \
        -d '{ "teams": [ "'$PROTOCOL'://'$SERVER'/team/'$ADMIN_TEAM_ID'",
                         "'$PROTOCOL'://'$SERVER'/team/'$TEAM_ID'" ] }' \
@@ -482,6 +484,9 @@ done
 createRule /tmp/cookiestorage3 $RULE_NAME
 
 ####
+
+# Wait
+for x in $(seq 1 5);do echo -n .;sleep 1;done;echo
 
 # REMOVE A RULE
 removeRule /tmp/cookiestorage3 $RULE_NAME
