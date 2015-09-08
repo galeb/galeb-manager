@@ -79,60 +79,64 @@ public class CheckFarms {
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        StreamSupport.stream(farmRepository.findAll().spliterator(), false)
-                                .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
-                                .forEach(farm -> {
+        try {
+            StreamSupport.stream(farmRepository.findAll().spliterator(), false)
+                                    .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
+                                    .forEach(farm -> {
 
-            final Driver driver = DriverBuilder.getDriver(farm);
-            AtomicBoolean isOk = new AtomicBoolean(true);
+                final Driver driver = DriverBuilder.getDriver(farm);
+                AtomicBoolean isOk = new AtomicBoolean(true);
 
-            if (!farm.getStatus().equals(EntityStatus.ERROR)) {
+                if (!farm.getStatus().equals(EntityStatus.ERROR)) {
 
-               final long virtualhostCount = getVirtualhosts(farm).count();
+                   final long virtualhostCount = getVirtualhosts(farm).count();
 
-               getVirtualhosts(farm).forEach(virtualhost -> {
-                    Properties properties = getProperties(farm, virtualhost, "virtualhost", virtualhostCount);
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
+                   getVirtualhosts(farm).forEach(virtualhost -> {
+                        Properties properties = getProperties(farm, virtualhost, "virtualhost", virtualhostCount);
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-                final long ruleCount = getRules(farm).count();
+                    final long ruleCount = getRules(farm).count();
 
-                getRules(farm).forEach(rule -> {
-                    Properties properties = getProperties(farm, rule, "rule", ruleCount);
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
+                    getRules(farm).forEach(rule -> {
+                        Properties properties = getProperties(farm, rule, "rule", ruleCount);
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-                Map<String, Long> targetsCountMap = getTargets(farm).parallel().collect(
-                                Collectors.groupingBy(target -> target.getTargetType().getName(),
-                                                      Collectors.counting()));
+                    Map<String, Long> targetsCountMap = getTargets(farm).parallel().collect(
+                                    Collectors.groupingBy(target -> target.getTargetType().getName(),
+                                                          Collectors.counting()));
 
-                getTargets(farm).forEach(target -> {
-                    String targetTypeName = target.getTargetType().getName();
-                    Properties properties = getProperties(farm, target,
-                            target.getTargetType().getName().toLowerCase(),
-                            targetsCountMap.get(targetTypeName));
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
+                    getTargets(farm).forEach(target -> {
+                        String targetTypeName = target.getTargetType().getName();
+                        Properties properties = getProperties(farm, target,
+                                target.getTargetType().getName().toLowerCase(),
+                                targetsCountMap.get(targetTypeName));
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-            } else {
-                isOk.set(false);
-            }
-
-            farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
-            if (!isOk.get()) {
-                if (farm.isAutoReload()) {
-                    jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                } else {
+                    isOk.set(false);
                 }
-            } else {
-                LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
-            }
-        });
-        SystemUserService.runAs(currentUser);
 
-        LOGGER.debug("TASK checkFarm finished");
+                farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
+                if (!isOk.get()) {
+                    if (farm.isAutoReload()) {
+                        jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                    }
+                } else {
+                    LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            SystemUserService.runAs(currentUser);
+            LOGGER.debug("TASK checkFarm finished");
+        }
     }
 
     private Stream<Target> getTargets(Farm farm) {
