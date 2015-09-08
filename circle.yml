@@ -1,0 +1,19 @@
+general:
+  branches:
+    only:
+      - master
+      - /feature/.*
+
+machine:
+  java:
+    version: oraclejdk8
+
+  environment:
+    LOGLEVEL: WARN
+    GALEB_DISABLE_SCHED: true
+    GALEB_DB_USER: ubuntu
+    GALEB_DB_URL: jdbc:mysql://localhost/circle_test
+    GALEB_DB_SHOWSQL: false
+    GALEB_DB_DRIVER: com.mysql.jdbc.Driver
+    GALEB_DB_DIALECT: org.hibernate.dialect.MySQL5Dialect
+    GALEB_DB_DDL_AUTO: validate
