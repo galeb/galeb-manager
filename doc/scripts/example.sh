@@ -2,7 +2,7 @@
 
 
 PROTOCOL="http"
-SERVER="localhost"
+SERVER="localhost:8000"
 HEADER="Content-Type: application/json;charset=UTF-8"
 TEAM_NAME='xxxxx'
 ADMIN_TEAM_NAME='AdminTeam'
