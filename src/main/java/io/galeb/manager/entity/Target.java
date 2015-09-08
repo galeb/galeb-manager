@@ -21,7 +21,6 @@ package io.galeb.manager.entity;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
@@ -38,8 +37,9 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NamedQuery(name="Target.findAll", query =
+@NamedQuery(name = "Target.findAll", query =
 "SELECT ta FROM Target ta "
         + "INNER JOIN ta.project.teams t "
         + "INNER JOIN t.accounts a "
@@ -49,7 +49,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = {
         @UniqueConstraint(name = "UK_ref_name_target",
-                          columnNames = { "ref", "name" })
+                          columnNames = { "_ref", "name" })
         })
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 
@@ -57,6 +57,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
+    @JsonProperty(required = true)
     private TargetType targetType;
 
     @ManyToOne
@@ -95,12 +96,6 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     protected Target() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_target_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public TargetType getTargetType() {

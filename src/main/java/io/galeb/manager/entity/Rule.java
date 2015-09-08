@@ -20,7 +20,6 @@ package io.galeb.manager.entity;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -36,6 +35,7 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @NamedQuery(name="Rule.findAll", query =
 "SELECT r FROM Rule r "
@@ -52,21 +52,25 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
     private static final long serialVersionUID = 5596582746795373020L;
 
     @ManyToOne
-    @JoinColumn(name = "ruletype", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
+    @JoinColumn(name = "ruletype_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
+    @JsonProperty(required = true)
     private RuleType ruleType;
 
     @ManyToOne
-    @JoinColumn(name = "parent", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent"))
+    @JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent"))
     private VirtualHost parent;
 
     @ManyToOne
-    @JoinColumn(name = "target", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JoinColumn(name = "target_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JsonProperty(required = true)
     private Target target;
 
     @Column
+    @JsonProperty("order")
     private int ruleOrder = 0;
 
     @Column
+    @JsonProperty("default")
     private boolean ruleDefault = false;
 
     @JsonIgnore
@@ -88,12 +92,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     protected Rule() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_rule_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public RuleType getRuleType() {

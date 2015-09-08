@@ -57,6 +57,8 @@ import io.galeb.manager.security.SpringSecurityAuditorAware;
 @JsonCustomProperties
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
+    public static final String DEFAULT_REFERENCE = "self";
+
     private static final long serialVersionUID = 4521414292400791447L;
 
     protected static Set<String> defaultReadOnlyFields = new ArraySet<>(Arrays.asList("name"));
@@ -75,35 +77,43 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     private long id;
 
     @Version
+    @Column(name = "_version")
+    @JsonProperty("_version")
     private Long version;
 
     @CreatedBy
-    @Column(nullable = false, updatable = false)
+    @Column(name = "_created_by", nullable = false, updatable = false)
+    @JsonProperty("_created_by")
     private String createdBy;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private Date createdDate;
+    @Column(name = "_created_at", nullable = false, updatable = false)
+    @JsonProperty("_created_at")
+    private Date createdAt;
 
     @LastModifiedDate
-    @Column(nullable = false)
-    private Date lastModifiedDate;
+    @Column(name = "_lastmodified_at", nullable = false)
+    @JsonProperty("_lastmodified_at")
+    private Date lastModifiedAt;
 
     @LastModifiedBy
-    @Column(nullable = false)
+    @Column(name = "_lastmodified_by", nullable = false)
+    @JsonProperty("_lastmodified_by")
     private String lastModifiedBy;
 
-    @Column(name="ref", nullable = false)
-    private String ref = "self";
+    @Column(name = "_ref", nullable = false)
+    private String ref = DEFAULT_REFERENCE;
 
-    @Column(name="name", nullable = false)
+    @Column(name = "name", nullable = false)
+    @JsonProperty(required = true)
     private String name;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @JoinColumn(nullable = false)
     private final Map<String, String> properties = new HashMap<>();
 
-    @Column(nullable = false)
+    @Column(name = "_status", nullable = false)
+    @JsonProperty("_status")
     private EntityStatus status;
 
     @JsonIgnore
@@ -116,16 +126,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @PrePersist
     private void onCreate() {
-        createdDate = new Date();
+        createdAt = new Date();
         createdBy = getCurrentAuditor();
-        lastModifiedDate = createdDate;
+        lastModifiedAt = createdAt;
         lastModifiedBy = createdBy;
         saveOnly = false;
     }
 
     @PreUpdate
     private void onUpdate() {
-        lastModifiedDate = new Date();
+        lastModifiedAt = new Date();
         lastModifiedBy = getCurrentAuditor();
     }
 
@@ -142,16 +152,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return createdBy;
     }
 
-    public Date getCreatedDate() {
-        return createdDate;
+    public Date getCreatedAt() {
+        return createdAt;
     }
 
     public String getLastModifiedBy() {
         return lastModifiedBy;
     }
 
-    public Date getLastModifiedDate() {
-        return lastModifiedDate;
+    public Date getLastModifiedAt() {
+        return lastModifiedAt;
     }
 
     public Long getVersion() {
@@ -177,7 +187,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return ref;
     }
 
-    @JsonProperty("ref")
+    @JsonProperty("_ref")
     @SuppressWarnings("unchecked")
     public T setRef(String ref) {
         if (ref != null) {
@@ -232,5 +242,42 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         this.forceRename = forceRename;
         return (T) this;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (id ^ (id >>> 32));
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + ((ref == null) ? 0 : ref.hashCode());
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        T other = (T) obj;
+        if (id != other.getId())
+            return false;
+        if (name == null) {
+            if (other.getName() != null)
+                return false;
+        } else if (!name.equals(other.getName()))
+            return false;
+        if (ref == null) {
+            if (other.getRef() != null)
+                return false;
+        } else if (!ref.equals(other.getRef()))
+            return false;
+        return true;
+    }
+
+
 
 }

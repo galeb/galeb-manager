@@ -19,14 +19,11 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
@@ -55,12 +52,6 @@ public class Provider extends AbstractEntity<Provider> {
 
     protected Provider() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_provider_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public String getDriver() {

@@ -28,6 +28,7 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.service.GenericEntityService;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,13 +51,16 @@ public class RuleEngine extends AbstractEngine {
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 
     @Autowired
-    FarmRepository farmRepository;
+    private FarmRepository farmRepository;
 
     @Autowired
-    JmsTemplate jms;
+    private JmsTemplate jms;
 
     @Autowired
     private RuleRepository ruleRepository;
+
+    @Autowired
+    private GenericEntityService genericEntityService;
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Rule rule) {
@@ -105,9 +109,13 @@ public class RuleEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Rule rule) {
-        rule.setSaveOnly(true);
+        if (genericEntityService.isNew(rule)) {
+            // rule removed?
+            return;
+        }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
+        rule.setSaveOnly(true);
         ruleRepository.save(rule);
         setFarmStatusOnError(rule);
         SystemUserService.runAs(currentUser);

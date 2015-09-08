@@ -249,6 +249,7 @@
                       -server
                       -Xmx2048m -Xms2048m
                       -Dauth_method=LDAP_TEST
+                      -DINTERNAL_PASSWORD=password
                     </argLine>
                 </configuration>
             </plugin>
@@ -271,6 +272,7 @@
                       -Dlog4j.configurationFile=log4j.xml
                       -Dauth_method=DEFAULT
                       -Dserver.port=8000
+                      -DINTERNAL_PASSWORD=password
                   </jvmArguments>
                 </configuration>
             </plugin>

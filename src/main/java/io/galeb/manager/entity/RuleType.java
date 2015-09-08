@@ -18,18 +18,15 @@
 
 package io.galeb.manager.entity;
 
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_ruletype", columnNames = { "name" }) })
+@Table(name = "ruletype", uniqueConstraints = { @UniqueConstraint(name = "UK_name_ruletype", columnNames = { "name" }) })
 public class RuleType extends AbstractEntity<RuleType> {
 
     private static final long serialVersionUID = 5596582746795373010L;
@@ -43,12 +40,6 @@ public class RuleType extends AbstractEntity<RuleType> {
 
     protected RuleType() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_ruletype_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public Set<Rule> getRules() {

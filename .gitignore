@@ -33,3 +33,4 @@ overridedb.*
 *.jar
 .DS_Store
 .factorypath
+.secret.txt

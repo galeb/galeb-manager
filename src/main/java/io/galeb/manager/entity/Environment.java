@@ -19,12 +19,9 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
@@ -55,12 +52,6 @@ public class Environment extends AbstractEntity<Environment> {
 
     protected Environment() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_environment_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
 }
