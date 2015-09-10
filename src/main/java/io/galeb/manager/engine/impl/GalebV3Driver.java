@@ -18,14 +18,14 @@
 
 package io.galeb.manager.engine.impl;
 
-import static io.galeb.manager.entity.AbstractEntity.DEFAULT_REFERENCE;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.logging.Log;
@@ -50,8 +50,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Entity;
+import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.handler.VirtualHostHandler;
 
 public class GalebV3Driver implements Driver {
@@ -153,16 +155,18 @@ public class GalebV3Driver implements Driver {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public StatusFarm status(Properties properties) {
         String api = properties.getOrDefault("api", "localhost:9090").toString();
         String path = properties.getOrDefault("path", "").toString();
         String name = properties.getOrDefault("name", "UNDEF").toString();
-        String ref = properties.getOrDefault("ref", DEFAULT_REFERENCE).toString();
+        Stream<? extends AbstractEntity<?>> parents =
+                (Stream<? extends AbstractEntity<?>>) properties.getOrDefault("parents", EmptyStream.get());
         int expectedId = properties.getOrDefault("id", -1);
         long expectedNumElements = properties.getOrDefault("numElements", -1L);
 
-        String uriPath = "http://" + api + "/" + path;
+        String basePath = "http://" + api + "/" + path;
         String nameEncoded = name;
         try {
             nameEncoded = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
@@ -170,25 +174,41 @@ public class GalebV3Driver implements Driver {
             LOGGER.error(e1);
             return StatusFarm.FAIL;
         }
-        String fullPath = uriPath+"/"+nameEncoded;
-        boolean result = false;
+        String fullPath = basePath+"/"+nameEncoded;
 
+        AtomicBoolean result = new AtomicBoolean(true);
         try {
-            boolean resultCount = isOkNumElements(uriPath, expectedNumElements);
-            boolean resultVersion = isSyncronized(fullPath, name, ref, expectedId);
-            result = resultVersion && resultCount;
+            if (!isOkNumElements(basePath, expectedNumElements)) {
+                return StatusFarm.FAIL;
+            };
+            if (parents.count()>0) {
+                parents.forEach(parent -> {
+                    try {
+                        if (result.get()) {
+                            boolean isSyncronized = isSyncronized(fullPath, name, parent.getName(), expectedId);
+                            result.set(isSyncronized);
+                        }
+                    } catch (Exception e) {
+                        result.set(false);
+                        LOGGER.error("STATUS FAIL: " + fullPath);
+                        LOGGER.error(e);
+                    }
+                });
+            } else {
+                result.set(isSyncronized(fullPath, name, null, expectedId));
+            }
 
-            if (!result) {
+            if (!result.get()) {
                 LOGGER.warn("STATUS FAIL: "+fullPath);
             } else {
                 LOGGER.debug("STATUS OK: "+fullPath);
             }
         } catch (RuntimeException | IOException | URISyntaxException e) {
-            result = false;
+            result.set(false);
             LOGGER.error("STATUS FAIL: "+fullPath);
             LOGGER.error(e);
         }
-        return result ? StatusFarm.OK : StatusFarm.FAIL;
+        return result.get() ? StatusFarm.OK : StatusFarm.FAIL;
     }
 
     private JsonNode getJson(String path) throws URISyntaxException, IOException, JsonProcessingException {
@@ -205,7 +225,7 @@ public class GalebV3Driver implements Driver {
         return json;
     }
 
-    private boolean isSyncronized(String fullPath, String name, String ref, int expectedId) throws URISyntaxException, JsonProcessingException, IOException {
+    private boolean isSyncronized(String fullPath, String name, String parent, int expectedId) throws URISyntaxException, JsonProcessingException, IOException {
         JsonNode json = getJson(fullPath);
         if (json == null) {
             return false;
@@ -214,20 +234,16 @@ public class GalebV3Driver implements Driver {
         boolean syncronized = false;
         final Entity entity = new Entity();
 
-        if (ref != null && !ref.equals(DEFAULT_REFERENCE)) {
-
-        }
-
         entity.setVersion(-1);
         if (json.isArray()) {
             StreamSupport.stream(json.spliterator(), false)
                 .filter(element -> element.isObject() &&
                         element.get("id") != null &&
                         element.get("id").asText("defaultTextIfAbsent").equals(name) &&
-                        (ref.equals(DEFAULT_REFERENCE) ||
-                                (!ref.equals(DEFAULT_REFERENCE) &&
+                        (parent == null) ||
+                                (!(parent != null) &&
                                  element.get("parentId") != null &&
-                                 element.get("parentId").asText("defaultTextIfAbsent").equals(ref))))
+                                 element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
                 .forEach(element -> {
                     entity.setVersion(element.get("version").asInt(-1));
             });

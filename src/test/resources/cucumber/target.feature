@@ -55,7 +55,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo                  |
             | targetType | http://localhost/targettype/1 |
-            | parent     | http://localhost/target/1     |
+            | parents    | [ http://localhost/target/1 ] |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
@@ -78,7 +78,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo                  |
             | targetType | http://localhost/targettype/1 |
-            | parent     | http://localhost/target/1     |
+            | parents    | [ http://localhost/target/1 ] |
             | project    | http://localhost/project/2    |
         And send POST /target
         Then the response status is 400
@@ -93,7 +93,7 @@ Feature: Target Support
         And request json body has:
             | name        | newTargetTwo                   |
             | targetType  | http://localhost/targettype/1  |
-            | parent      | http://localhost/target/1      |
+            | parents     | [ http://localhost/target/1 ] |
             | environment | http://localhost/environment/2 |
         And send POST /target
         Then the response status is 400

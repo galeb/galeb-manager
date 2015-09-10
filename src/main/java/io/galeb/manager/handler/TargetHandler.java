@@ -21,6 +21,8 @@ package io.galeb.manager.handler;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
 import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +40,7 @@ import org.springframework.security.core.Authentication;
 import io.galeb.manager.engine.farm.TargetEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.FarmRepository;
@@ -68,9 +71,10 @@ public class TargetHandler extends RoutableToEngine<Target> {
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
-        if (target.getParent() != null) {
-            final Target targetParent = target.getParent();
-            farmId = targetParent.getFarmId();
+        if (!target.getParents().isEmpty()) {
+            Set<Long> farmIds = target.getParents().stream().collect(
+                                    Collectors.groupingBy(Target::getFarmId)).keySet();
+            farmId = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
         } else {
             final Environment environment = target.getEnvironment();
             if (environment != null) {
@@ -95,11 +99,9 @@ public class TargetHandler extends RoutableToEngine<Target> {
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
         beforeCreate(target, LOGGER);
-        if (target.getParent() != null) {
-            target.setRef(target.getParent().getName());
-        }
         setProject(target);
         setEnvironment(target);
+        setGlobalIfNecessary(target);
     }
 
     @HandleAfterCreate
@@ -110,6 +112,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
     @HandleBeforeSave
     public void beforeSave(Target target) throws Exception {
         beforeSave(target, targetRepository, LOGGER);
+        setGlobalIfNecessary(target);
     }
 
     @HandleAfterSave
@@ -128,19 +131,23 @@ public class TargetHandler extends RoutableToEngine<Target> {
     }
 
     private void setProject(Target target) throws Exception {
-        if (target.getParent() != null) {
+        if (!target.getParents().isEmpty()) {
+            final Set<Project> projects = target.getParents().stream().collect(
+                                            Collectors.groupingBy(Target::getProject)).keySet();
+            final Project projectOfParent = projects.size() == 1 ? projects.iterator().next() : null;
+
             if (target.getProject() == null) {
-                target.setProject(target.getParent().getProject());
+                target.setProject(projectOfParent);
             } else {
-                if (!target.getProject().equals(target.getParent().getProject())) {
-                    final String errorMsg = "Target Project is not equal of the Parent Project";
+                if (!target.getProject().equals(projectOfParent)) {
+                    final String errorMsg = "Target Project is not equal of the Parent's Project";
                     LOGGER.error(errorMsg);
                     throw new BadRequestException(errorMsg);
                 }
             }
         } else {
             if (target.getProject()==null) {
-                final String errorMsg = "Target Project and Parent is null";
+                final String errorMsg = "Target Project and Parent is UNDEF";
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
             }
@@ -148,11 +155,15 @@ public class TargetHandler extends RoutableToEngine<Target> {
     }
 
     private void setEnvironment(Target target) throws Exception {
-        if (target.getParent() != null) {
+        final Set<Environment> environments = target.getParents().stream().collect(
+                                                Collectors.groupingBy(Target::getEnvironment)).keySet();
+        final Environment envOfParent = environments.size() == 1 ? environments.iterator().next() : null;
+
+        if (!target.getParents().isEmpty()) {
             if (target.getEnvironment() == null) {
-                target.setEnvironment(target.getParent().getEnvironment());
+                target.setEnvironment(envOfParent);
             } else {
-                if (!target.getEnvironment().equals(target.getParent().getEnvironment())) {
+                if (!target.getEnvironment().equals(envOfParent)) {
                     final String errorMsg = "Target Environment is not equal of the Parent Environment";
                     LOGGER.error(errorMsg);
                     throw new BadRequestException(errorMsg);
@@ -164,6 +175,14 @@ public class TargetHandler extends RoutableToEngine<Target> {
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
             }
+        }
+    }
+
+    private void setGlobalIfNecessary(Target target) {
+        boolean hasParentGlobal = target.getParents().stream().collect(
+                Collectors.groupingBy(Target::isGlobal)).keySet().contains(true);
+        if (hasParentGlobal) {
+            target.setGlobal(true);
         }
     }
 

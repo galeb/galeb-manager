@@ -23,16 +23,16 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -44,13 +44,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
         + "INNER JOIN ta.project.teams t "
         + "INNER JOIN t.accounts a "
         + "WHERE 1 = :hasRoleAdmin OR "
+        + "ta.global = TRUE OR "
         + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
-@Table(uniqueConstraints = {
-        @UniqueConstraint(name = "UK_ref_name_target",
-                          columnNames = { "_ref", "name" })
-        })
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
@@ -67,9 +64,13 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JsonIgnore
     private long farmId;
 
-    @ManyToOne
-    @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
-    private Target parent;
+    @ManyToMany
+    @JoinTable(joinColumns=@JoinColumn(name = "target_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_target")),
+    inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_target_parent")))
+    private Set<Target> parents = new HashSet<>();
+
+    @ManyToMany(mappedBy="parents")
+    private Set<Target> children = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "target", fetch = FetchType.EAGER)
@@ -83,10 +84,8 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JoinColumn(name = "balancepolicy_id", foreignKey = @ForeignKey(name="FK_target_balancepolicy"))
     private BalancePolicy balancePolicy;
 
-    @Override
-    protected Set<String> readOnlyFields() {
-        return AbstractEntity.defaultReadOnlyFields;
-    }
+    @Column
+    private Boolean global = false;
 
     public Target(String name, TargetType targetType) {
         Assert.notNull(targetType);
@@ -127,12 +126,27 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    public Target getParent() {
-        return parent;
+    public Set<Target> getParents() {
+        return parents;
     }
 
-    public Target setParent(Target parent) {
-        this.parent = parent;
+    public Target setParents(Set<Target> parents) {
+        if (parents != null) {
+            this.parents.clear();
+            this.parents.addAll(parents);
+        }
+        return this;
+    }
+
+    public Set<Target> getChildren() {
+        return children;
+    }
+
+    public Target setChildren(Set<Target> children) {
+        if (children != null) {
+            this.children.clear();
+            this.children.addAll(children);
+        }
         return this;
     }
 
@@ -151,6 +165,17 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     public Target setBalancePolicy(BalancePolicy balancePolicy) {
         this.balancePolicy = balancePolicy;
+        return this;
+    }
+
+    public boolean isGlobal() {
+        return global;
+    }
+
+    public Target setGlobal(Boolean global) {
+        if (global != null) {
+            this.global = global;
+        }
         return this;
     }
 
