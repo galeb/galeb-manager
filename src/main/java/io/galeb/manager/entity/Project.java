@@ -27,9 +27,6 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @NamedQuery(name="Project.findAll", query =
@@ -39,7 +36,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_project", columnNames = { "name" }) })
 public class Project extends AbstractEntity<Project> {
 
     private static final long serialVersionUID = 5596582746795373018L;

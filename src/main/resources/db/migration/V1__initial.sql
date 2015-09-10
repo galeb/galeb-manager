@@ -29,7 +29,6 @@ CREATE TABLE `account` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
@@ -187,7 +186,6 @@ CREATE TABLE `balancepolicy` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `balancepolicytype_id` bigint(20) NOT NULL,
@@ -221,7 +219,6 @@ CREATE TABLE `balancepolicytype` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -252,7 +249,6 @@ CREATE TABLE `environment` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -308,7 +304,6 @@ CREATE TABLE `farm` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `api` varchar(255) NOT NULL,
@@ -373,7 +368,6 @@ CREATE TABLE `project` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -455,7 +449,6 @@ CREATE TABLE `provider` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `driver` varchar(255) DEFAULT NULL,
@@ -513,21 +506,18 @@ CREATE TABLE `rule` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `farm_id` bigint(20) NOT NULL,
+  `global` bit(1) DEFAULT 0,
   `rule_default` bit(1) DEFAULT NULL,
   `rule_order` int(11) DEFAULT NULL,
-  `parent_id` bigint(20) DEFAULT NULL,
   `ruletype_id` bigint(20) NOT NULL,
   `target_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_rule` (`name`),
-  KEY `FK_rule_parent` (`parent_id`),
   KEY `FK_rule_ruletype` (`ruletype_id`),
   KEY `FK_rule_target` (`target_id`),
-  CONSTRAINT `FK_rule_parent` FOREIGN KEY (`parent_id`) REFERENCES `virtualhost` (`id`),
   CONSTRAINT `FK_rule_ruletype` FOREIGN KEY (`ruletype_id`) REFERENCES `ruletype` (`id`),
   CONSTRAINT `FK_rule_target` FOREIGN KEY (`target_id`) REFERENCES `target` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -593,6 +583,32 @@ LOCK TABLES `rule_type_properties` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `rule_virtualhosts`
+--
+
+DROP TABLE IF EXISTS `rule_virtualhosts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `rule_virtualhosts` (
+  `rule_id` bigint(20) NOT NULL,
+  `virtualhost_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`rule_id`,`virtualhost_id`),
+  KEY `FK_rule_virtualhost_id` (`virtualhost_id`),
+  CONSTRAINT `FK_rule_rule_id` FOREIGN KEY (`rule_id`) REFERENCES `rule` (`id`),
+  CONSTRAINT `FK_rule_virtualhost_id` FOREIGN KEY (`virtualhost_id`) REFERENCES `virtualhost` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `rule_virtualhosts`
+--
+
+LOCK TABLES `rule_virtualhosts` WRITE;
+/*!40000 ALTER TABLE `rule_virtualhosts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rule_virtualhosts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `ruletype`
 --
 
@@ -606,7 +622,6 @@ CREATE TABLE `ruletype` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -637,25 +652,22 @@ CREATE TABLE `target` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `farm_id` bigint(20) NOT NULL,
+  `global` bit(1) DEFAULT 0,
   `balancepolicy_id` bigint(20) DEFAULT NULL,
   `environment_id` bigint(20) DEFAULT NULL,
-  `parent_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `targettype_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_ref_name_target` (`_ref`,`name`),
+  UNIQUE KEY `UK_name_rule` (`name`),
   KEY `FK_target_balancepolicy` (`balancepolicy_id`),
   KEY `FK_target_environment` (`environment_id`),
-  KEY `FK_target_parent` (`parent_id`),
   KEY `FK_target_project` (`project_id`),
   KEY `FK_target_targettype` (`targettype_id`),
   CONSTRAINT `FK_target_balancepolicy` FOREIGN KEY (`balancepolicy_id`) REFERENCES `balancepolicy` (`id`),
   CONSTRAINT `FK_target_environment` FOREIGN KEY (`environment_id`) REFERENCES `environment` (`id`),
-  CONSTRAINT `FK_target_parent` FOREIGN KEY (`parent_id`) REFERENCES `target` (`id`),
   CONSTRAINT `FK_target_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`),
   CONSTRAINT `FK_target_targettype` FOREIGN KEY (`targettype_id`) REFERENCES `targettype` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -668,6 +680,32 @@ CREATE TABLE `target` (
 LOCK TABLES `target` WRITE;
 /*!40000 ALTER TABLE `target` DISABLE KEYS */;
 /*!40000 ALTER TABLE `target` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `target_parents`
+--
+
+DROP TABLE IF EXISTS `target_parents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `target_parents` (
+  `target_id` bigint(20) NOT NULL,
+  `parent_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`target_id`,`parent_id`),
+  KEY `FK_target_parent_id` (`parent_id`),
+  CONSTRAINT `FK_target_target_id` FOREIGN KEY (`target_id`) REFERENCES `target` (`id`),
+  CONSTRAINT `FK_target_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `target` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `target_parents`
+--
+
+LOCK TABLES `target_parents` WRITE;
+/*!40000 ALTER TABLE `target_parents` DISABLE KEYS */;
+/*!40000 ALTER TABLE `target_parents` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -734,7 +772,6 @@ CREATE TABLE `targettype` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -765,7 +802,6 @@ CREATE TABLE `team` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -870,7 +906,6 @@ CREATE TABLE `virtualhost` (
   `_lastmodified_at` datetime NOT NULL,
   `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `_ref` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `farm_id` bigint(20) NOT NULL,

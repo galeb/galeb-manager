@@ -23,15 +23,11 @@ import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;

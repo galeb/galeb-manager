@@ -16,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.Driver.StatusFarm;
@@ -54,15 +55,29 @@ public class CheckFarms {
     @Autowired
     JmsTemplate jms;
 
-    private Properties getProperties(final Farm farm, final AbstractEntity<?> entity,
-                                     String path, long numElements) {
+    private Properties getProperties(final Farm farm,
+                                     final AbstractEntity<?> entity,
+                                     String path,
+                                     long numElements) {
+        return getProperties(farm,
+                             entity,
+                             path,
+                             numElements,
+                             EmptyStream.get());
+    }
+
+    private Properties getProperties(final Farm farm,
+                                     final AbstractEntity<?> entity,
+                                     String path,
+                                     long numElements,
+                                     final Stream<? extends AbstractEntity<?>> parents) {
         Properties properties = new Properties();
         properties.put("api", farm.getApi());
         properties.put("name", entity.getName());
         properties.put("path", path);
         properties.put("id", entity.getId());
-        properties.put("ref", entity.getRef());
         properties.put("numElements", numElements);
+        properties.put("parents", parents);
         return properties;
     }
 
@@ -92,7 +107,10 @@ public class CheckFarms {
                    final long virtualhostCount = getVirtualhosts(farm).count();
 
                    getVirtualhosts(farm).forEach(virtualhost -> {
-                        Properties properties = getProperties(farm, virtualhost, "virtualhost", virtualhostCount);
+                        Properties properties = getProperties(farm,
+                                                              virtualhost,
+                                                              "virtualhost",
+                                                              virtualhostCount);
                         boolean lastStatus = isOk.get();
                         isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                     });
@@ -100,7 +118,12 @@ public class CheckFarms {
                     final long ruleCount = getRules(farm).count();
 
                     getRules(farm).forEach(rule -> {
-                        Properties properties = getProperties(farm, rule, "rule", ruleCount);
+                        Stream<VirtualHost> virtualhosts =  StreamSupport.stream(rule.getVirtualhosts().spliterator(), false);
+                        Properties properties = getProperties(farm,
+                                                              rule,
+                                                              "rule",
+                                                              ruleCount,
+                                                              virtualhosts);
                         boolean lastStatus = isOk.get();
                         isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                     });
@@ -111,9 +134,12 @@ public class CheckFarms {
 
                     getTargets(farm).forEach(target -> {
                         String targetTypeName = target.getTargetType().getName();
-                        Properties properties = getProperties(farm, target,
-                                target.getTargetType().getName().toLowerCase(),
-                                targetsCountMap.get(targetTypeName));
+                        Stream<Target> parents =  StreamSupport.stream(target.getParents().spliterator(), false);
+                        Properties properties = getProperties(farm,
+                                                              target,
+                                                              target.getTargetType().getName().toLowerCase(),
+                                                              targetsCountMap.get(targetTypeName),
+                                                              parents);
                         boolean lastStatus = isOk.get();
                         isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                     });
@@ -127,6 +153,7 @@ public class CheckFarms {
                     if (farm.isAutoReload()) {
                         jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
                     }
+                    LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
                 } else {
                     LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
                 }
@@ -147,7 +174,7 @@ public class CheckFarms {
     private Stream<Rule> getRules(Farm farm) {
         return StreamSupport.stream(
                 ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
-                .filter(rule -> rule.getParent() != null);
+                .filter(rule -> !rule.getVirtualhosts().isEmpty());
     }
 
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {

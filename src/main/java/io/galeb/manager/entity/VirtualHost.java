@@ -26,12 +26,10 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -44,7 +42,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
+@Table(name = "virtualhost")
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
@@ -65,14 +63,8 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     @JsonIgnore
     private long farmId;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "virtualhosts")
     private final Set<Rule> rules = new HashSet<>();
-
-    @Override
-    protected Set<String> readOnlyFields() {
-        return AbstractEntity.defaultReadOnlyFields;
-    }
 
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);

@@ -19,14 +19,10 @@
 package io.galeb.manager.entity;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -40,7 +36,6 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import org.jboss.weld.util.collections.ArraySet;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -57,11 +52,7 @@ import io.galeb.manager.security.SpringSecurityAuditorAware;
 @JsonCustomProperties
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
-    public static final String DEFAULT_REFERENCE = "self";
-
     private static final long serialVersionUID = 4521414292400791447L;
-
-    protected static Set<String> defaultReadOnlyFields = new ArraySet<>(Arrays.asList("name"));
 
     public enum EntityStatus {
         PENDING,
@@ -101,10 +92,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JsonProperty("_lastmodified_by")
     private String lastModifiedBy;
 
-    @Column(name = "_ref", nullable = false)
-    private String ref = DEFAULT_REFERENCE;
-
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, unique = true)
     @JsonProperty(required = true)
     private String name;
 
@@ -119,10 +107,6 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JsonIgnore
     @Transient
     private boolean saveOnly = false;
-
-    @JsonIgnore
-    @Transient
-    private boolean forceRename = false;
 
     @PrePersist
     private void onCreate() {
@@ -175,24 +159,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setName(String name) {
         Assert.hasText(name);
-        if (!forceRename && this.name != null && readOnlyFields().contains("name")) {
-            return (T) this;
-        }
         this.name = name;
-        return (T) this;
-    }
-
-    @JsonIgnore
-    public String getRef() {
-        return ref;
-    }
-
-    @JsonProperty("_ref")
-    @SuppressWarnings("unchecked")
-    public T setRef(String ref) {
-        if (ref != null) {
-            this.ref = ref;
-        }
         return (T) this;
     }
 
@@ -229,53 +196,23 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return (T) this;
     }
 
-    protected Set<String> readOnlyFields() {
-        return Collections.emptySet();
-    }
-
-    public boolean isForceRename() {
-        return forceRename;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setForceRename(boolean forceRename) {
-        this.forceRename = forceRename;
-        return (T) this;
-    }
-
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (id ^ (id >>> 32));
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result + ((ref == null) ? 0 : ref.hashCode());
-        return result;
+        if (name != null) {
+            return name.hashCode();
+        }
+        return -1;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
         if (obj == null)
             return false;
         if (getClass() != obj.getClass())
             return false;
         T other = (T) obj;
-        if (id != other.getId())
-            return false;
-        if (name == null) {
-            if (other.getName() != null)
-                return false;
-        } else if (!name.equals(other.getName()))
-            return false;
-        if (ref == null) {
-            if (other.getRef() != null)
-                return false;
-        } else if (!ref.equals(other.getRef()))
-            return false;
-        return true;
+        return other.getName().equals(getName());
     }
 
 

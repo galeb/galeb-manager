@@ -41,16 +41,13 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
            + "INNER JOIN t.accounts a "
            + "WHERE ta.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "ta.global = TRUE OR "
                + "a.name = ?#{principal.username})")
     Target findOne(@Param("id") Long id);
 
     @Override
     @Query
     Target findByName(@Param("name") String name);
-
-    Page<Target>findByParentName(Pageable pageable, @Param("name") String name);
-
-    Page<Target>findByRef(Pageable pageable, @Param("ref") String ref);
 
     @Override
     @Query
@@ -65,6 +62,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
             + "INNER JOIN t.accounts a "
             + "WHERE ta.targetType.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "ta.global = TRUE OR "
                 + "a.name = ?#{principal.username})")
     Iterable<Target> findByTargetTypeName(@Param("name") String name);
 }

@@ -79,10 +79,10 @@ Feature: VirtualHost Support
         When send GET /virtualhost/2
         Then the response status is 404
 
-    Scenario: Update VirtualHost (name update is ignored)
+    Scenario: Update VirtualHost
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | two                            |
+            | name        | one                            |
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send PUT /virtualhost/1
@@ -92,10 +92,10 @@ Feature: VirtualHost Support
         Then the response status is 200
         And property name contains one
 
-    Scenario: Update name field of VirtualHost (name update is ignored)
+    Scenario: Update name field of VirtualHost
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name | two |
+            | name | one |
         And send PATCH /virtualhost/1
         Then the response status is 204
         And a REST client authenticated as accountOne

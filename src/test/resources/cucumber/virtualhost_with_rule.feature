@@ -81,10 +81,10 @@ Feature: Virtualhost with Rule Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name     | ruleOne                        |
-            | ruleType | http://localhost/ruletype/1    |
-            | parent   | http://localhost/virtualhost/1 |
-            | target   | http://localhost/target/1      |
+            | name         | ruleOne                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/1          |
         And send POST /rule
         Then the response status is 201
 

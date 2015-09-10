@@ -286,7 +286,7 @@ createBackend() {
               "targetType": "'$PROTOCOL'://'$SERVER'/targettype/'$TARGETTYPE_BACKEND_ID'",
               "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
               "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'",
-              "parent": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'"
+              "parents": [ "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'" ]
           }' \
        -b $COOKIE $PROTOCOL://$SERVER/target
   echo
@@ -303,7 +303,7 @@ createRule() {
        -d '{
               "name": "'$NAME'",
               "ruleType": "'$PROTOCOL'://'$SERVER'/ruletype/'$RULETYPE_URLPATH_ID'",
-              "parent": "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'",
+              "virtualhosts": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
               "target": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'",
               "default": true,
               "order": 0,
@@ -336,18 +336,19 @@ removeVirtualHost() {
 getNumBackendsByPool() {
   local COOKIE=$1
   local POOL_NAME=$2
-
+  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
   curl -k -s -XGET -b $COOKIE \
-    $PROTOCOL'://'$SERVER'/target/search/findByParentName?name='$POOL_NAME'&size=99999' | \
+    $PROTOCOL'://'$SERVER'/target/'$POOL_ID'/children?size=99999' | \
   jq .page.totalElements
 }
 
 getFirstTargetIdByPool() {
   local COOKIE=$1
   local POOL_NAME=$2
+  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
 
   curl -k -s -XGET -b $COOKIE \
-    $PROTOCOL'://'$SERVER'/target/search/findByParentName?name='$POOL_NAME'&size=99999' | \
+    $PROTOCOL'://'$SERVER'/target/'$POOL_ID'/children?size=99999' | \
   jq ._embedded.target[0].id
 }
 
