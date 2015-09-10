@@ -661,7 +661,7 @@ CREATE TABLE `target` (
   `project_id` bigint(20) DEFAULT NULL,
   `targettype_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_rule` (`name`)
+  UNIQUE KEY `UK_name_rule` (`name`),
   KEY `FK_target_balancepolicy` (`balancepolicy_id`),
   KEY `FK_target_environment` (`environment_id`),
   KEY `FK_target_project` (`project_id`),
