@@ -26,55 +26,45 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NamedQuery(name="VirtualHost.findAll", query=
+@NamedQuery(name = "VirtualHost.findAll", query =
 "SELECT v FROM VirtualHost v "
         + "INNER JOIN v.project.teams t "
         + "INNER JOIN t.accounts a "
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
+@Table(name = "virtualhost")
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
     @ManyToOne
-    @JoinColumn(name = "environment",  nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_environment"))
+    @JoinColumn(name = "environment_id",  nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_environment"))
+    @JsonProperty(required = true)
     private Environment environment;
 
     @ManyToOne
-    @JoinColumn(name = "project", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_project"))
+    @JoinColumn(name = "project_id", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_project"))
+    @JsonProperty(required = true)
     private Project project;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @JoinTable(joinColumns = {
-            @JoinColumn(name = "virtualhost_id",
-                        foreignKey = @ForeignKey(name="FK_virtualhost_aliases_virtualhost_id"))
-    })
     private Set<String> aliases = new HashSet<>();
 
     @JsonIgnore
     private long farmId;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "virtualhosts")
     private final Set<Rule> rules = new HashSet<>();
-
-    @Override
-    protected Set<String> readOnlyFields() {
-        return AbstractEntity.defaultReadOnlyFields;
-    }
 
     public VirtualHost(String name, Environment environment, Project project) {
         Assert.notNull(environment);

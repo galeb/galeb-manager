@@ -1,5 +1,7 @@
 package io.galeb.manager.scheduler.tasks;
 
+import static io.galeb.manager.scheduler.SchedulerConfiguration.GALEB_DISABLE_SCHED;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -14,11 +16,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.Driver.StatusFarm;
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.engine.farm.FarmEngine;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
@@ -51,82 +55,115 @@ public class CheckFarms {
     @Autowired
     JmsTemplate jms;
 
+    private Properties getProperties(final Farm farm,
+                                     final AbstractEntity<?> entity,
+                                     String path,
+                                     long numElements) {
+        return getProperties(farm,
+                             entity,
+                             path,
+                             numElements,
+                             EmptyStream.get());
+    }
+
+    private Properties getProperties(final Farm farm,
+                                     final AbstractEntity<?> entity,
+                                     String path,
+                                     long numElements,
+                                     final Stream<? extends AbstractEntity<?>> parents) {
+        Properties properties = new Properties();
+        properties.put("api", farm.getApi());
+        properties.put("name", entity.getName());
+        properties.put("path", path);
+        properties.put("id", entity.getId());
+        properties.put("numElements", numElements);
+        properties.put("parents", parents);
+        return properties;
+    }
+
     @Scheduled(fixedRate = 10000)
     private void run() {
+
+        String disableSchedulerStr = System.getenv(GALEB_DISABLE_SCHED);
+        if (disableSchedulerStr != null && Boolean.parseBoolean(disableSchedulerStr)) {
+            LOGGER.warn(GALEB_DISABLE_SCHED+" is true");
+            return;
+        }
+
         LOGGER.debug("TASK checkFarm executing");
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        StreamSupport.stream(farmRepository.findAll().spliterator(), false)
-                                .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
-                                .forEach(farm -> {
+        try {
+            StreamSupport.stream(farmRepository.findAll().spliterator(), false)
+                                    .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
+                                    .forEach(farm -> {
 
-            final Driver driver = DriverBuilder.getDriver(farm);
-            AtomicBoolean isOk = new AtomicBoolean(true);
+                final Driver driver = DriverBuilder.getDriver(farm);
+                AtomicBoolean isOk = new AtomicBoolean(true);
 
-            if (!farm.getStatus().equals(EntityStatus.ERROR)) {
+                if (!farm.getStatus().equals(EntityStatus.ERROR)) {
 
-               final long virtualhostCount = getVirtualhosts(farm).count();
+                   final long virtualhostCount = getVirtualhosts(farm).count();
 
-               getVirtualhosts(farm).forEach(virtualhost -> {
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", virtualhost.getName());
-                    properties.put("path", "virtualhost");
-                    properties.put("id", virtualhost.getId());
-                    properties.put("numElements", virtualhostCount);
+                   getVirtualhosts(farm).forEach(virtualhost -> {
+                        Properties properties = getProperties(farm,
+                                                              virtualhost,
+                                                              "virtualhost",
+                                                              virtualhostCount);
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
+                    final long ruleCount = getRules(farm).count();
 
-                final long ruleCount = getRules(farm).count();
+                    getRules(farm).forEach(rule -> {
+                        Stream<VirtualHost> virtualhosts =  StreamSupport.stream(rule.getVirtualhosts().spliterator(), false);
+                        Properties properties = getProperties(farm,
+                                                              rule,
+                                                              "rule",
+                                                              ruleCount,
+                                                              virtualhosts);
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-                getRules(farm).forEach(rule -> {
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", rule.getName());
-                    properties.put("path", "rule");
-                    properties.put("id", rule.getId());
-                    properties.put("numElements", ruleCount);
+                    Map<String, Long> targetsCountMap = getTargets(farm).parallel().collect(
+                                    Collectors.groupingBy(target -> target.getTargetType().getName(),
+                                                          Collectors.counting()));
 
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
+                    getTargets(farm).forEach(target -> {
+                        String targetTypeName = target.getTargetType().getName();
+                        Stream<Target> parents =  StreamSupport.stream(target.getParents().spliterator(), false);
+                        Properties properties = getProperties(farm,
+                                                              target,
+                                                              target.getTargetType().getName().toLowerCase(),
+                                                              targetsCountMap.get(targetTypeName),
+                                                              parents);
+                        boolean lastStatus = isOk.get();
+                        isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
+                    });
 
-                Map<String, Long> targetsCountMap = getTargets(farm).parallel().collect(
-                                Collectors.groupingBy(target -> target.getTargetType().getName(),
-                                                      Collectors.counting()));
-
-                getTargets(farm).forEach(target -> {
-                    String targetTypeName = target.getTargetType().getName();
-                    Properties properties = new Properties();
-                    properties.put("api", farm.getApi());
-                    properties.put("name", target.getName());
-                    properties.put("path", target.getTargetType().getName().toLowerCase());
-                    properties.put("id", target.getId());
-                    properties.put("numElements", targetsCountMap.get(targetTypeName));
-
-                    boolean lastStatus = isOk.get();
-                    isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
-                });
-
-            } else {
-                isOk.set(false);
-            }
-
-            farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
-            if (!isOk.get()) {
-                if (farm.isAutoReload()) {
-                    jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                } else {
+                    isOk.set(false);
                 }
-            } else {
-                LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
-            }
-        });
-        SystemUserService.runAs(currentUser);
 
-        LOGGER.debug("TASK checkFarm finished");
+                farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
+                if (!isOk.get()) {
+                    if (farm.isAutoReload()) {
+                        jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                    }
+                    LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
+                } else {
+                    LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
+                }
+            });
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            SystemUserService.runAs(currentUser);
+            LOGGER.debug("TASK checkFarm finished");
+        }
     }
 
     private Stream<Target> getTargets(Farm farm) {
@@ -137,7 +174,7 @@ public class CheckFarms {
     private Stream<Rule> getRules(Farm farm) {
         return StreamSupport.stream(
                 ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
-                .filter(rule -> rule.getParent() != null);
+                .filter(rule -> !rule.getVirtualhosts().isEmpty());
     }
 
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {

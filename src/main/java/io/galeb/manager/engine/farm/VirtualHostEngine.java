@@ -38,6 +38,7 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.service.GenericEntityService;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine {
@@ -53,10 +54,13 @@ public class VirtualHostEngine extends AbstractEngine {
     private FarmRepository farmRepository;
 
     @Autowired
-    JmsTemplate jms;
+    private JmsTemplate jms;
 
     @Autowired
     private VirtualHostRepository virtualHostRepository;
+
+    @Autowired
+    private GenericEntityService genericEntityService;
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
@@ -105,9 +109,13 @@ public class VirtualHostEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(VirtualHost virtualHost) {
-        virtualHost.setSaveOnly(true);
+        if (genericEntityService.isNew(virtualHost)) {
+            // virtualHost removed?
+            return;
+        }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
+        virtualHost.setSaveOnly(true);
         virtualHostRepository.save(virtualHost);
         setFarmStatusOnError(virtualHost);
         SystemUserService.runAs(currentUser);

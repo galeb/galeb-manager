@@ -55,7 +55,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo                  |
             | targetType | http://localhost/targettype/1 |
-            | parent     | http://localhost/target/1     |
+            | parents    | [ http://localhost/target/1 ] |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
@@ -78,7 +78,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo                  |
             | targetType | http://localhost/targettype/1 |
-            | parent     | http://localhost/target/1     |
+            | parents    | [ http://localhost/target/1 ] |
             | project    | http://localhost/project/2    |
         And send POST /target
         Then the response status is 400
@@ -93,7 +93,7 @@ Feature: Target Support
         And request json body has:
             | name        | newTargetTwo                   |
             | targetType  | http://localhost/targettype/1  |
-            | parent      | http://localhost/target/1      |
+            | parents     | [ http://localhost/target/1 ] |
             | environment | http://localhost/environment/2 |
         And send POST /target
         Then the response status is 400
@@ -119,10 +119,10 @@ Feature: Target Support
         When send GET /target/3
         Then the response status is 404
 
-    Scenario: Update Target (name update is ignored)
+    Scenario: Update Target
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetTwo                      |
+            | name        | targetOne                      |
             | targetType  | http://localhost/targettype/1  |
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
@@ -133,10 +133,10 @@ Feature: Target Support
         Then the response status is 200
         And property name contains targetOne
 
-    Scenario: Update name field of Target (name update is ignored)
+    Scenario: Update name field of Target
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name | targetThree |
+            | name | targetOne |
         And send PATCH /target/1
         Then the response status is 204
         And a REST client authenticated as accountOne

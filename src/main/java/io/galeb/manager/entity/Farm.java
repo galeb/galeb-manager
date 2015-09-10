@@ -18,37 +18,36 @@
 
 package io.galeb.manager.entity;
 
-import java.util.Map;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String domain;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String api;
 
     @ManyToOne
-    @JoinColumn(name = "environment", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
+    @JoinColumn(name = "environment_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_environment"))
+    @JsonProperty(required = true)
     private Environment environment;
 
-    @OneToOne
-    @JoinColumn(name = "provider", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
+    @ManyToOne
+    @JoinColumn(name = "provider_id", nullable = false, foreignKey = @ForeignKey(name="FK_farm_provider"))
+    @JsonProperty(required = true)
     private Provider provider;
 
     @Column
@@ -68,12 +67,6 @@ public class Farm extends AbstractEntity<Farm> {
 
     protected Farm() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_farm_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public String getDomain() {

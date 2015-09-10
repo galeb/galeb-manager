@@ -41,6 +41,7 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.service.GenericEntityService;
 
 @Component
 public class FarmEngine extends AbstractEngine {
@@ -54,19 +55,22 @@ public class FarmEngine extends AbstractEngine {
     private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
     @Autowired
-    FarmRepository farmRepository;
+    private FarmRepository farmRepository;
 
     @Autowired
-    VirtualHostRepository virtualHostRepository;
+    private GenericEntityService genericEntityService;
 
     @Autowired
-    RuleRepository ruleRepository;
+    private VirtualHostRepository virtualHostRepository;
 
     @Autowired
-    TargetRepository targetRepository;
+    private RuleRepository ruleRepository;
 
     @Autowired
-    JmsTemplate jms;
+    private TargetRepository targetRepository;
+
+    @Autowired
+    private JmsTemplate jms;
 
     @JmsListener(destination = QUEUE_CREATE)
     public void create(Farm farm) {
@@ -128,9 +132,7 @@ public class FarmEngine extends AbstractEngine {
             }
             if (rules != null) {
                 rules.forEach(rule -> {
-                    if (rule.getParent() != null) {
-                        jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
-                    }
+                    jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
                 });
             } else {
                 LOGGER.warn("rules is null");
@@ -147,6 +149,10 @@ public class FarmEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_CALLBK)
     public void callBack(Farm farm) {
+        if (genericEntityService.isNew(farm)) {
+            // farm removed?
+            return;
+        }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         farm.setSaveOnly(true);

@@ -20,6 +20,7 @@ public class TargetRepositoryImpl extends AbstractRepositoryImplementation<Targe
                                             + "INNER JOIN ta.project.teams t "
                                             + "INNER JOIN t.accounts a "
                                             + "WHERE 1 = :hasRoleAdmin OR "
+                                            + "ta.global = TRUE OR "
                                             + "a.name = :principalName";
 
     @SuppressWarnings("unused")

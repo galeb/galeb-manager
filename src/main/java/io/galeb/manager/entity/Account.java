@@ -32,9 +32,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.Assert;
 
@@ -46,7 +43,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
         + "1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_account", columnNames = { "name" }) })
 public class Account extends AbstractEntity<Account> {
 
     private static final long serialVersionUID = -2745836665462717899L;
@@ -59,14 +55,17 @@ public class Account extends AbstractEntity<Account> {
     }
 
     @ManyToMany
-    @JoinTable(joinColumns=@JoinColumn(name="team_id", foreignKey=@ForeignKey(name="FK_account_teams_team_id")),
-               inverseJoinColumns=@JoinColumn(name="account_id", foreignKey=@ForeignKey(name="FK_account_teams_account_id")))
+    @JoinTable(joinColumns = @JoinColumn(name = "account_id",
+                                         foreignKey = @ForeignKey(name = "FK_account_teams_account_id")),
+               inverseJoinColumns = @JoinColumn(name = "team_id",
+                                       foreignKey = @ForeignKey(name = "FK_account_teams_team_id")))
     private final Set<Team> teams = new HashSet<>();
 
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
+    @JsonProperty(required = true)
     private String email;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -113,7 +112,7 @@ public class Account extends AbstractEntity<Account> {
         return password;
     }
 
-    @JsonProperty("password")
+    @JsonProperty(value = "password", required = true)
     public Account setPassword(String password) {
         Assert.hasText(password);
         this.password = ENCODER.encode(password);

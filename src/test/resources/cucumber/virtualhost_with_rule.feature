@@ -1,9 +1,9 @@
-@virtualhost
-Feature: VirtualHost Support
-    The manager have than
-    to support REST standard
+@virtualhostWithRule
+Feature: Virtualhost with Rule Support
+    The manager have than to support REST standard
+    and constraints are applied
 
-    Background:
+        Background:
         Given a REST client authenticated as admin
         When request json body has:
             | name | oneEnv |
@@ -55,78 +55,48 @@ Feature: VirtualHost Support
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send POST /virtualhost
-
-    Scenario: Create VirtualHost
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | urlPath |
+        And send POST /ruletype
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | cookie |
+        And send POST /ruletype
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | poolOne |
+        And send POST /targettype
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request json body has:
+            | name        | targetOne                      |
+            | environment | http://localhost/environment/1 |
+            | targetType  | http://localhost/targettype/1  |
+            | project     | http://localhost/project/1     |
+        And send POST /target
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        And request json body has:
+            | name         | ruleOne                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/1          |
+        And send POST /rule
         Then the response status is 201
 
-    Scenario: Create duplicated Virtualhost
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name        | one                            |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
-        And send POST /virtualhost
-        Then the response status is 409
-
-    Scenario: Get VirtualHost
-        Given a REST client authenticated as accountOne
-        When send GET /virtualhost/1
-        Then the response status is 200
-        And property name contains one
-
-    Scenario: Get null VirtualHost
-        Given a REST client authenticated as accountOne
-        When send GET /virtualhost/2
-        Then the response status is 404
-
-    Scenario: Update VirtualHost
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name        | one                            |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
-        And send PUT /virtualhost/1
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /virtualhost/1
-        Then the response status is 200
-        And property name contains one
-
-    Scenario: Update name field of VirtualHost
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name | one |
-        And send PATCH /virtualhost/1
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /virtualhost/1
-        Then the response status is 200
-        And property name contains one
-
-    Scenario: Update project field of VirtualHost (name update is ignored)
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | project     | http://localhost/project/2 |
-        And send PATCH /virtualhost/1
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /virtualhost/1
-        Then the response status is 200
-        And property name contains one
-
-    Scenario: Delete VirtualHost
+    Scenario: Delete VirtualHost with Rule not allowed
         Given a REST client authenticated as accountOne
         When send DELETE /virtualhost/1
+        Then the response status is 409
+
+    Scenario: Delete VirtualHost, deleting Rule before, is allowed
+        Given a REST client authenticated as accountOne
+        When send DELETE /rule/1
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /virtualhost/1
-        Then the response status is 404
-        And a REST client authenticated as accountOne
-        When send GET /environment/1
-        Then the response status is 200
-        And property name contains oneEnv
-        And a REST client authenticated as accountOne
-        When send GET /project/1
-        Then the response status is 200
-        And property name contains projOne
-
+        When send DELETE /virtualhost/1
+        Then the response status is 204

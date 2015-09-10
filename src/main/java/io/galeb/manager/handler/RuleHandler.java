@@ -18,6 +18,9 @@
 
 package io.galeb.manager.handler;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +34,12 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.manager.engine.farm.RuleEngine;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.repository.TargetRepository;
 
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler extends RoutableToEngine<Rule> {
@@ -49,6 +52,10 @@ public class RuleHandler extends RoutableToEngine<Rule> {
     @Autowired
     private RuleRepository ruleRepository;
 
+    @Autowired
+    private TargetRepository targetRepository;
+
+
     public RuleHandler() {
         setQueueCreateName(RuleEngine.QUEUE_CREATE);
         setQueueUpdateName(RuleEngine.QUEUE_UPDATE);
@@ -57,12 +64,11 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
-        long farmIdVirtualHost = -1L;
         long farmIdTarget = -1L;
-        if (rule.getParent() != null) {
-            final VirtualHost virtualhost = rule.getParent();
-            farmIdVirtualHost = virtualhost.getFarmId();
-        }
+        Set<Long> farmIds = rule.getVirtualhosts().stream().collect(
+                Collectors.groupingBy(VirtualHost::getFarmId)).keySet();
+        long farmIdVirtualHost = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
+
         if (rule.getTarget() != null) {
             final Target target = rule.getTarget();
             farmIdTarget = target.getFarmId();
@@ -78,39 +84,24 @@ public class RuleHandler extends RoutableToEngine<Rule> {
     @HandleBeforeCreate
     public void beforeCreate(Rule rule) throws Exception {
         beforeCreate(rule, LOGGER);
-        if (rule.getParent() == null) {
-            rule.setForceRename(true);
-            rule.setName("#"+rule.getName());
-            rule.setStatus(EntityStatus.OK);
-        }
+        setTargetGlobalIfNecessary(rule);
+
     }
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
-        afterCreate(rule, rule.getParent() != null ? jms : null, LOGGER);
-        rule.setForceRename(false);
+        afterCreate(rule, jms, LOGGER);
     }
 
     @HandleBeforeSave
     public void beforeSave(Rule rule) throws Exception {
-        if (rule.getName().startsWith("#") && (rule.getParent() != null)) {
-            VirtualHost virtualHost = rule.getParent();
-            rule.setParent(null);
-            String newName= rule.getName().replaceAll("^#", "")+"@"+virtualHost.getName();
-            Rule newRule = new Rule(newName, rule.getRuleType(), virtualHost, rule.getTarget());
-            newRule.setProperties(rule.getProperties());
-            newRule.setStatus(EntityStatus.PENDING);
-            beforeSave(newRule);
-            ruleRepository.save(newRule);
-            afterSave(newRule);
-            LOGGER.info("Rule "+rule.getName()+" copied to new Rule "+newName);
-        }
         beforeSave(rule, ruleRepository, LOGGER);
+        setTargetGlobalIfNecessary(rule);
     }
 
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
-        afterSave(rule, rule.getParent() != null ? jms : null, LOGGER);
+        afterSave(rule, jms, LOGGER);
     }
 
     @HandleBeforeDelete
@@ -120,7 +111,17 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterDelete
     public void afterDelete(Rule rule) throws Exception {
-        afterDelete(rule, rule.getParent() != null ? jms : null, LOGGER);
+        afterDelete(rule, jms, LOGGER);
+    }
+
+    private void setTargetGlobalIfNecessary(Rule rule) {
+        if (rule.isGlobal()) {
+            Target target = rule.getTarget();
+            target.setGlobal(true);
+            target.setSaveOnly(true);
+            targetRepository.save(target);
+            target.setSaveOnly(false);
+        }
     }
 
 }

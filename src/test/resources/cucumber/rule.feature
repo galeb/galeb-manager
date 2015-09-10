@@ -74,10 +74,12 @@ Feature: Rule Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name     | ruleOne                        |
-            | ruleType | http://localhost/ruletype/1    |
-            | parent   | http://localhost/virtualhost/1 |
-            | target   | http://localhost/target/1      |
+            | name         | ruleOne                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/1          |
+            | default      | true                               |
+            | order        | 0                                  |
         And send POST /rule
 
     Scenario: Create Rule
@@ -86,10 +88,10 @@ Feature: Rule Support
     Scenario: Create duplicated Rule
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name     | ruleOne                        |
-            | ruleType | http://localhost/ruletype/1    |
-            | parent   | http://localhost/virtualhost/1 |
-            | target   | http://localhost/target/1      |
+            | name         | ruleOne                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/1          |
         And send POST /rule
         Then the response status is 409
 
@@ -115,10 +117,10 @@ Feature: Rule Support
         And send POST /target
         And a REST client authenticated as accountOne
         And request json body has:
-            | name     | ruleTwo                        |
-            | ruleType | http://localhost/ruletype/1    |
-            | parent   | http://localhost/virtualhost/1 |
-            | target   | http://localhost/target/2      |
+            | name         | ruleTwo                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/2          |
         And send POST /rule
         Then the response status is 400
 
@@ -133,13 +135,13 @@ Feature: Rule Support
         When send GET /rule/2
         Then the response status is 404
 
-    Scenario: Update Rule (name update is ignored)
+    Scenario: Update Rule
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name     | ruleTwo                        |
-            | ruleType | http://localhost/ruletype/1    |
-            | parent   | http://localhost/virtualhost/1 |
-            | target   | http://localhost/target/1      |
+            | name         | ruleOne                            |
+            | ruleType     | http://localhost/ruletype/1        |
+            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | target       | http://localhost/target/1          |
         And send PUT /rule/1
         Then the response status is 204
         And a REST client authenticated as accountOne
@@ -147,10 +149,10 @@ Feature: Rule Support
         Then the response status is 200
         And property name contains ruleOne
 
-    Scenario: Update name field of Rule (name update is ignored)
+    Scenario: Update name field of Rule
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name | ruleThree |
+            | name | ruleOne |
         And send PATCH /rule/1
         Then the response status is 204
         And a REST client authenticated as accountOne

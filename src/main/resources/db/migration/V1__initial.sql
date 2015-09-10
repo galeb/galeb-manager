@@ -24,14 +24,13 @@ DROP TABLE IF EXISTS `account`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `account` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
@@ -60,7 +59,7 @@ CREATE TABLE `account_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`account`,`properties_key`),
-  CONSTRAINT `FK_4xg9qchhwpc3r23gm5sxmxnab` FOREIGN KEY (`account`) REFERENCES `account` (`id`)
+  CONSTRAINT `FK_account_properties_account_id` FOREIGN KEY (`account`) REFERENCES `account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -83,8 +82,8 @@ DROP TABLE IF EXISTS `account_roles`;
 CREATE TABLE `account_roles` (
   `account` bigint(20) NOT NULL,
   `roles` varchar(255) DEFAULT NULL,
-  KEY `FK_avjbyhyjd6nnh52cr6ij2pujp` (`account`),
-  CONSTRAINT `FK_avjbyhyjd6nnh52cr6ij2pujp` FOREIGN KEY (`account`) REFERENCES `account` (`id`)
+  KEY `FK_account_roles_account` (`account`),
+  CONSTRAINT `FK_account_roles_account_id` FOREIGN KEY (`account`) REFERENCES `account` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -105,12 +104,12 @@ DROP TABLE IF EXISTS `account_teams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `account_teams` (
-  `team_id` bigint(20) NOT NULL,
   `account_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`team_id`,`account_id`),
-  KEY `FK_m4ye5wq8c6uaj62iittg0kjnc` (`account_id`),
-  CONSTRAINT `FK_m4ye5wq8c6uaj62iittg0kjnc` FOREIGN KEY (`account_id`) REFERENCES `team` (`id`),
-  CONSTRAINT `FK_snaq2liyp3pnvwus6cgrxb32k` FOREIGN KEY (`team_id`) REFERENCES `account` (`id`)
+  `team_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`account_id`,`team_id`),
+  KEY `FK_account_teams_team_id` (`team_id`),
+  CONSTRAINT `FK_account_teams_account_id_account` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`),
+  CONSTRAINT `FK_account_teams_team_id_team_id` FOREIGN KEY (`team_id`) REFERENCES `team` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -121,40 +120,6 @@ CREATE TABLE `account_teams` (
 LOCK TABLES `account_teams` WRITE;
 /*!40000 ALTER TABLE `account_teams` DISABLE KEYS */;
 /*!40000 ALTER TABLE `account_teams` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `balance_policy`
---
-
-DROP TABLE IF EXISTS `balance_policy`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `balance_policy` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
-  `balancepolicytype_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_balancepolicytype` (`name`),
-  KEY `FK_balancepolicy_balancepolicytype` (`balancepolicytype_id`),
-  CONSTRAINT `FK_balancepolicy_balancepolicytype` FOREIGN KEY (`balancepolicytype_id`) REFERENCES `balance_policy_type` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `balance_policy`
---
-
-LOCK TABLES `balance_policy` WRITE;
-/*!40000 ALTER TABLE `balance_policy` DISABLE KEYS */;
-/*!40000 ALTER TABLE `balance_policy` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -169,7 +134,7 @@ CREATE TABLE `balance_policy_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`balance_policy`,`properties_key`),
-  CONSTRAINT `FK_af41du505aqvx8ifde9mvtcu` FOREIGN KEY (`balance_policy`) REFERENCES `balance_policy` (`id`)
+  CONSTRAINT `FK_balance_policy_properties_balancepolicy_id` FOREIGN KEY (`balance_policy`) REFERENCES `balancepolicy` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -180,37 +145,6 @@ CREATE TABLE `balance_policy_properties` (
 LOCK TABLES `balance_policy_properties` WRITE;
 /*!40000 ALTER TABLE `balance_policy_properties` DISABLE KEYS */;
 /*!40000 ALTER TABLE `balance_policy_properties` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `balance_policy_type`
---
-
-DROP TABLE IF EXISTS `balance_policy_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `balance_policy_type` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_balancepolicytype` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `balance_policy_type`
---
-
-LOCK TABLES `balance_policy_type` WRITE;
-/*!40000 ALTER TABLE `balance_policy_type` DISABLE KEYS */;
-/*!40000 ALTER TABLE `balance_policy_type` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -225,7 +159,7 @@ CREATE TABLE `balance_policy_type_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`balance_policy_type`,`properties_key`),
-  CONSTRAINT `FK_fv0680hutb6905ipt9omwun1n` FOREIGN KEY (`balance_policy_type`) REFERENCES `balance_policy_type` (`id`)
+  CONSTRAINT `FK_balance_policy_type_properties_balancepolicytype_id` FOREIGN KEY (`balance_policy_type`) REFERENCES `balancepolicytype` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -239,6 +173,69 @@ LOCK TABLES `balance_policy_type_properties` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `balancepolicy`
+--
+
+DROP TABLE IF EXISTS `balancepolicy`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `balancepolicy` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
+  `balancepolicytype_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_name_balancepolicytype` (`name`),
+  KEY `FK_balancepolicy_balancepolicytype` (`balancepolicytype_id`),
+  CONSTRAINT `FK_balancepolicy_balancepolicytype` FOREIGN KEY (`balancepolicytype_id`) REFERENCES `balancepolicytype` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `balancepolicy`
+--
+
+LOCK TABLES `balancepolicy` WRITE;
+/*!40000 ALTER TABLE `balancepolicy` DISABLE KEYS */;
+/*!40000 ALTER TABLE `balancepolicy` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `balancepolicytype`
+--
+
+DROP TABLE IF EXISTS `balancepolicytype`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `balancepolicytype` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_name_balancepolicytype` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `balancepolicytype`
+--
+
+LOCK TABLES `balancepolicytype` WRITE;
+/*!40000 ALTER TABLE `balancepolicytype` DISABLE KEYS */;
+/*!40000 ALTER TABLE `balancepolicytype` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `environment`
 --
 
@@ -247,14 +244,13 @@ DROP TABLE IF EXISTS `environment`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `environment` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_environment` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -281,7 +277,7 @@ CREATE TABLE `environment_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`environment`,`properties_key`),
-  CONSTRAINT `FK_ivonvausm2b3ae4j7tqo2f8q2` FOREIGN KEY (`environment`) REFERENCES `environment` (`id`)
+  CONSTRAINT `FK_environment_properties_environment_id` FOREIGN KEY (`environment`) REFERENCES `environment` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -303,25 +299,24 @@ DROP TABLE IF EXISTS `farm`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `farm` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   `api` varchar(255) NOT NULL,
   `auto_reload` bit(1) DEFAULT NULL,
   `domain` varchar(255) NOT NULL,
-  `environment` bigint(20) NOT NULL,
-  `provider` bigint(20) NOT NULL,
+  `environment_id` bigint(20) NOT NULL,
+  `provider_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_farm` (`name`),
-  KEY `FK_farm_environment` (`environment`),
-  KEY `FK_farm_provider` (`provider`),
-  CONSTRAINT `FK_farm_environment` FOREIGN KEY (`environment`) REFERENCES `environment` (`id`),
-  CONSTRAINT `FK_farm_provider` FOREIGN KEY (`provider`) REFERENCES `provider` (`id`)
+  KEY `FK_farm_environment` (`environment_id`),
+  KEY `FK_farm_provider` (`provider_id`),
+  CONSTRAINT `FK_farm_environment` FOREIGN KEY (`environment_id`) REFERENCES `environment` (`id`),
+  CONSTRAINT `FK_farm_provider` FOREIGN KEY (`provider_id`) REFERENCES `provider` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -346,7 +341,7 @@ CREATE TABLE `farm_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`farm`,`properties_key`),
-  CONSTRAINT `FK_fvsbxi9xd2ll3g3ubk5yf6qlk` FOREIGN KEY (`farm`) REFERENCES `farm` (`id`)
+  CONSTRAINT `FK_farm_properties_farm_id` FOREIGN KEY (`farm`) REFERENCES `farm` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -368,14 +363,13 @@ DROP TABLE IF EXISTS `project`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `project` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_project` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -402,7 +396,7 @@ CREATE TABLE `project_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`project`,`properties_key`),
-  CONSTRAINT `FK_gn253eirumrjc14uu65lr5obc` FOREIGN KEY (`project`) REFERENCES `project` (`id`)
+  CONSTRAINT `FK_project_properties_project_id` FOREIGN KEY (`project`) REFERENCES `project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -423,12 +417,12 @@ DROP TABLE IF EXISTS `project_teams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `project_teams` (
-  `team_id` bigint(20) NOT NULL,
   `project_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`team_id`,`project_id`),
-  KEY `FK_8e6r729xp5tbbuu80s0tyt8ca` (`project_id`),
-  CONSTRAINT `FK_35l2xiix5kpyd9amhv1bdmt8q` FOREIGN KEY (`team_id`) REFERENCES `project` (`id`),
-  CONSTRAINT `FK_8e6r729xp5tbbuu80s0tyt8ca` FOREIGN KEY (`project_id`) REFERENCES `team` (`id`)
+  `team_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`project_id`,`team_id`),
+  KEY `FK_project_teams_team_id` (`team_id`),
+  CONSTRAINT `FK_project_teams_team_id` FOREIGN KEY (`team_id`) REFERENCES `team` (`id`),
+  CONSTRAINT `FK_project_teams_project_id` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -450,14 +444,13 @@ DROP TABLE IF EXISTS `provider`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `provider` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   `driver` varchar(255) DEFAULT NULL,
   `provisioning` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -486,7 +479,7 @@ CREATE TABLE `provider_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`provider`,`properties_key`),
-  CONSTRAINT `FK_f4vhaschnfyv85kbu2f1kl30e` FOREIGN KEY (`provider`) REFERENCES `provider` (`id`)
+  CONSTRAINT `FK_provider_properties_provider_id` FOREIGN KEY (`provider`) REFERENCES `provider` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -508,28 +501,25 @@ DROP TABLE IF EXISTS `rule`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `rule` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   `farm_id` bigint(20) NOT NULL,
+  `global` bit(1) DEFAULT 0,
   `rule_default` bit(1) DEFAULT NULL,
   `rule_order` int(11) DEFAULT NULL,
-  `parent` bigint(20) DEFAULT NULL,
-  `ruletype` bigint(20) NOT NULL,
-  `target` bigint(20) NOT NULL,
+  `ruletype_id` bigint(20) NOT NULL,
+  `target_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_rule` (`name`),
-  KEY `FK_rule_parent` (`parent`),
-  KEY `FK_rule_ruletype` (`ruletype`),
-  KEY `FK_rule_target` (`target`),
-  CONSTRAINT `FK_rule_parent` FOREIGN KEY (`parent`) REFERENCES `virtual_host` (`id`),
-  CONSTRAINT `FK_rule_ruletype` FOREIGN KEY (`ruletype`) REFERENCES `rule_type` (`id`),
-  CONSTRAINT `FK_rule_target` FOREIGN KEY (`target`) REFERENCES `target` (`id`)
+  KEY `FK_rule_ruletype` (`ruletype_id`),
+  KEY `FK_rule_target` (`target_id`),
+  CONSTRAINT `FK_rule_ruletype` FOREIGN KEY (`ruletype_id`) REFERENCES `ruletype` (`id`),
+  CONSTRAINT `FK_rule_target` FOREIGN KEY (`target_id`) REFERENCES `target` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -554,7 +544,7 @@ CREATE TABLE `rule_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`rule`,`properties_key`),
-  CONSTRAINT `FK_hfjylajvohli734i7kwkxuh55` FOREIGN KEY (`rule`) REFERENCES `rule` (`id`)
+  CONSTRAINT `FK_rule_properties_rule_id` FOREIGN KEY (`rule`) REFERENCES `rule` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -565,37 +555,6 @@ CREATE TABLE `rule_properties` (
 LOCK TABLES `rule_properties` WRITE;
 /*!40000 ALTER TABLE `rule_properties` DISABLE KEYS */;
 /*!40000 ALTER TABLE `rule_properties` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `rule_type`
---
-
-DROP TABLE IF EXISTS `rule_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `rule_type` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_ruletype` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `rule_type`
---
-
-LOCK TABLES `rule_type` WRITE;
-/*!40000 ALTER TABLE `rule_type` DISABLE KEYS */;
-/*!40000 ALTER TABLE `rule_type` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -610,7 +569,7 @@ CREATE TABLE `rule_type_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`rule_type`,`properties_key`),
-  CONSTRAINT `FK_55h9kk3vn1lgha9cqkk9y9t05` FOREIGN KEY (`rule_type`) REFERENCES `rule_type` (`id`)
+  CONSTRAINT `FK_rule_type_properties_ruletype_id` FOREIGN KEY (`rule_type`) REFERENCES `ruletype` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -624,6 +583,62 @@ LOCK TABLES `rule_type_properties` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `rule_virtualhosts`
+--
+
+DROP TABLE IF EXISTS `rule_virtualhosts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `rule_virtualhosts` (
+  `rule_id` bigint(20) NOT NULL,
+  `virtualhost_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`rule_id`,`virtualhost_id`),
+  KEY `FK_rule_virtualhost_id` (`virtualhost_id`),
+  CONSTRAINT `FK_rule_rule_id` FOREIGN KEY (`rule_id`) REFERENCES `rule` (`id`),
+  CONSTRAINT `FK_rule_virtualhost_id` FOREIGN KEY (`virtualhost_id`) REFERENCES `virtualhost` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `rule_virtualhosts`
+--
+
+LOCK TABLES `rule_virtualhosts` WRITE;
+/*!40000 ALTER TABLE `rule_virtualhosts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rule_virtualhosts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `ruletype`
+--
+
+DROP TABLE IF EXISTS `ruletype`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `ruletype` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_name_ruletype` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `ruletype`
+--
+
+LOCK TABLES `ruletype` WRITE;
+/*!40000 ALTER TABLE `ruletype` DISABLE KEYS */;
+/*!40000 ALTER TABLE `ruletype` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `target`
 --
 
@@ -632,32 +647,29 @@ DROP TABLE IF EXISTS `target`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `target` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   `farm_id` bigint(20) NOT NULL,
+  `global` bit(1) DEFAULT 0,
   `balancepolicy_id` bigint(20) DEFAULT NULL,
   `environment_id` bigint(20) DEFAULT NULL,
-  `parent_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `targettype_id` bigint(20) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_prefix_name_target` (`prefix`,`name`),
+  UNIQUE KEY `UK_name_rule` (`name`),
   KEY `FK_target_balancepolicy` (`balancepolicy_id`),
   KEY `FK_target_environment` (`environment_id`),
-  KEY `FK_target_parent` (`parent_id`),
   KEY `FK_target_project` (`project_id`),
   KEY `FK_target_targettype` (`targettype_id`),
-  CONSTRAINT `FK_target_balancepolicy` FOREIGN KEY (`balancepolicy_id`) REFERENCES `balance_policy` (`id`),
+  CONSTRAINT `FK_target_balancepolicy` FOREIGN KEY (`balancepolicy_id`) REFERENCES `balancepolicy` (`id`),
   CONSTRAINT `FK_target_environment` FOREIGN KEY (`environment_id`) REFERENCES `environment` (`id`),
-  CONSTRAINT `FK_target_parent` FOREIGN KEY (`parent_id`) REFERENCES `target` (`id`),
   CONSTRAINT `FK_target_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`),
-  CONSTRAINT `FK_target_targettype` FOREIGN KEY (`targettype_id`) REFERENCES `target_type` (`id`)
+  CONSTRAINT `FK_target_targettype` FOREIGN KEY (`targettype_id`) REFERENCES `targettype` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -668,6 +680,32 @@ CREATE TABLE `target` (
 LOCK TABLES `target` WRITE;
 /*!40000 ALTER TABLE `target` DISABLE KEYS */;
 /*!40000 ALTER TABLE `target` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `target_parents`
+--
+
+DROP TABLE IF EXISTS `target_parents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `target_parents` (
+  `target_id` bigint(20) NOT NULL,
+  `parent_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`target_id`,`parent_id`),
+  KEY `FK_target_parent_id` (`parent_id`),
+  CONSTRAINT `FK_target_target_id` FOREIGN KEY (`target_id`) REFERENCES `target` (`id`),
+  CONSTRAINT `FK_target_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `target` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `target_parents`
+--
+
+LOCK TABLES `target_parents` WRITE;
+/*!40000 ALTER TABLE `target_parents` DISABLE KEYS */;
+/*!40000 ALTER TABLE `target_parents` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -682,7 +720,7 @@ CREATE TABLE `target_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`target`,`properties_key`),
-  CONSTRAINT `FK_9f081qaobl24b36qrt7a88510` FOREIGN KEY (`target`) REFERENCES `target` (`id`)
+  CONSTRAINT `FK_target_properties_target_id` FOREIGN KEY (`target`) REFERENCES `target` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -693,37 +731,6 @@ CREATE TABLE `target_properties` (
 LOCK TABLES `target_properties` WRITE;
 /*!40000 ALTER TABLE `target_properties` DISABLE KEYS */;
 /*!40000 ALTER TABLE `target_properties` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `target_type`
---
-
-DROP TABLE IF EXISTS `target_type`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `target_type` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_targettype` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `target_type`
---
-
-LOCK TABLES `target_type` WRITE;
-/*!40000 ALTER TABLE `target_type` DISABLE KEYS */;
-/*!40000 ALTER TABLE `target_type` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -738,7 +745,7 @@ CREATE TABLE `target_type_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`target_type`,`properties_key`),
-  CONSTRAINT `FK_fx14ro1ve5e2dh9bfs33wpil` FOREIGN KEY (`target_type`) REFERENCES `target_type` (`id`)
+  CONSTRAINT `FK_target_type_properties_targettype_id` FOREIGN KEY (`target_type`) REFERENCES `targettype` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -752,6 +759,36 @@ LOCK TABLES `target_type_properties` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `targettype`
+--
+
+DROP TABLE IF EXISTS `targettype`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `targettype` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_name_targettype` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `targettype`
+--
+
+LOCK TABLES `targettype` WRITE;
+/*!40000 ALTER TABLE `targettype` DISABLE KEYS */;
+/*!40000 ALTER TABLE `targettype` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `team`
 --
 
@@ -760,14 +797,13 @@ DROP TABLE IF EXISTS `team`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `team` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_team` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -794,7 +830,7 @@ CREATE TABLE `team_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`team`,`properties_key`),
-  CONSTRAINT `FK_267af8v0swycwatnls4g0bqxk` FOREIGN KEY (`team`) REFERENCES `team` (`id`)
+  CONSTRAINT `FK_team_properties_team_id` FOREIGN KEY (`team`) REFERENCES `team` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -808,44 +844,6 @@ LOCK TABLES `team_properties` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `virtual_host`
---
-
-DROP TABLE IF EXISTS `virtual_host`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `virtual_host` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `created_by` varchar(255) NOT NULL,
-  `created_date` datetime NOT NULL,
-  `last_modified_by` varchar(255) NOT NULL,
-  `last_modified_date` datetime NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `prefix` varchar(255) NOT NULL,
-  `status` int(11) NOT NULL,
-  `version` bigint(20) DEFAULT NULL,
-  `farm_id` bigint(20) NOT NULL,
-  `environment` bigint(20) NOT NULL,
-  `project` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK_name_virtualhost` (`name`),
-  KEY `FK_virtualhost_environment` (`environment`),
-  KEY `FK_virtualhost_project` (`project`),
-  CONSTRAINT `FK_virtualhost_environment` FOREIGN KEY (`environment`) REFERENCES `environment` (`id`),
-  CONSTRAINT `FK_virtualhost_project` FOREIGN KEY (`project`) REFERENCES `project` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `virtual_host`
---
-
-LOCK TABLES `virtual_host` WRITE;
-/*!40000 ALTER TABLE `virtual_host` DISABLE KEYS */;
-/*!40000 ALTER TABLE `virtual_host` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `virtual_host_aliases`
 --
 
@@ -853,10 +851,10 @@ DROP TABLE IF EXISTS `virtual_host_aliases`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `virtual_host_aliases` (
-  `virtualhost_id` bigint(20) NOT NULL,
+  `virtual_host` bigint(20) NOT NULL,
   `aliases` varchar(255) DEFAULT NULL,
-  KEY `FK_6xn1g4l5me1qs5kta41fqnimg` (`virtualhost_id`),
-  CONSTRAINT `FK_6xn1g4l5me1qs5kta41fqnimg` FOREIGN KEY (`virtualhost_id`) REFERENCES `virtual_host` (`id`)
+  KEY `FK_virtual_host_aliases_virtualhost_id` (`virtual_host`),
+  CONSTRAINT `FK_virtual_host_aliases_virtualhost_id` FOREIGN KEY (`virtual_host`) REFERENCES `virtualhost` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -881,7 +879,7 @@ CREATE TABLE `virtual_host_properties` (
   `properties` varchar(255) DEFAULT NULL,
   `properties_key` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`virtual_host`,`properties_key`),
-  CONSTRAINT `FK_l8ridicm0l2d76u0d4l7uf4y6` FOREIGN KEY (`virtual_host`) REFERENCES `virtual_host` (`id`)
+  CONSTRAINT `FK_virtual_host_properties_virtualhost_id` FOREIGN KEY (`virtual_host`) REFERENCES `virtualhost` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -893,6 +891,43 @@ LOCK TABLES `virtual_host_properties` WRITE;
 /*!40000 ALTER TABLE `virtual_host_properties` DISABLE KEYS */;
 /*!40000 ALTER TABLE `virtual_host_properties` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Table structure for table `virtualhost`
+--
+
+DROP TABLE IF EXISTS `virtualhost`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `virtualhost` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `_created_at` datetime NOT NULL,
+  `_created_by` varchar(255) NOT NULL,
+  `_lastmodified_at` datetime NOT NULL,
+  `_lastmodified_by` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `_status` int(11) NOT NULL,
+  `_version` bigint(20) DEFAULT NULL,
+  `farm_id` bigint(20) NOT NULL,
+  `environment_id` bigint(20) NOT NULL,
+  `project_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK_name_virtualhost` (`name`),
+  KEY `FK_virtualhost_environment` (`environment_id`),
+  KEY `FK_virtualhost_project` (`project_id`),
+  CONSTRAINT `FK_virtualhost_environment` FOREIGN KEY (`environment_id`) REFERENCES `environment` (`id`),
+  CONSTRAINT `FK_virtualhost_project` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `virtualhost`
+--
+
+LOCK TABLES `virtualhost` WRITE;
+/*!40000 ALTER TABLE `virtualhost` DISABLE KEYS */;
+/*!40000 ALTER TABLE `virtualhost` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -903,4 +938,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-09-01 11:01:08
+-- Dump completed on 2015-09-05 11:13:15

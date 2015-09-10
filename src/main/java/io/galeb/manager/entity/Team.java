@@ -19,16 +19,11 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 @NamedQuery(name="Team.findAll", query=
 "SELECT t FROM Team t "
@@ -36,7 +31,6 @@ import javax.persistence.UniqueConstraint;
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_team", columnNames = { "name" }) })
 public class Team extends AbstractEntity<Team> {
 
     private static final long serialVersionUID = -4278444359290384175L;
@@ -46,12 +40,6 @@ public class Team extends AbstractEntity<Team> {
 
     @ManyToMany(mappedBy = "teams")
     private final Set<Project> projects = new HashSet<>();
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_team_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
-    }
 
     public Set<Account> getAccounts() {
         return accounts;

@@ -20,7 +20,7 @@ public class RuleRepositoryImpl extends AbstractRepositoryImplementation<Rule>
                                            + "INNER JOIN r.target.project.teams t "
                                            + "INNER JOIN t.accounts a "
                                            + "WHERE 1 = :hasRoleAdmin OR "
-                                                + "r.parent IS NULL OR "
+                                                + "r.global = TRUE OR "
                                                 + "a.name = :principalName";
 
     @SuppressWarnings("unused")

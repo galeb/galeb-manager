@@ -20,80 +20,75 @@ package io.galeb.manager.entity;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @NamedQuery(name="Rule.findAll", query =
 "SELECT r FROM Rule r "
         + "INNER JOIN r.target.project.teams t "
         + "INNER JOIN t.accounts a "
         + "WHERE 1 = :hasRoleAdmin OR "
-             + "r.parent IS NULL OR "
+             + "r.global = TRUE OR "
              + "a.name = :principalName")
 @Entity
 @JsonInclude(NON_NULL)
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_rule", columnNames = { "name" }) })
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     private static final long serialVersionUID = 5596582746795373020L;
 
     @ManyToOne
-    @JoinColumn(name = "ruletype", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
+    @JoinColumn(name = "ruletype_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
+    @JsonProperty(required = true)
     private RuleType ruleType;
 
-    @ManyToOne
-    @JoinColumn(name = "parent", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent"))
-    private VirtualHost parent;
+    @ManyToMany
+    @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_virtualhost")),
+    inverseJoinColumns=@JoinColumn(name = "virtualhost_id", nullable = true, foreignKey = @ForeignKey(name="FK_virtualhost_rule")))
+    private Set<VirtualHost> virtualhosts = new HashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "target", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JoinColumn(name = "target_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JsonProperty(required = true)
     private Target target;
 
     @Column
+    @JsonProperty("order")
     private int ruleOrder = 0;
 
     @Column
+    @JsonProperty("default")
     private boolean ruleDefault = false;
+
+    @Column
+    private Boolean global = false;
 
     @JsonIgnore
     private long farmId;
 
-    @Override
-    protected Set<String> readOnlyFields() {
-        return AbstractEntity.defaultReadOnlyFields;
-    }
-
-    public Rule(String name, RuleType ruleType, VirtualHost parent, Target target) {
+    public Rule(String name, RuleType ruleType, Target target) {
         Assert.notNull(ruleType);
         Assert.notNull(target);
         setName(name);
         this.ruleType = ruleType;
-        this.parent = parent;
         this.target = target;
     }
 
     protected Rule() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_rule_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public RuleType getRuleType() {
@@ -105,12 +100,14 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
         return this;
     }
 
-    public VirtualHost getParent() {
-        return parent;
+    public Set<VirtualHost> getVirtualhosts() {
+        return virtualhosts;
     }
 
-    public Rule setParent(VirtualHost parent) {
-        this.parent = parent;
+    public Rule setVirtualhosts(Set<VirtualHost> virtualhosts) {
+        if (virtualhosts != null) {
+            this.virtualhosts = virtualhosts;
+        }
         return this;
     }
 
@@ -150,6 +147,17 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     public Rule setRuleDefault(boolean ruleDefault) {
         this.ruleDefault = ruleDefault;
+        return this;
+    }
+
+    public boolean isGlobal() {
+        return global;
+    }
+
+    public Rule setGlobal(Boolean global) {
+        if (global != null) {
+            this.global = global;
+        }
         return this;
     }
 

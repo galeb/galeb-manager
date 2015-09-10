@@ -41,13 +41,16 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
            + "INNER JOIN t.accounts a "
            + "WHERE r.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "r.parent IS NULL OR "
+               + "r.global = TRUE OR "
                + "a.name = ?#{principal.username})")
     Rule findOne(@Param("id") Long id);
 
     @Override
     @Query
     Rule findByName(@Param("name") String name);
+
+    @Query
+    Page<Rule> findByTargetName(@Param("name") String name, Pageable pageable);
 
     @Override
     @Query

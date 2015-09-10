@@ -9,4 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class SchedulerConfiguration {
 
+    public static final String GALEB_DISABLE_SCHED = "GALEB_DISABLE_SCHED";
+
 }

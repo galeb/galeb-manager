@@ -19,10 +19,14 @@
 package io.galeb.manager.engine.impl;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,11 +46,14 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Entity;
+import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.handler.VirtualHostHandler;
 
 public class GalebV3Driver implements Driver {
@@ -56,7 +63,7 @@ public class GalebV3Driver implements Driver {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public String toString() {
@@ -148,62 +155,125 @@ public class GalebV3Driver implements Driver {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public StatusFarm status(Properties properties) {
-        String api = properties.getOrDefault("api", "NULL").toString();
+        String api = properties.getOrDefault("api", "localhost:9090").toString();
         String path = properties.getOrDefault("path", "").toString();
-        String name = properties.getOrDefault("name", "").toString();
+        String name = properties.getOrDefault("name", "UNDEF").toString();
+        Stream<? extends AbstractEntity<?>> parents =
+                (Stream<? extends AbstractEntity<?>>) properties.getOrDefault("parents", EmptyStream.get());
         int expectedId = properties.getOrDefault("id", -1);
         long expectedNumElements = properties.getOrDefault("numElements", -1L);
-        String uriPath = "http://" + api + "/" + path;
-        String fullPath = uriPath+"/"+name;
-        RestTemplate restTemplate = new RestTemplate();
-        boolean result = false;
 
+        String basePath = "http://" + api + "/" + path;
+        String nameEncoded = name;
         try {
-            URI uri = new URI(uriPath);
-            RequestEntity<Void> request = RequestEntity.get(uri).build();
-            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = response.getStatusCode().value() < 400;
-            if (result) {
-                JsonNode json = mapper.readTree(response.getBody());
-                final Entity entity = new Entity();
-                entity.setVersion(-1);
+            nameEncoded = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException e1) {
+            LOGGER.error(e1);
+            return StatusFarm.FAIL;
+        }
+        String fullPath = basePath+"/"+nameEncoded;
 
-                int numElements = 0;
-                if (json != null && json.isArray()) {
-                    numElements = json.size();
-                    json.forEach(element -> {
-                        if (element != null &&
-                                element.isObject() &&
-                                element.get("id") != null &&
-                                element.get("id").asText("defaultTextIfAbsent").equals(name)) {
-                            entity.setVersion(element.get("version").asInt(-1));
+        AtomicBoolean result = new AtomicBoolean(true);
+        try {
+            if (!isOkNumElements(basePath, expectedNumElements)) {
+                return StatusFarm.FAIL;
+            };
+            if (parents.count()>0) {
+                parents.forEach(parent -> {
+                    try {
+                        if (result.get()) {
+                            boolean isSyncronized = isSyncronized(fullPath, name, parent.getName(), expectedId);
+                            result.set(isSyncronized);
                         }
-                    });
-                }
-                int entityVersion = entity.getVersion();
-                boolean resultVersion = expectedId == entityVersion;
-                if (!resultVersion) {
-                    LOGGER.error(fullPath+" : VERSION NOT MATCH (manager:"+expectedId+" != farm:"+entityVersion+")");
-                }
-                boolean resultCount = expectedNumElements == numElements;
-                if (!resultCount) {
-                    LOGGER.error(fullPath+" : COUNT NOT MATCH (manager:"+expectedNumElements+" != farm:"+numElements+")");
-                }
-                result = resultVersion && resultCount;
+                    } catch (Exception e) {
+                        result.set(false);
+                        LOGGER.error("STATUS FAIL: " + fullPath);
+                        LOGGER.error(e);
+                    }
+                });
+            } else {
+                result.set(isSyncronized(fullPath, name, null, expectedId));
             }
-            if (!result) {
+
+            if (!result.get()) {
                 LOGGER.warn("STATUS FAIL: "+fullPath);
             } else {
                 LOGGER.debug("STATUS OK: "+fullPath);
             }
         } catch (RuntimeException | IOException | URISyntaxException e) {
-            result = false;
+            result.set(false);
             LOGGER.error("STATUS FAIL: "+fullPath);
             LOGGER.error(e);
         }
-        return result ? StatusFarm.OK : StatusFarm.FAIL;
+        return result.get() ? StatusFarm.OK : StatusFarm.FAIL;
+    }
+
+    private JsonNode getJson(String path) throws URISyntaxException, IOException, JsonProcessingException {
+        JsonNode json = null;
+        RestTemplate restTemplate = new RestTemplate();
+        URI uri = new URI(path);
+        RequestEntity<Void> request = RequestEntity.get(uri).build();
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        boolean result = response.getStatusCode().value() < 400;
+
+        if (result) {
+            json = mapper.readTree(response.getBody());
+        }
+        return json;
+    }
+
+    private boolean isSyncronized(String fullPath, String name, String parent, int expectedId) throws URISyntaxException, JsonProcessingException, IOException {
+        JsonNode json = getJson(fullPath);
+        if (json == null) {
+            return false;
+        }
+
+        boolean syncronized = false;
+        final Entity entity = new Entity();
+
+        entity.setVersion(-1);
+        if (json.isArray()) {
+            StreamSupport.stream(json.spliterator(), false)
+                .filter(element -> element.isObject() &&
+                        element.get("id") != null &&
+                        element.get("id").asText("defaultTextIfAbsent").equals(name) &&
+                        (parent == null) ||
+                                (!(parent != null) &&
+                                 element.get("parentId") != null &&
+                                 element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
+                .forEach(element -> {
+                    entity.setVersion(element.get("version").asInt(-1));
+            });
+        }
+        syncronized = expectedId == entity.getVersion();
+        if (!syncronized) {
+            LOGGER.error(fullPath+" : VERSION NOT MATCH (manager:"+expectedId+" != farm:"+entity.getVersion()+")");
+        }
+
+        return syncronized;
+    }
+
+    private boolean isOkNumElements(String pathBase, long expectedNumElements) throws URISyntaxException, JsonProcessingException, IOException {
+        JsonNode json = getJson(pathBase);
+        if (json == null) {
+            return false;
+        }
+
+        boolean resultCount = false;
+        int numElements = 0;
+
+        if (json.isArray()) {
+            numElements = json.size();
+        }
+        resultCount = expectedNumElements == numElements;
+        if (!resultCount) {
+            LOGGER.error(pathBase+" : COUNT NOT MATCH (manager:"+expectedNumElements+" != farm:"+numElements+")");
+        }
+
+        return resultCount;
     }
 
     @NotThreadSafe

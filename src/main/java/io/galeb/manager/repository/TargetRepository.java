@@ -41,6 +41,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
            + "INNER JOIN t.accounts a "
            + "WHERE ta.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+               + "ta.global = TRUE OR "
                + "a.name = ?#{principal.username})")
     Target findOne(@Param("id") Long id);
 
@@ -61,6 +62,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
             + "INNER JOIN t.accounts a "
             + "WHERE ta.targetType.name = :name AND "
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                + "ta.global = TRUE OR "
                 + "a.name = ?#{principal.username})")
     Iterable<Target> findByTargetTypeName(@Param("name") String name);
 }

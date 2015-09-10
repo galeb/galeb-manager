@@ -19,19 +19,14 @@
 package io.galeb.manager.entity;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @NamedQuery(name="Project.findAll", query =
@@ -41,7 +36,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
         + "WHERE 1 = :hasRoleAdmin OR "
         + "a.name = :principalName")
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_project", columnNames = { "name" }) })
 public class Project extends AbstractEntity<Project> {
 
     private static final long serialVersionUID = 5596582746795373018L;
@@ -55,9 +49,8 @@ public class Project extends AbstractEntity<Project> {
     private final Set<Target> targets = new HashSet<>();
 
     @ManyToMany
-    @JoinTable(joinColumns=@JoinColumn(name="team_id"),
-               inverseJoinColumns=@JoinColumn(name="project_id"),
-               foreignKey=@ForeignKey(name="FK_project_teams"))
+    @JoinTable(joinColumns=@JoinColumn(name="project_id"),
+               inverseJoinColumns=@JoinColumn(name="team_id"))
     private final Set<Team> teams = new HashSet<>();
 
     public Project(String name) {
@@ -66,12 +59,6 @@ public class Project extends AbstractEntity<Project> {
 
     protected Project() {
         //
-    }
-
-    @Override
-    @JoinColumn(foreignKey=@ForeignKey(name="FK_project_properties"))
-    public Map<String, String> getProperties() {
-        return super.getProperties();
     }
 
     public Set<Team> getTeams() {

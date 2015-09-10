@@ -15,6 +15,12 @@ public class DatabaseConfiguration {
     @Autowired
     private Environment env;
 
+    private static String url = "jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+
+    private static String username = "root";
+
+    private static String password = "";
+
     @Bean
     public DataSource dataSource() {
 
@@ -23,15 +29,15 @@ public class DatabaseConfiguration {
         driver = driver != null ? driver : "org.h2.Driver";
 
         String urlEnvName = System.getProperty("io.galeb.manager.datasource.url.env", "GALEB_DB_URL");
-        String url = System.getenv(urlEnvName);
+        url = System.getenv(urlEnvName);
         url = url != null ? url : "jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
 
         String usernameEnvName = System.getProperty("io.galeb.manager.datasource.username.env", "GALEB_DB_USER");
-        String username = System.getenv(usernameEnvName);
+        username = System.getenv(usernameEnvName);
         username = username != null ? username : "root";
 
         String passwordEnvName = System.getProperty("io.galeb.manager.datasource.password.env", "GALEB_DB_PASS");
-        String password = System.getenv(passwordEnvName);
+        password = System.getenv(passwordEnvName);
         password = password != null ? password : "";
 
         HikariDataSource dataSource = new HikariDataSource();
@@ -43,6 +49,18 @@ public class DatabaseConfiguration {
         dataSource.setConnectionTestQuery("SELECT 1");
 
         return dataSource;
+    }
+
+    public static String getUrl() {
+        return url;
+    }
+
+    public static String getUsername() {
+        return username;
+    }
+
+    public static String getPassword() {
+        return password;
     }
 
 }
