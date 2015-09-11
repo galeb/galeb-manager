@@ -67,9 +67,9 @@ if [ "x$1" == "x-h" -o "x$1" == "x--help" ]; then
 fi
 
 login() {
-  local MESSAGE=$2
-  local LOGIN=$3
-  local PASSWORD=$4
+  local MESSAGE=$1
+  local LOGIN=$2
+  local PASSWORD=$3
 
   if [ "x$PASSWORD" == "x" ]; then
     echo -n "$MESSAGE password: "
@@ -79,7 +79,7 @@ login() {
     PASSWORD='password'
   fi
 
-  TOKEN="$(curl -k -v ${PROTOCOL}://${LOGIN}:${PASSWORD}@${SERVER}/token | jq -r .token)"
+  export TOKEN="$(curl -k -v ${PROTOCOL}://${LOGIN}:${PASSWORD}@${SERVER}/token | jq -r .token)"
   echo
 }
 
@@ -117,7 +117,7 @@ createAccount() {
   local TEAM_NAME=$3
   local LOGIN=$4
   local RANDOM_EMAIL="fake.$(date +%s%N)@fake.com"
-  local TEAM_ID="$(getId $COOKIE team $TEAM_NAME)"
+  local TEAM_ID="$(getId $TOKEN team $TEAM_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -178,8 +178,8 @@ createRuleType() {
 createFarm () {
   local TOKEN=$1
   local NAME=$2
-  local ENV_ID="$(getId $COOKIE environment $ENV_NAME)"
-  local PROVIDER_ID="$(getId $COOKIE provider $PROVIDER_NAME)"
+  local ENV_ID="$(getId $TOKEN environment $ENV_NAME)"
+  local PROVIDER_ID="$(getId $TOKEN provider $PROVIDER_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -206,7 +206,7 @@ createBalancePolicyType() {
 createBalancePolicy() {
   local TOKEN=$1
   local NAME=$2
-  local BALANCEPOLICYTYPE_ID="$(getId $COOKIE balancepolicytype $BALANCEPOLICYTYPE_NAME)"
+  local BALANCEPOLICYTYPE_ID="$(getId $TOKEN balancepolicytype $BALANCEPOLICYTYPE_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -220,7 +220,7 @@ createBalancePolicy() {
 createProject() {
   local TOKEN=$1
   local NAME=$2
-  local TEAM_ID="$(getId $COOKIE team $TEAM_NAME)"
+  local TEAM_ID="$(getId $TOKEN team $TEAM_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -234,8 +234,8 @@ createProject() {
 createVirtualHost() {
   local TOKEN=$1
   local NAME=$2
-  local PROJECT_ID="$(getId $COOKIE project $PROJECT_NAME)"
-  local ENV_ID="$(getId $COOKIE environment $ENV_NAME)"
+  local PROJECT_ID="$(getId $TOKEN project $PROJECT_NAME)"
+  local ENV_ID="$(getId $TOKEN environment $ENV_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -250,10 +250,10 @@ createVirtualHost() {
 createBackendPool() {
   local TOKEN=$1
   local NAME=$2
-  local TARGETTYPE_POOL_ID="$(getId $COOKIE targettype BackendPool)"
-  local ENV_ID="$(getId $COOKIE environment $ENV_NAME)"
-  local PROJECT_ID="$(getId $COOKIE project $PROJECT_NAME)"
-  local BALANCEPOLICY_ID="$(getId $COOKIE balancepolicy $BALANCEPOLICY_NAME)"
+  local TARGETTYPE_POOL_ID="$(getId $TOKEN targettype BackendPool)"
+  local ENV_ID="$(getId $TOKEN environment $ENV_NAME)"
+  local PROJECT_ID="$(getId $TOKEN project $PROJECT_NAME)"
+  local BALANCEPOLICY_ID="$(getId $TOKEN balancepolicy $BALANCEPOLICY_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -275,10 +275,10 @@ createBackendPool() {
 createBackend() {
   local TOKEN=$1
   local NAME=$2
-  local TARGETTYPE_BACKEND_ID="$(getId $COOKIE targettype Backend)"
-  local ENV_ID="$(getId $COOKIE environment $ENV_NAME)"
-  local PROJECT_ID="$(getId $COOKIE project $PROJECT_NAME)"
-  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
+  local TARGETTYPE_BACKEND_ID="$(getId $TOKEN targettype Backend)"
+  local ENV_ID="$(getId $TOKEN environment $ENV_NAME)"
+  local PROJECT_ID="$(getId $TOKEN project $PROJECT_NAME)"
+  local POOL_ID="$(getId $TOKEN target $POOL_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -295,9 +295,9 @@ createBackend() {
 createRule() {
   local TOKEN=$1
   local NAME=$2
-  local RULETYPE_URLPATH_ID="$(getId $COOKIE ruletype $RULETYPE_NAME)"
-  local VIRTUALHOST_ID=$(getId $COOKIE virtualhost $VIRTUALHOST_NAME)
-  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
+  local RULETYPE_URLPATH_ID="$(getId $TOKEN ruletype $RULETYPE_NAME)"
+  local VIRTUALHOST_ID=$(getId $TOKEN virtualhost $VIRTUALHOST_NAME)
+  local POOL_ID="$(getId $TOKEN target $POOL_NAME)"
 
   curl -k -v -XPOST -H $HEADER \
        -d '{
@@ -318,7 +318,7 @@ createRule() {
 removeRule() {
   local TOKEN=$1
   local NAME=$2
-  local ID="$(getId $COOKIE rule $NAME)"
+  local ID="$(getId $TOKEN rule $NAME)"
 
   curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule/$ID
   echo
@@ -327,7 +327,7 @@ removeRule() {
 removeVirtualHost() {
   local TOKEN=$1
   local NAME=$2
-  local ID="$(getId $COOKIE virtualhost $NAME)"
+  local ID="$(getId $TOKEN virtualhost $NAME)"
 
   curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/virtualhost/$ID
   echo
@@ -336,7 +336,7 @@ removeVirtualHost() {
 getNumBackendsByPool() {
   local TOKEN=$1
   local POOL_NAME=$2
-  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
+  local POOL_ID="$(getId $TOKEN target $POOL_NAME)"
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
     $PROTOCOL'://'$SERVER'/target/'$POOL_ID'/children?size=99999' | \
   jq .page.totalElements
@@ -345,7 +345,7 @@ getNumBackendsByPool() {
 getFirstTargetIdByPool() {
   local TOKEN=$1
   local POOL_NAME=$2
-  local POOL_ID="$(getId $COOKIE target $POOL_NAME)"
+  local POOL_ID="$(getId $TOKEN target $POOL_NAME)"
 
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
     $PROTOCOL'://'$SERVER'/target/'$POOL_ID'/children?size=99999' | \
@@ -356,11 +356,11 @@ removeBackendsOfPool() {
   local TOKEN=$1
   local POOL_NAME=$2
 
-  NUM_BACKENDS_BY_POOL="$(getNumBackendsByPool $COOKIE $POOL_NAME)"
+  NUM_BACKENDS_BY_POOL="$(getNumBackendsByPool $TOKEN $POOL_NAME)"
 
   if [ -n "$NUM_BACKENDS_BY_POOL" -a "x$NUM_BACKENDS_BY_POOL" != "x0" ]; then
-      while [ "$(getNumBackendsByPool $COOKIE $POOL_NAME)" -gt 0 ];do
-          TARGET_ID="$(getFirstTargetIdByPool $COOKIE $POOL_NAME)"
+      while [ "$(getNumBackendsByPool $TOKEN $POOL_NAME)" -gt 0 ];do
+          TARGET_ID="$(getFirstTargetIdByPool $TOKEN $POOL_NAME)"
           curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target/$TARGET_ID
           echo
       done
@@ -370,7 +370,7 @@ removeBackendsOfPool() {
 removeBackendPool() {
   local TOKEN=$1
   local NAME=$2
-  local ID="$(getId $COOKIE target $NAME)"
+  local ID="$(getId $TOKEN target $NAME)"
 
   curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target/$ID
   echo
@@ -379,7 +379,7 @@ removeBackendPool() {
 removeProject() {
   local TOKEN=$1
   local NAME=$2
-  local ID="$(getId $COOKIE project $NAME)"
+  local ID="$(getId $TOKEN project $NAME)"
 
   curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/project/$ID
   echo
