@@ -118,10 +118,9 @@ public class StepDefs {
 
     @Given("^a REST client authenticated as (.*)$")
     public void givenRestClientAuthenticatedAs(String login) throws Throwable {
-        final URI loginUrl = URI.create("http://127.0.0.1:"+port+"/login");
-        Response result = with().param("username", login).and()
-                                .param("password", "password")
-                                .post(loginUrl).thenReturn();
+        final URI loginUrl = URI.create("http://127.0.0.1:"+port+"/");
+        Response result = with().auth().basic(login, "password")
+                                .get(loginUrl).thenReturn();
 
         token = result.header("x-auth-token");
 
