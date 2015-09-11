@@ -122,7 +122,11 @@ public class StepDefs {
         Response result = with().auth().basic(login, "password")
                                 .get(loginUrl).thenReturn();
 
-        token = result.header("x-auth-token");
+        if (result.getStatusCode() == 200) {
+            final URI tokenURI = URI.create("http://127.0.0.1:"+port+"/token");
+            token = with().auth().basic(login, "password").get(tokenURI)
+                                 .thenReturn().body().jsonPath().getString("token");
+        }
 
         try {
             request = with().config(restAssuredConfig).contentType("application/json")
