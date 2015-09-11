@@ -78,7 +78,7 @@ public class StepDefs {
 
     private ValidatableResponse response;
 
-    private String sessionId;
+    private String token;
 
     private RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(false);
 
@@ -95,7 +95,7 @@ public class StepDefs {
     public void setUp() {
         response = null;
         request = null;
-        sessionId = null;
+        token = null;
         flyway.migrate();
     }
 
@@ -103,7 +103,8 @@ public class StepDefs {
     public void cleanUp() {
         final URI logoutUrl = URI.create("http://127.0.0.1:"+port+"/logout");
         try {
-            with().sessionId(sessionId).post(logoutUrl).andReturn();
+            with().header("x-auth-token", token).get(logoutUrl).andReturn();
+            token = "";
         } catch (Exception e) {
             LOGGER.warn(e);
         }
@@ -118,14 +119,21 @@ public class StepDefs {
 
     @Given("^a REST client authenticated as (.*)$")
     public void givenRestClientAuthenticatedAs(String login) throws Throwable {
-        final URI loginUrl = URI.create("http://127.0.0.1:"+port+"/login");
-        Response result = with().param("username", login).and()
-                                .param("password", "password")
-                                .post(loginUrl).thenReturn();
+        final URI loginUrl = URI.create("http://127.0.0.1:"+port+"/");
+        Response result = with().auth().basic(login, "password")
+                                .get(loginUrl).thenReturn();
 
-        sessionId = result.getSessionId();
+        if (result.getStatusCode() == 200) {
+            final URI tokenURI = URI.create("http://127.0.0.1:"+port+"/token");
+            token = with().auth().basic(login, "password").get(tokenURI)
+                                 .thenReturn().body().jsonPath().getString("token");
+        } else {
+            token="NULL";
+        }
+
         try {
-            request = with().config(restAssuredConfig).contentType("application/json").sessionId(sessionId);
+            request = with().config(restAssuredConfig).contentType("application/json")
+                                                      .header("x-auth-token", token);
         } catch (Exception e) {
             request = with().config(restAssuredConfig).contentType("application/json");
             LOGGER.warn(e);
