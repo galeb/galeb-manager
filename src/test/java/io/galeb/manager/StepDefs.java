@@ -104,6 +104,7 @@ public class StepDefs {
         final URI logoutUrl = URI.create("http://127.0.0.1:"+port+"/logout");
         try {
             with().header("x-auth-token", token).get(logoutUrl).andReturn();
+            token = "";
         } catch (Exception e) {
             LOGGER.warn(e);
         }
@@ -126,6 +127,8 @@ public class StepDefs {
             final URI tokenURI = URI.create("http://127.0.0.1:"+port+"/token");
             token = with().auth().basic(login, "password").get(tokenURI)
                                  .thenReturn().body().jsonPath().getString("token");
+        } else {
+            token="NULL";
         }
 
         try {
