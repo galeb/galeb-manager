@@ -51,7 +51,7 @@ Feature: Virtualhost with Rule Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | name        | one                            |
+            | name        | virtOne                        |
             | environment | http://localhost/environment/1 |
             | project     | http://localhost/project/1     |
         And send POST /virtualhost
@@ -100,3 +100,85 @@ Feature: Virtualhost with Rule Support
         And a REST client authenticated as accountOne
         When send DELETE /virtualhost/1
         Then the response status is 204
+
+    Scenario: Add virtualhosts to rule
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | name        | virtTwo                        |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /virtualhost
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/virtualhost/1 |
+        And send PATCH /rule/1/virtualhosts
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/virtualhost/2 |
+        And send PATCH /rule/1/virtualhosts
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/1
+        Then the response status is 200
+        And property name contains virtOne
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/2
+        Then the response status is 200
+        And property name contains virtTwo
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/1/rules/1
+        Then the response status is 200
+        And property name contains ruleOne
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/2/rules/1
+        Then the response status is 200
+        And property name contains ruleOne
+
+    Scenario: Remove virtualhosts from rule
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | name        | virtTwo                        |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /virtualhost
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/virtualhost/1 |
+        And send PATCH /rule/1/virtualhosts
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/virtualhost/2 |
+        And send PATCH /rule/1/virtualhosts
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/1
+        Then the response status is 200
+        And property name contains virtOne
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/2
+        Then the response status is 200
+        And property name contains virtTwo
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/1/rules/1
+        Then the response status is 200
+        And property name contains ruleOne
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/2/rules/1
+        Then the response status is 200
+        And property name contains ruleOne
+        And a REST client authenticated as accountOne
+        When send DELETE /rule/1/virtualhosts/1
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/1
+        Then the response status is 404
+        And a REST client authenticated as accountOne
+        When send GET /rule/1/virtualhosts/2
+        Then the response status is 200
+        And a REST client authenticated as accountOne
+        When send GET /virtualhost/2
+        Then the response status is 200

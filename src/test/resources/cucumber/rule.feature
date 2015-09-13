@@ -100,6 +100,7 @@ Feature: Rule Support
         When request json body has:
             | name | envTwo |
         And send POST /environment
+        Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
             | name        | farmTwo                        |
@@ -108,6 +109,7 @@ Feature: Rule Support
             | environment | http://localhost/environment/2 |
             | provider    | http://localhost/provider/1    |
         And send POST /farm
+        Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
             | name        | targetTwo                      |
@@ -115,6 +117,7 @@ Feature: Rule Support
             | targetType  | http://localhost/targettype/1  |
             | project     | http://localhost/project/1     |
         And send POST /target
+        Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
             | name         | ruleTwo                            |
@@ -187,3 +190,4 @@ Feature: Rule Support
         And a REST client authenticated as accountOne
         When send GET /target/1
         Then the response status is 200
+

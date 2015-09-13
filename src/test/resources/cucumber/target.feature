@@ -144,7 +144,7 @@ Feature: Target Support
         Then the response status is 200
         And property name contains targetOne
 
-    Scenario: Update targetType field of Target (name update is ignored)
+    Scenario: Update targetType field of Target
         Given a REST client authenticated as accountOne
         When request json body has:
             | targetType  | http://localhost/targettype/2 |
@@ -170,4 +170,54 @@ Feature: Target Support
         Then the response status is 200
         And a REST client authenticated as accountOne
         When send GET /project/1
+        Then the response status is 200
+
+    Scenario: Add a new parent target to a target
+        Given a REST client authenticated as accountOne
+        And request json body has:
+            | name        | targetParentOne              |
+            | targetType  | http://localhost/targettype/1  |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /target
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/target/2 |
+        And send PATCH /target/1/parents
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /target/1/parents/2
+        Then the response status is 200
+        And property name contains targetParentOne
+        And a REST client authenticated as accountOne
+        When send GET /target/2/children/1
+        Then the response status is 200
+        And property name contains targetOne
+
+    Scenario: Remove a parent target from a target
+        Given a REST client authenticated as accountOne
+        And request json body has:
+            | name        | targetParentOne              |
+            | targetType  | http://localhost/targettype/1  |
+            | environment | http://localhost/environment/1 |
+            | project     | http://localhost/project/1     |
+        And send POST /target
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request uri-list body has:
+            | http://localhost/target/2 |
+        And send PATCH /target/1/parents
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /target/1/parents/2
+        Then the response status is 200
+        And a REST client authenticated as accountOne
+        When send DELETE /target/1/parents/2
+        Then the response status is 204
+        And a REST client authenticated as accountOne
+        When send GET /target/1/parents/2
+        Then the response status is 404
+        And a REST client authenticated as accountOne
+        When send GET /target/2
         Then the response status is 200
