@@ -42,7 +42,7 @@
         <apacheds-server-jndi.version>1.5.5</apacheds-server-jndi.version>
         <spring-security-data.version>4.0.2.RELEASE</spring-security-data.version>
         <info-cukes.version>1.2.4</info-cukes.version>
-        <com.jayway.restassured.version>2.4.1</com.jayway.restassured.version>
+        <com.jayway.restassured.version>2.5.0</com.jayway.restassured.version>
         <jackson-module-jsonSchema.version>2.6.1</jackson-module-jsonSchema.version>
     </properties>
 
