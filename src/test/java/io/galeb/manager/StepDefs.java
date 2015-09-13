@@ -23,7 +23,9 @@ import static org.hamcrest.Matchers.hasToString;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
@@ -156,6 +158,15 @@ public class StepDefs {
             });
             String json = jsonParser.toJson(jsonComponentsProcessed);
             request.body(json);
+        }
+    }
+
+    @When("^request uri-list body has:$")
+    public void requestUriListBodyHas(List<String> uriList) throws Throwable {
+        request.contentType("text/uri-list");
+        if (!uriList.isEmpty()) {
+            String body = uriList.stream().collect(Collectors.joining("\n"));
+            request.body(body);
         }
     }
 
