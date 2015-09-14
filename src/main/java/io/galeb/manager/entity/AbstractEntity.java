@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -107,6 +108,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JsonIgnore
     @Transient
     private boolean saveOnly = false;
+
+    private String description;
 
     @PrePersist
     private void onCreate() {
@@ -215,6 +218,14 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return other.getName().equals(getName());
     }
 
+    public String getDescription() {
+        return description;
+    }
 
+    @SuppressWarnings("unchecked")
+    public T setDescription(String description) {
+        this.description = description;
+        return (T) this;
+    }
 
 }
