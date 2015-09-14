@@ -33,6 +33,7 @@ CREATE TABLE `account` (
   `_version` bigint(20) DEFAULT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_account` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -189,6 +190,7 @@ CREATE TABLE `balancepolicy` (
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
   `balancepolicytype_id` bigint(20) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_balancepolicytype` (`name`),
   KEY `FK_balancepolicy_balancepolicytype` (`balancepolicytype_id`),
@@ -221,6 +223,7 @@ CREATE TABLE `balancepolicytype` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_balancepolicytype` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -251,6 +254,7 @@ CREATE TABLE `environment` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_environment` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -311,6 +315,7 @@ CREATE TABLE `farm` (
   `domain` varchar(255) NOT NULL,
   `environment_id` bigint(20) NOT NULL,
   `provider_id` bigint(20) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_farm` (`name`),
   KEY `FK_farm_environment` (`environment_id`),
@@ -370,6 +375,7 @@ CREATE TABLE `project` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_project` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -453,6 +459,7 @@ CREATE TABLE `provider` (
   `_version` bigint(20) DEFAULT NULL,
   `driver` varchar(255) DEFAULT NULL,
   `provisioning` varchar(255) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_provider` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -514,6 +521,7 @@ CREATE TABLE `rule` (
   `rule_order` int(11) DEFAULT NULL,
   `ruletype_id` bigint(20) NOT NULL,
   `target_id` bigint(20) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_rule` (`name`),
   KEY `FK_rule_ruletype` (`ruletype_id`),
@@ -624,6 +632,7 @@ CREATE TABLE `ruletype` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_ruletype` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -660,6 +669,7 @@ CREATE TABLE `target` (
   `environment_id` bigint(20) DEFAULT NULL,
   `project_id` bigint(20) DEFAULT NULL,
   `targettype_id` bigint(20) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_rule` (`name`),
   KEY `FK_target_balancepolicy` (`balancepolicy_id`),
@@ -774,6 +784,7 @@ CREATE TABLE `targettype` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_targettype` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -804,6 +815,7 @@ CREATE TABLE `team` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_team` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -911,6 +923,7 @@ CREATE TABLE `virtualhost` (
   `farm_id` bigint(20) NOT NULL,
   `environment_id` bigint(20) NOT NULL,
   `project_id` bigint(20) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK_name_virtualhost` (`name`),
   KEY `FK_virtualhost_environment` (`environment_id`),
