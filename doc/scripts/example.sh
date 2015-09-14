@@ -285,11 +285,27 @@ createBackend() {
               "name": "'$NAME'",
               "targetType": "'$PROTOCOL'://'$SERVER'/targettype/'$TARGETTYPE_BACKEND_ID'",
               "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
-              "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'",
-              "parents": [ "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'" ]
+              "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'"
           }' \
        -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target
   echo
+
+  local BACKEND_ID="$(getId $TOKEN target $NAME)"
+  curl -k -v -XPATCH -H 'Content-Type: text/uri-list' \
+       -d "$PROTOCOL://$SERVER/target/$POOL_ID" \
+       -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target/$BACKEND_ID/parents
+  echo
+
+  # OR :
+  # curl -k -v -XPOST -H $HEADER \
+  #      -d '{
+  #             "name": "'$NAME'",
+  #             "targetType": "'$PROTOCOL'://'$SERVER'/targettype/'$TARGETTYPE_BACKEND_ID'",
+  #             "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
+  #             "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'",
+  #             "parents": [ "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'" ]
+  #         }' \
+  #      -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target
 }
 
 createRule() {
@@ -303,7 +319,6 @@ createRule() {
        -d '{
               "name": "'$NAME'",
               "ruleType": "'$PROTOCOL'://'$SERVER'/ruletype/'$RULETYPE_URLPATH_ID'",
-              "virtualhosts": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
               "target": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'",
               "default": true,
               "order": 0,
@@ -313,6 +328,27 @@ createRule() {
           }' \
        -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule
   echo
+
+  local RULE_ID="$(getId $TOKEN rule $NAME)"
+  curl -k -v -XPATCH -H 'Content-Type: text/uri-list' \
+       -d "$PROTOCOL://$SERVER/virtualhost/$VIRTUALHOST_ID" \
+       -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule/$RULE_ID/virtualhosts
+  echo
+
+  # OR:
+  # curl -k -v -XPOST -H $HEADER \
+  #     -d '{
+  #            "name": "'$NAME'",
+  #            "ruleType": "'$PROTOCOL'://'$SERVER'/ruletype/'$RULETYPE_URLPATH_ID'",
+  #            "target": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'",
+  #            "virtualhosts": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
+  #            "default": true,
+  #            "order": 0,
+  #            "properties": {
+  #                "match": "/"
+  #            }
+  #        }' \
+  #     -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule
 }
 
 removeRule() {
@@ -338,8 +374,8 @@ getNumBackendsByPool() {
   local POOL_NAME=$2
   local POOL_ID="$(getId $TOKEN target $POOL_NAME)"
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    $PROTOCOL'://'$SERVER'/target/'$POOL_ID'/children?size=99999' | \
-  jq .page.totalElements
+    $PROTOCOL://$SERVER/target/$POOL_ID/children?size=9999 | \
+  jq '._embedded.target | length'
 }
 
 getFirstTargetIdByPool() {
@@ -358,8 +394,8 @@ removeBackendsOfPool() {
 
   NUM_BACKENDS_BY_POOL="$(getNumBackendsByPool $TOKEN $POOL_NAME)"
 
-  if [ -n "$NUM_BACKENDS_BY_POOL" -a "x$NUM_BACKENDS_BY_POOL" != "x0" ]; then
-      while [ "$(getNumBackendsByPool $TOKEN $POOL_NAME)" -gt 0 ];do
+  if [ -n "$NUM_BACKENDS_BY_POOL" ] && [ $NUM_BACKENDS_BY_POOL -gt 0 ]; then
+      while [ -n "$(getNumBackendsByPool $TOKEN $POOL_NAME)" ] && [ $(getNumBackendsByPool $TOKEN $POOL_NAME) -gt 0 ];do
           TARGET_ID="$(getFirstTargetIdByPool $TOKEN $POOL_NAME)"
           curl -k -v -XDELETE -H $HEADER -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target/$TARGET_ID
           echo
