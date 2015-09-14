@@ -24,6 +24,8 @@ import javax.persistence.Entity;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(name = "balancepolicytype")
 public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
@@ -31,6 +33,7 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
     private static final long serialVersionUID = 5596582746795373010L;
 
     @OneToMany(mappedBy = "balancePolicyType")
+    @JsonProperty("balance_policies")
     private Set<BalancePolicy> balancePolicies;
 
     public BalancePolicyType(String name) {

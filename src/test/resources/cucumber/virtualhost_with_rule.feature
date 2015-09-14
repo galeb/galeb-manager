@@ -75,14 +75,14 @@ Feature: Virtualhost with Rule Support
         When request json body has:
             | name        | targetOne                      |
             | environment | http://localhost/environment/1 |
-            | targetType  | http://localhost/targettype/1  |
+            | target_type | http://localhost/targettype/1  |
             | project     | http://localhost/project/1     |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
             | name         | ruleOne                            |
-            | ruleType     | http://localhost/ruletype/1        |
+            | rule_type    | http://localhost/ruletype/1        |
             | virtualhosts | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send POST /rule
