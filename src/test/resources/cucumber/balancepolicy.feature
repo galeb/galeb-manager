@@ -26,7 +26,7 @@ Feature: BalancePolicy Support
         And a REST client authenticated as admin
         When request json body has:
             | name              | tBalancePolicyOne                    |
-            | balance_policy_type | http://localhost/balancepolicytype/1 |
+            | balancePolicyType | http://localhost/balancepolicytype/1 |
         And send POST /balancepolicy
 
     Scenario: Create BalancePolicy
@@ -36,7 +36,7 @@ Feature: BalancePolicy Support
         Given a REST client authenticated as admin
         When request json body has:
             | name              | tBalancePolicyOne                    |
-            | balance_policy_type | http://localhost/balancepolicytype/1 |
+            | balancePolicyType | http://localhost/balancepolicytype/1 |
         And send POST /balancepolicy
         Then the response status is 409
 
@@ -55,7 +55,7 @@ Feature: BalancePolicy Support
         Given a REST client authenticated as admin
         When request json body has:
             | name              | tBalancePolicyTwo                    |
-            | balance_policy_type | http://localhost/balancepolicytype/1 |
+            | balancePolicyType | http://localhost/balancepolicytype/1 |
         And send PUT /balancepolicy/1
         Then the response status is 204
         And a REST client authenticated as admin

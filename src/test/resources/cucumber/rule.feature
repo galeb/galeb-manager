@@ -68,14 +68,14 @@ Feature: Rule Support
         When request json body has:
             | name        | targetOne                      |
             | environment | http://localhost/environment/1 |
-            | target_type | http://localhost/targettype/1  |
+            | targetType  | http://localhost/targettype/1  |
             | project     | http://localhost/project/1     |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
             | name         | ruleOne                            |
-            | rule_type    | http://localhost/ruletype/1        |
+            | ruleType     | http://localhost/ruletype/1        |
             | virtualhosts | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
             | default      | true                               |
@@ -89,7 +89,7 @@ Feature: Rule Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name         | ruleOne                            |
-            | rule_type    | http://localhost/ruletype/1        |
+            | ruleType     | http://localhost/ruletype/1        |
             | virtualhosts | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send POST /rule
@@ -114,14 +114,14 @@ Feature: Rule Support
         When request json body has:
             | name        | targetTwo                      |
             | environment | http://localhost/environment/2 |
-            | target_type | http://localhost/targettype/1  |
+            | targetType  | http://localhost/targettype/1  |
             | project     | http://localhost/project/1     |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
             | name         | ruleTwo                            |
-            | rule_type    | http://localhost/ruletype/1        |
+            | ruleType     | http://localhost/ruletype/1        |
             | virtualhosts | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/2          |
         And send POST /rule
@@ -142,7 +142,7 @@ Feature: Rule Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name         | ruleOne                            |
-            | rule_type    | http://localhost/ruletype/1        |
+            | ruleType     | http://localhost/ruletype/1        |
             | virtualhosts | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send PUT /rule/1
@@ -166,7 +166,7 @@ Feature: Rule Support
     Scenario: Update ruleType field of Rule (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
-            | rule_type | http://localhost/ruletype/2 |
+            | ruleType | http://localhost/ruletype/2 |
         And send PATCH /rule/1
         Then the response status is 204
         And a REST client authenticated as accountOne

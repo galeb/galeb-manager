@@ -50,7 +50,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @ManyToOne
     @JoinColumn(name = "ruletype_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
-    @JsonProperty(value = "rule_type", required = true)
+    @JsonProperty(value = "ruletype", required = true)
     private RuleType ruleType;
 
     @ManyToMany(fetch = FetchType.EAGER)
