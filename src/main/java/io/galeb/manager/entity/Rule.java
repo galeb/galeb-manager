@@ -25,12 +25,14 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
+
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -48,10 +50,10 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @ManyToOne
     @JoinColumn(name = "ruletype_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_ruletype"))
-    @JsonProperty(required = true)
+    @JsonProperty(value = "ruletype", required = true)
     private RuleType ruleType;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_virtualhost")),
     inverseJoinColumns=@JoinColumn(name = "virtualhost_id", nullable = true, foreignKey = @ForeignKey(name="FK_virtualhost_rule")))
     private Set<VirtualHost> virtualhosts = new HashSet<>();

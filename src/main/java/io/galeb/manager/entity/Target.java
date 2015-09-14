@@ -32,6 +32,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -49,7 +50,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
-    @JsonProperty(required = true)
+    @JsonProperty(value = "targetType", required = true)
     private TargetType targetType;
 
     @ManyToOne
@@ -59,12 +60,12 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JsonIgnore
     private long farmId;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(joinColumns=@JoinColumn(name = "target_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_target")),
     inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_target_parent")))
     private Set<Target> parents = new HashSet<>();
 
-    @ManyToMany(mappedBy="parents")
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "parents")
     private Set<Target> children = new HashSet<>();
 
     @JsonIgnore
@@ -77,9 +78,9 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "balancepolicy_id", foreignKey = @ForeignKey(name="FK_target_balancepolicy"))
+    @JsonProperty("balancepolicy")
     private BalancePolicy balancePolicy;
 
-    @JsonIgnore
     private Boolean global = false;
 
     public Target(String name, TargetType targetType) {
@@ -163,10 +164,12 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
+    @JsonProperty("_global")
     public boolean isGlobal() {
         return global;
     }
 
+    @JsonIgnore
     public Target setGlobal(Boolean global) {
         if (global != null) {
             this.global = global;
