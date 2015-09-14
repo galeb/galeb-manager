@@ -16,7 +16,7 @@ import io.galeb.manager.entity.Project;
 public class ProjectRepositoryImpl extends AbstractRepositoryImplementation<Project>
                                    implements ProjectRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT p FROM Project p "
+    public static final String FIND_ALL = "SELECT p FROM Project p "
                                            + "INNER JOIN p.teams t "
                                            + "INNER JOIN t.accounts a "
                                            + "WHERE 1 = :hasRoleAdmin OR "

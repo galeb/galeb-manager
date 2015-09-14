@@ -16,7 +16,7 @@ import io.galeb.manager.entity.VirtualHost;
 public class VirtualHostRepositoryImpl extends AbstractRepositoryImplementation<VirtualHost>
                                        implements VirtualHostRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT v FROM VirtualHost v "
+    public static final String FIND_ALL = "SELECT v FROM VirtualHost v "
                                             + "INNER JOIN v.project.teams t "
                                             + "INNER JOIN t.accounts a "
                                             + "WHERE 1 = :hasRoleAdmin OR "

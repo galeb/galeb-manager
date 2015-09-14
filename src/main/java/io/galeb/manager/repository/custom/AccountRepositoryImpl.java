@@ -16,7 +16,7 @@ import io.galeb.manager.entity.Account;
 public class AccountRepositoryImpl extends AbstractRepositoryImplementation<Account>
                                    implements AccountRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT a FROM Account a WHERE "
+    public static final String FIND_ALL = "SELECT a FROM Account a WHERE "
                                            + "1 = :hasRoleAdmin OR "
                                            + "a.name = :principalName";
 

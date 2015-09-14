@@ -16,7 +16,7 @@ import io.galeb.manager.entity.Team;
 public class TeamRepositoryImpl extends AbstractRepositoryImplementation<Team>
                                 implements TeamRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT t FROM Team t "
+    public static final String FIND_ALL = "SELECT t FROM Team t "
                                             + "LEFT JOIN t.accounts a "
                                             + "WHERE 1 = :hasRoleAdmin OR "
                                             + "a.name = :principalName";

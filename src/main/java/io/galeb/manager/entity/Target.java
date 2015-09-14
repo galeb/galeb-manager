@@ -38,13 +38,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NamedQuery(name = "Target.findAll", query =
-"SELECT ta FROM Target ta "
-        + "INNER JOIN ta.project.teams t "
-        + "INNER JOIN t.accounts a "
-        + "WHERE 1 = :hasRoleAdmin OR "
-        + "ta.global = TRUE OR "
-        + "a.name = :principalName")
+import io.galeb.manager.repository.custom.TargetRepositoryImpl;
+
+@NamedQuery(name = "Target.findAll", query = TargetRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {

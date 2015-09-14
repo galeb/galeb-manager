@@ -35,12 +35,9 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NamedQuery(name = "VirtualHost.findAll", query =
-"SELECT v FROM VirtualHost v "
-        + "INNER JOIN v.project.teams t "
-        + "INNER JOIN t.accounts a "
-        + "WHERE 1 = :hasRoleAdmin OR "
-        + "a.name = :principalName")
+import io.galeb.manager.repository.custom.VirtualHostRepositoryImpl;
+
+@NamedQuery(name = "VirtualHost.findAll", query = VirtualHostRepositoryImpl.FIND_ALL)
 @Entity
 @Table(name = "virtualhost")
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {

@@ -16,7 +16,7 @@ import io.galeb.manager.entity.Target;
 public class TargetRepositoryImpl extends AbstractRepositoryImplementation<Target>
                                   implements TargetRepositoryCustom {
 
-    private static final String FIND_ALL = "SELECT ta FROM Target ta "
+    public static final String FIND_ALL = "SELECT ta FROM Target ta "
                                             + "INNER JOIN ta.project.teams t "
                                             + "INNER JOIN t.accounts a "
                                             + "WHERE 1 = :hasRoleAdmin OR "

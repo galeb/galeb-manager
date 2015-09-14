@@ -38,10 +38,9 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NamedQuery(name="Account.findAll", query =
-"SELECT a FROM Account a WHERE "
-        + "1 = :hasRoleAdmin OR "
-        + "a.name = :principalName")
+import io.galeb.manager.repository.custom.AccountRepositoryImpl;
+
+@NamedQuery(name="Account.findAll", query = AccountRepositoryImpl.FIND_ALL)
 @Entity
 public class Account extends AbstractEntity<Account> {
 
