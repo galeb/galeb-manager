@@ -24,7 +24,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -49,6 +51,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.galeb.core.model.Entity;
 import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
@@ -180,9 +183,10 @@ public class GalebV3Driver implements Driver {
         try {
             if (!isOkNumElements(basePath, expectedNumElements)) {
                 return StatusFarm.FAIL;
-            };
-            if (parents.count()>0) {
-                parents.forEach(parent -> {
+            }
+            List<AbstractEntity<?>> listOfParents = parents.collect(Collectors.toList());
+            if (listOfParents.size()>0) {
+                listOfParents.forEach(parent -> {
                     try {
                         if (result.get()) {
                             boolean isSyncronized = isSyncronized(fullPath, name, parent.getName(), expectedId);
@@ -239,13 +243,18 @@ public class GalebV3Driver implements Driver {
             StreamSupport.stream(json.spliterator(), false)
                 .filter(element -> element.isObject() &&
                         element.get("id") != null &&
-                        element.get("id").asText("defaultTextIfAbsent").equals(name) &&
-                        (parent == null) ||
+                        element.get("id").asText("defaultTextIfAbsent").equals(name))
+                .forEach(element -> {
+                    if ((parent == null) ||
                                 (!(parent != null) &&
                                  element.get("parentId") != null &&
-                                 element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
-                .forEach(element -> {
-                    entity.setVersion(element.get("version").asInt(-1));
+                                 element.get("parentId").asText("defaultTextIfAbsent").equals(parent))) {
+
+                        entity.setVersion(element.get("version").asInt(-1));
+                    } else {
+                        LOGGER.debug("CHECK FAIL >>>>  "+fullPath+" : "+" parent="+parent+" expectedId="+expectedId);
+                        LOGGER.debug("           >>>>  "+fullPath+" : "+" parent(remote)="+element.get("parentId").asText()+" id(remote)="+element.get("version").asInt());
+                    }
             });
         }
         syncronized = expectedId == entity.getVersion();
