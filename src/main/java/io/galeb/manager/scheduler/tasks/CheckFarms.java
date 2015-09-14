@@ -152,8 +152,9 @@ public class CheckFarms {
                 if (!isOk.get()) {
                     if (farm.isAutoReload()) {
                         jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                    } else {
+                        LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
                     }
-                    LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
                 } else {
                     LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
                 }
