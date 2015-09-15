@@ -35,23 +35,23 @@ Feature: TargetType Support
 
     Scenario: Get TargetType
         Given a REST client authenticated as accountOne
-        When send GET /targettype/1
+        When send GET TargetType=tTypeOne
         Then the response status is 200
         And property name contains tTypeOne
 
     Scenario: Get null TargetType
         Given a REST client authenticated as accountOne
-        When send GET /targettype/2
+        When send GET TargetType=NULL
         Then the response status is 404
 
     Scenario: Update TargetType
         Given a REST client authenticated as admin
         When request json body has:
             | name | tTypeTwo |
-        And send PUT /targettype/1
+        And send PUT TargetType=tTypeOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /targettype/1
+        When send GET TargetType=tTypeTwo
         Then the response status is 200
         And property name contains tTypeTwo
 
@@ -59,14 +59,14 @@ Feature: TargetType Support
         Given a REST client authenticated as admin
         When request json body has:
             | name | tTypeThree |
-        And send PATCH /targettype/1
+        And send PATCH TargetType=tTypeOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /targettype/1
+        When send GET TargetType=tTypeThree
         Then the response status is 200
         And property name contains tTypeThree
 
     Scenario: Delete TargetType
         Given a REST client authenticated as admin
-        When send DELETE /targettype/1
+        When send DELETE TargetType=tTypeOne
         Then the response status is 204

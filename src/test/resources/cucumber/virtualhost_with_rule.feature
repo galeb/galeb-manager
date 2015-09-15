@@ -75,7 +75,7 @@ Feature: Virtualhost with Rule Support
         When request json body has:
             | name        | targetOne                      |
             | environment | http://localhost/environment/1 |
-            | targetType  | http://localhost/targettype/1  |
+            | targetType  | TargetType=poolOne  |
             | project     | http://localhost/project/1     |
         And send POST /target
         Then the response status is 201
