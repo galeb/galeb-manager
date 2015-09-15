@@ -37,13 +37,13 @@ import io.galeb.manager.jms.JmsConfiguration;
 public class CucumberTest {
 
     @BeforeClass
-    public static void beforeClass() {
+    public static void beforeRun() {
         System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(true));
     }
 
     @AfterClass
-    public static void afterClass() {
-        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(true));
+    public static void afterRun() {
+        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(false));
     }
 
 }
