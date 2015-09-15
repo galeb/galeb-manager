@@ -13,3 +13,9 @@ services:
 before_script:
   - mysql -e 'create database galeb;'
 
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
