@@ -50,7 +50,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
-    @JsonProperty(value = "targetType", required = true)
+    @JsonProperty(required = true)
     private TargetType targetType;
 
     @ManyToOne
