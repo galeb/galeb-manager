@@ -119,6 +119,7 @@ Feature: Target Support
         When send GET /target/3
         Then the response status is 404
 
+    @ignore @todo
     Scenario: Update Target
         Given a REST client authenticated as accountOne
         When request json body has:
