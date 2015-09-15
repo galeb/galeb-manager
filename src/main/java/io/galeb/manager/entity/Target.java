@@ -23,6 +23,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
@@ -81,6 +82,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JsonProperty("balancepolicy")
     private BalancePolicy balancePolicy;
 
+    @Column(insertable = false, updatable = false, nullable = false)
     private Boolean global = false;
 
     public Target(String name, TargetType targetType) {
