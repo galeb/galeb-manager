@@ -28,6 +28,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.flywaydb.core.Flyway;
@@ -55,6 +60,7 @@ import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import gherkin.deps.com.google.gson.Gson;
 import gherkin.deps.com.google.gson.GsonBuilder;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.repository.DatabaseConfiguration;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -67,14 +73,15 @@ import io.galeb.manager.repository.DatabaseConfiguration;
 @Ignore
 public class StepDefs {
 
-    private static Flyway flyway = new Flyway();
-
-    private static Log LOGGER = LogFactory.getLog(StepDefs.class);
-    private static final Gson jsonParser = new GsonBuilder().setPrettyPrinting()
-                                                            .create();
+    private static final Flyway FLYWAY     = new Flyway();
+    private static final Log    LOGGER     = LogFactory.getLog(StepDefs.class);
+    private static final Gson   jsonParser = new GsonBuilder().setPrettyPrinting().create();
 
     @Value("${local.server.port}")
     private int port;
+
+    @PersistenceContext
+    private EntityManager em;
 
     private RequestSpecification request;
 
@@ -82,13 +89,14 @@ public class StepDefs {
 
     private String token;
 
-    private RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig().followRedirects(false);
+    private RedirectConfig redirectConfig = RestAssuredConfig.config().getRedirectConfig()
+                                                                      .followRedirects(false);
 
     private RestAssuredConfig restAssuredConfig = RestAssuredConfig.config().redirect(redirectConfig);
 
     @PostConstruct
     public void init() {
-        flyway.setDataSource(DatabaseConfiguration.getUrl(),
+        FLYWAY.setDataSource(DatabaseConfiguration.getUrl(),
                              DatabaseConfiguration.getUsername(),
                              DatabaseConfiguration.getPassword());
     }
@@ -98,7 +106,7 @@ public class StepDefs {
         response = null;
         request = null;
         token = null;
-        flyway.migrate();
+        FLYWAY.migrate();
     }
 
     @After
@@ -110,7 +118,39 @@ public class StepDefs {
         } catch (Exception e) {
             LOGGER.warn(e);
         }
-        flyway.clean();
+        FLYWAY.clean();
+    }
+
+    private String processFullUrl(String data) {
+        String key = "=";
+        if (data.contains(key)) {
+            int indexOf = data.indexOf(key);
+            String entityClass = data.substring(0, indexOf);
+            return "http://localhost/" + entityClass.toLowerCase() + "/" + getIdFromData(data, indexOf);
+        }
+        return data;
+    }
+
+    private String getIdFromData(String dataWithTypeAndName, int keyPos) {
+        String id = "0";
+        String entityClass = dataWithTypeAndName.substring(0, keyPos);
+        String entityName = dataWithTypeAndName.substring(keyPos + 1, dataWithTypeAndName.length());
+        String jpqlFindByName ="SELECT e FROM " + entityClass + " e WHERE e.name = '" + entityName + "'";
+        Query query = em.createQuery(jpqlFindByName);
+        AbstractEntity<?> entity = null;
+
+        try {
+            entity = (AbstractEntity<?>) query.getSingleResult();
+        } catch (NoResultException e) {
+            LOGGER.warn("CUCUMBER: " + dataWithTypeAndName + "NOT FOUND (" + e.getMessage() + ")");
+        } finally {
+            if (entity != null) {
+               id = String.valueOf(entity.getId());
+            } else {
+                LOGGER.warn("CUCUMBER: " + dataWithTypeAndName + "NOT FOUND");
+            }
+        }
+        return id;
     }
 
     @Given("^a REST client unauthenticated$")
@@ -151,8 +191,12 @@ public class StepDefs {
                 String oldValue = entry.getValue();
                 if (oldValue.contains("[")) {
                     String[] arrayOfValues = oldValue.replaceAll("\\[|\\]| ", "").split(",");
+                    for (int x = 0; x < arrayOfValues.length; x++) {
+                        arrayOfValues[x] = processFullUrl(arrayOfValues[x]);
+                    }
                     jsonComponentsProcessed.put(entry.getKey(), arrayOfValues);
                 } else {
+                    oldValue = processFullUrl(oldValue);
                     jsonComponentsProcessed.put(entry.getKey(), oldValue);
                 }
             });
@@ -165,7 +209,8 @@ public class StepDefs {
     public void requestUriListBodyHas(List<String> uriList) throws Throwable {
         request.contentType("text/uri-list");
         if (!uriList.isEmpty()) {
-            String body = uriList.stream().collect(Collectors.joining("\n"));
+            String body = uriList.stream().map(uri -> processFullUrl(uri))
+                                          .collect(Collectors.joining("\n"));
             request.body(body);
         }
     }
@@ -179,14 +224,14 @@ public class StepDefs {
 
     @And("^send (.+) (.+)$")
     public void sendMethodPath(String method, String path) throws Throwable {
-        final String fullUrlStr="http://127.0.0.1:"+port+path;
-        URI fullUrl = URI.create(fullUrlStr);
+        URI fullUrl = URI.create(processFullUrl(path));
         switch (method) {
         case "GET":
             response = request.get(fullUrl).then();
             break;
         case "POST":
-            response = request.post(fullUrl).then();
+            final String fullUrlStr="http://127.0.0.1:"+port+path;
+            response = request.post(URI.create(fullUrlStr)).then();
             break;
         case "PUT":
             response = request.put(fullUrl).then();
