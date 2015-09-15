@@ -181,9 +181,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
     private void setGlobalIfNecessary(Target target) {
         boolean hasParentGlobal = target.getParents().stream().collect(
                 Collectors.groupingBy(Target::isGlobal)).keySet().contains(true);
-        if (hasParentGlobal) {
-            target.setGlobal(true);
-        }
+        target.setGlobal(hasParentGlobal);
     }
 
 }
