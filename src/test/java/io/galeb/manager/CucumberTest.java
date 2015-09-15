@@ -28,7 +28,8 @@ import cucumber.api.junit.Cucumber;
         monochrome = true,
         plugin= {"pretty", "json:target/cucumber.json", "html:target/cucumber"},
         glue = {"io.galeb"},
-        features= {"classpath:cucumber"}
+        features= {"classpath:cucumber"},
+        tags={"~@ignore"}
         )
 public class CucumberTest {
 
