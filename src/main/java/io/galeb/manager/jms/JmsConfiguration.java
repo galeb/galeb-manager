@@ -9,6 +9,8 @@ import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 @EnableJms
 public class JmsConfiguration {
 
+    public static final String DISABLE_JMS = "DISABLE_JMS";
+
     @Bean
     public DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory() {
         DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory =

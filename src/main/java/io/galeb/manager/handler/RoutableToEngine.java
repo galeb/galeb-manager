@@ -29,6 +29,7 @@ import org.springframework.jms.core.JmsTemplate;
 
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.jms.JmsConfiguration;
 
 public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
 
@@ -37,6 +38,9 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     private String queueCreateName = QUEUE_UNDEF;
     private String queueUpdateName = QUEUE_UNDEF;
     private String queueRemoveName = QUEUE_UNDEF;
+
+    private boolean disableJms = Boolean.getBoolean(System.getProperty(
+                                    JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
 
     protected abstract void setBestFarm(T entity) throws Exception;
 
@@ -92,7 +96,7 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     }
 
     protected void jmsSend(JmsTemplate jms, String queue, T entity) throws JmsException {
-        if (!QUEUE_UNDEF.equals(queue)) {
+        if (!QUEUE_UNDEF.equals(queue) && !disableJms) {
             jms.convertAndSend(queue, entity);
         }
     }

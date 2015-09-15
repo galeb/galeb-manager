@@ -18,10 +18,13 @@
 
 package io.galeb.manager;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 import cucumber.api.CucumberOptions;
 import cucumber.api.junit.Cucumber;
+import io.galeb.manager.jms.JmsConfiguration;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
@@ -32,5 +35,15 @@ import cucumber.api.junit.Cucumber;
         tags={"~@ignore"}
         )
 public class CucumberTest {
+
+    @BeforeClass
+    public static void beforeClass() {
+        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(true));
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(true));
+    }
 
 }

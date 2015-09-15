@@ -28,6 +28,7 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.jms.JmsConfiguration;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
@@ -54,6 +55,9 @@ public class CheckFarms {
 
     @Autowired
     JmsTemplate jms;
+
+    private boolean disableJms = Boolean.getBoolean(System.getProperty(
+                                    JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
 
     private Properties getProperties(final Farm farm,
                                      final AbstractEntity<?> entity,
@@ -150,7 +154,7 @@ public class CheckFarms {
 
                 farm.setStatus(isOk.get() ? EntityStatus.OK : EntityStatus.ERROR);
                 if (!isOk.get()) {
-                    if (farm.isAutoReload()) {
+                    if (farm.isAutoReload() && !disableJms) {
                         jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
                     } else {
                         LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
