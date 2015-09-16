@@ -19,6 +19,8 @@
 package io.galeb.manager.engine;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.farm.EntityFarm;
@@ -55,6 +57,10 @@ public interface Driver {
 
     default StatusFarm status(Properties properties) {
         return StatusFarm.UNKNOWN;
+    }
+
+    default Map<String, Properties> diff(Properties properties) {
+        return Collections.emptyMap();
     }
 
 }

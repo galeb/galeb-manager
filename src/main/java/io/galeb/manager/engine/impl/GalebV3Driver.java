@@ -24,7 +24,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,14 +62,13 @@ import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.handler.VirtualHostHandler;
 
 public class GalebV3Driver implements Driver {
 
     public static final String DRIVER_NAME = GalebV3Driver.class.getSimpleName()
                                                                 .replaceAll("Driver", "");
 
-    private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
+    private static final Log LOGGER = LogFactory.getLog(GalebV3Driver.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -311,6 +315,100 @@ public class GalebV3Driver implements Driver {
         } catch (IOException e) {
             return "";
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, Properties> diff(Properties properties) {
+        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
+
+        final String api = properties.getOrDefault("api", "localhost:9090").toString();
+        final Set<AbstractEntity<?>> virtualhosts = (Set<AbstractEntity<?>>)
+                            properties.getOrDefault("virtualhosts", Collections.emptySet());
+        final Set<AbstractEntity<?>> backendpools = (Set<AbstractEntity<?>>)
+                properties.getOrDefault("backendpools", Collections.emptySet());
+        final Set<AbstractEntity<?>> backends = (Set<AbstractEntity<?>>)
+                properties.getOrDefault("backends", Collections.emptySet());
+        final Set<AbstractEntity<?>> rules = (Set<AbstractEntity<?>>)
+                properties.getOrDefault("rules", Collections.emptySet());
+        entitiesMap.put("virtualhost", virtualhosts);
+        entitiesMap.put("backendpool", backendpools);
+        entitiesMap.put("backend", backends);
+        entitiesMap.put("rule", rules);
+
+        final Map<String, Properties> fullMap = new HashMap<>();
+        final Map<String, Properties> diffMap = new HashMap<>();
+
+        final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
+
+        pathList.stream().map(path -> api + "/" + path).forEach(fullPath -> {
+            try {
+                JsonNode json = getJson(fullPath);
+                if (json.isArray()) {
+                    json.forEach(element -> {
+                        Properties entityProperties = new Properties();
+                        String id = element.get("id").asText();
+                        JsonNode parentIdObj = element.get("parentId");
+                        String parentId = parentIdObj != null ? parentIdObj.asText() : "";
+                        String pk = element.get("pk").asText();
+                        String version = element.get("version").asText();
+                        String entityType = element.get("_entity_type").asText();
+                        String etag = element.get("_etag").asText();
+
+                        properties.put("pk", pk);
+                        properties.put("version", version);
+                        properties.put("entity_type", entityType);
+                        properties.put("etag", etag);
+                        fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
+                    });
+                }
+            } catch (Exception e) {
+                LOGGER.error(e);
+            }
+        });
+
+        pathList.stream().forEach(path -> {
+
+            Set<AbstractEntity<?>> entities = entitiesMap.get(path);
+
+            fullMap.entrySet().stream()
+                              .filter(entry ->
+                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
+                              .forEach(entry -> {
+                String id = entry.getValue().getOrDefault("id", "UNDEF").toString();
+                String parentId = entry.getValue().getOrDefault("parentId", "UNDEF").toString();
+
+                if (entities.stream().filter(entity ->
+                        entity.getName().equals(id)).count() == 0) {
+                    String key = entry.getKey();
+                    Properties entityProperties = entry.getValue();
+                    entityProperties.put("action", "DELETE");
+                    diffMap.put(key, entityProperties);
+                } else {
+                    // TODO: Check parentId
+                }
+            });
+
+            entities.stream().forEach(entity -> {
+                String id = entity.getName();
+                String parentId = ""; // TODO: How to get parent?
+                String key = api + "/" + path + "/" + id + "@" + parentId;
+                if (!fullMap.containsKey(key)) {
+                    Properties entityProperties = new Properties();
+                    entityProperties.put("action", "ADD");
+                    diffMap.put(key, entityProperties);
+                } else {
+                    Properties entityProperties = fullMap.get(key);
+                    if (!entityProperties.getOrDefault("version", "-999").equals(
+                            Long.valueOf(entity.getId()).toString())) {
+                        entityProperties.put("action", "RELOAD");
+                        diffMap.put(key, entityProperties);
+                    }
+                }
+            });
+        });
+
+        return diffMap;
     }
 
 }
