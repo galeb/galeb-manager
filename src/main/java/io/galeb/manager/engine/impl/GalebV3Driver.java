@@ -62,6 +62,8 @@ import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.WithParent;
+import io.galeb.manager.entity.WithParents;
 
 public class GalebV3Driver implements Driver {
 
@@ -320,7 +322,6 @@ public class GalebV3Driver implements Driver {
     @SuppressWarnings("unchecked")
     @Override
     public Map<String, Properties> diff(Properties properties) {
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
 
         final String api = properties.getOrDefault("api", "localhost:9090").toString();
         final Set<AbstractEntity<?>> virtualhosts = (Set<AbstractEntity<?>>)
@@ -331,17 +332,94 @@ public class GalebV3Driver implements Driver {
                 properties.getOrDefault("backends", Collections.emptySet());
         final Set<AbstractEntity<?>> rules = (Set<AbstractEntity<?>>)
                 properties.getOrDefault("rules", Collections.emptySet());
+
+        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
         entitiesMap.put("virtualhost", virtualhosts);
         entitiesMap.put("backendpool", backendpools);
         entitiesMap.put("backend", backends);
         entitiesMap.put("rule", rules);
 
-        final Map<String, Properties> fullMap = new HashMap<>();
-        final Map<String, Properties> diffMap = new HashMap<>();
+        final Map<String, Properties> fullMap = extractRemoteMap(api, properties);
+        final Map<String, Properties> diffMap = makeDiffMap(api, entitiesMap, fullMap);
 
+        return diffMap;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Properties> makeDiffMap(final String api,
+                                                final Map<String, Set<AbstractEntity<?>>> entitiesMap,
+                                                final Map<String, Properties> fullMap) {
+
+        final Map<String, Properties> diffMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
-        pathList.stream().map(path -> api + "/" + path).forEach(fullPath -> {
+        pathList.stream().forEach(path ->
+        {
+            Set<AbstractEntity<?>> entities = entitiesMap.get(path);
+
+            fullMap.entrySet().stream()
+                              .filter(entry ->
+                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
+                              .forEach(entry ->
+            {
+                final String key = entry.getKey();
+                final Properties entityProperties = entry.getValue();
+                final String id = entityProperties.getOrDefault("id", "UNDEF").toString();
+                final String parentId = entityProperties.getOrDefault("parentId", "UNDEF").toString();
+                final String version = entityProperties.getOrDefault("version", "UNDEF").toString();
+                final String pk = entityProperties.getOrDefault("pk", "UNDEF").toString();
+                AtomicBoolean hasId = new AtomicBoolean(false);
+
+                entities.stream().filter(entity -> entity.getName().equals(id))
+                                 .filter(entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
+                                                   (entity instanceof WithParent) &&
+                                                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                                        ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId) ||
+                                                   (entity instanceof WithParents) &&
+                                                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                                                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                                            .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
+                                 .forEach(entity ->
+                {
+                    hasId.set(true);
+                    if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
+                        changeAction(key, entityProperties, diffMap);
+                    }
+                });
+
+                if (!hasId.get()) {
+                    delAction(key, entityProperties, diffMap);
+                }
+            });
+
+            entities.stream().forEach(entity -> {
+                String id = entity.getName();
+                if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
+                    addAction(api, path, id, "", fullMap, diffMap);
+                }
+                if (entity instanceof WithParent) {
+                    String parentId = ((WithParent<AbstractEntity<?>>) entity).getParent().getName();
+                    addAction(api, path, id, parentId, fullMap, diffMap);
+                }
+                if (entity instanceof WithParents) {
+                    ((WithParents<AbstractEntity<?>>) entity).getParents().forEach(aParent ->
+                    {
+                        String parentId = aParent.getName();
+                        addAction(api, path, id, parentId, fullMap, diffMap);
+                    });
+                }
+            });
+        });
+        return diffMap;
+    }
+
+    private Map<String, Properties> extractRemoteMap(final String api,
+            Properties properties) {
+        final Map<String, Properties> fullMap = new HashMap<>();
+        final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
+
+        pathList.stream().map(path -> api + "/" + path).forEach(fullPath ->
+        {
             try {
                 JsonNode json = getJson(fullPath);
                 if (json.isArray()) {
@@ -366,49 +444,35 @@ public class GalebV3Driver implements Driver {
                 LOGGER.error(e);
             }
         });
+        return fullMap;
+    }
 
-        pathList.stream().forEach(path -> {
+    private void addAction(final String api,
+                           final String path,
+                           final String id,
+                           final String parentId,
+                           final Map<String, Properties> fullMap,
+                           final Map<String, Properties> diffMap) {
+        String key = api + "/" + path + "/" + id + "@" + parentId;
+        if (!fullMap.containsKey(key)) {
+            Properties entityProperties = new Properties();
+            entityProperties.put("action", "ADD");
+            diffMap.put(key, entityProperties);
+        }
+    }
 
-            Set<AbstractEntity<?>> entities = entitiesMap.get(path);
+    private void changeAction(final String key,
+                              final Properties entityProperties,
+                              final Map<String, Properties> diffMap) {
+        entityProperties.put("action", "CHANGE");
+        diffMap.put(key, entityProperties);
+    }
 
-            fullMap.entrySet().stream()
-                              .filter(entry ->
-                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
-                              .forEach(entry -> {
-                String id = entry.getValue().getOrDefault("id", "UNDEF").toString();
-                String parentId = entry.getValue().getOrDefault("parentId", "UNDEF").toString();
-
-                if (entities.stream().filter(entity ->
-                        entity.getName().equals(id)).count() == 0) {
-                    String key = entry.getKey();
-                    Properties entityProperties = entry.getValue();
-                    entityProperties.put("action", "DELETE");
-                    diffMap.put(key, entityProperties);
-                } else {
-                    // TODO: Check parentId
-                }
-            });
-
-            entities.stream().forEach(entity -> {
-                String id = entity.getName();
-                String parentId = ""; // TODO: How to get parent?
-                String key = api + "/" + path + "/" + id + "@" + parentId;
-                if (!fullMap.containsKey(key)) {
-                    Properties entityProperties = new Properties();
-                    entityProperties.put("action", "ADD");
-                    diffMap.put(key, entityProperties);
-                } else {
-                    Properties entityProperties = fullMap.get(key);
-                    if (!entityProperties.getOrDefault("version", "-999").equals(
-                            Long.valueOf(entity.getId()).toString())) {
-                        entityProperties.put("action", "RELOAD");
-                        diffMap.put(key, entityProperties);
-                    }
-                }
-            });
-        });
-
-        return diffMap;
+    private void delAction(final String key,
+                           final Properties entityProperties,
+                           final Map<String, Properties> diffMap) {
+        entityProperties.put("action", "DELETE");
+        diffMap.put(key, entityProperties);
     }
 
 }
