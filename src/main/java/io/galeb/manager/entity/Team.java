@@ -24,11 +24,14 @@ import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import io.galeb.manager.repository.custom.TeamRepositoryImpl;
 
 @NamedQuery(name="Team.findAll", query= TeamRepositoryImpl.FIND_ALL)
 @Entity
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
 public class Team extends AbstractEntity<Team> {
 
     private static final long serialVersionUID = -4278444359290384175L;

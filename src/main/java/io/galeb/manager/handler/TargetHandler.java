@@ -21,8 +21,6 @@ package io.galeb.manager.handler;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
 import java.util.Iterator;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -71,10 +69,8 @@ public class TargetHandler extends RoutableToEngine<Target> {
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
-        if (!target.getParents().isEmpty()) {
-            Set<Long> farmIds = target.getParents().stream().collect(
-                                    Collectors.groupingBy(Target::getFarmId)).keySet();
-            farmId = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
+        if (target.getParent() != null) {
+            farmId = target.getParent().getFarmId();
         } else {
             final Environment environment = target.getEnvironment();
             if (environment != null) {
@@ -131,10 +127,8 @@ public class TargetHandler extends RoutableToEngine<Target> {
     }
 
     private void setProject(Target target) throws Exception {
-        if (!target.getParents().isEmpty()) {
-            final Set<Project> projects = target.getParents().stream().collect(
-                                            Collectors.groupingBy(Target::getProject)).keySet();
-            final Project projectOfParent = projects.size() == 1 ? projects.iterator().next() : null;
+        if (target.getParent() != null) {
+            final Project projectOfParent = target.getParent().getProject();
 
             if (target.getProject() == null) {
                 target.setProject(projectOfParent);
@@ -155,11 +149,8 @@ public class TargetHandler extends RoutableToEngine<Target> {
     }
 
     private void setEnvironment(Target target) throws Exception {
-        final Set<Environment> environments = target.getParents().stream().collect(
-                                                Collectors.groupingBy(Target::getEnvironment)).keySet();
-        final Environment envOfParent = environments.size() == 1 ? environments.iterator().next() : null;
-
-        if (!target.getParents().isEmpty()) {
+        if (target.getParent() != null) {
+            final Environment envOfParent = target.getParent().getEnvironment();
             if (target.getEnvironment() == null) {
                 target.setEnvironment(envOfParent);
             } else {
@@ -179,9 +170,9 @@ public class TargetHandler extends RoutableToEngine<Target> {
     }
 
     private void setGlobalIfNecessary(Target target) {
-        boolean hasParentGlobal = target.getParents().stream().collect(
-                Collectors.groupingBy(Target::isGlobal)).keySet().contains(true);
-        target.setGlobal(hasParentGlobal);
+        if (target.getParent() != null) {
+            target.setGlobal(target.getParent().isGlobal());
+        }
     }
 
 }

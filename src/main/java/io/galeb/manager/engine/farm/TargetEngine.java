@@ -18,18 +18,6 @@
 
 package io.galeb.manager.engine.farm;
 
-import io.galeb.core.model.BackendPool;
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
-import io.galeb.manager.entity.Target;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
-import io.galeb.manager.service.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +27,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
+import io.galeb.core.model.BackendPool;
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.TargetRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.service.GenericEntityService;
 
 @Component
 public class TargetEngine extends AbstractEngine {
@@ -66,13 +67,7 @@ public class TargetEngine extends AbstractEngine {
     public void create(Target target) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        if (target.getParents().isEmpty()) {
-            createTarget(target, null, driver);
-        } else {
-            target.getParents().stream().forEach(parent -> {
-                createTarget(target, parent, driver);
-            });
-        }
+        createTarget(target, target.getParent(), driver);
     }
 
     private void createTarget(Target target, Target parent, final Driver driver) {
@@ -91,13 +86,7 @@ public class TargetEngine extends AbstractEngine {
     public void update(Target target) {
         LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        if (target.getParents().isEmpty()) {
-            updateTarget(target, null, driver);
-        } else {
-            target.getParents().stream().forEach(parent -> {
-                updateTarget(target, parent, driver);
-            });
-        }
+        updateTarget(target, target.getParent(), driver);
     }
 
     private void updateTarget(final Target target, final Target parent, final Driver driver) {
@@ -116,13 +105,7 @@ public class TargetEngine extends AbstractEngine {
     public void remove(Target target) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        if (target.getParents().isEmpty()) {
-            removeTarget(target, null, driver);
-        } else {
-            target.getParents().stream().forEach(parent -> {
-                removeTarget(target, parent, driver);
-            });
-        }
+        removeTarget(target, target.getParent(), driver);
     }
 
     private void removeTarget(final Target target, final Target parent, final Driver driver) {

@@ -93,7 +93,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JsonProperty("_lastmodified_by")
     private String lastModifiedBy;
 
-    @Column(name = "name", nullable = false, unique = true)
+    @Column(name = "name", nullable = false)
     @JsonProperty(required = true)
     private String name;
 
