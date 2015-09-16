@@ -65,4 +65,8 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
                 + "ta.global = TRUE OR "
                 + "a.name = ?#{principal.username})")
     Iterable<Target> findByTargetTypeName(@Param("name") String name);
+
+    @Query
+    Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
+
 }

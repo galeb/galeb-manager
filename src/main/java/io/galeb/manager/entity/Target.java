@@ -28,11 +28,11 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
@@ -45,7 +45,8 @@ import io.galeb.manager.repository.custom.TargetRepositoryImpl;
 @NamedQuery(name = "Target.findAll", query = TargetRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
-public class Target extends AbstractEntity<Target> implements WithFarmID<Target> {
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_parent_id_target", columnNames = { "name", "parent_id" }) })
+public class Target extends AbstractEntity<Target> implements WithFarmID<Target>, WithParent<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;
 
@@ -61,12 +62,11 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JsonIgnore
     private long farmId;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(joinColumns=@JoinColumn(name = "target_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_target")),
-    inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_target_parent")))
-    private Set<Target> parents = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
+    private Target parent;
 
-    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "parents")
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "parent")
     private Set<Target> children = new HashSet<>();
 
     @JsonIgnore
@@ -124,15 +124,13 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    public Set<Target> getParents() {
-        return parents;
+    @Override
+    public Target getParent() {
+        return parent;
     }
 
-    public Target setParents(Set<Target> parents) {
-        if (parents != null) {
-            this.parents.clear();
-            this.parents.addAll(parents);
-        }
+    public Target setParent(Target parent) {
+        this.parent = parent;
         return this;
     }
 

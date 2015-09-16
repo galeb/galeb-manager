@@ -65,7 +65,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
         long farmIdTarget = -1L;
-        Set<Long> farmIds = rule.getVirtualhosts().stream().collect(
+        Set<Long> farmIds = rule.getParents().stream().collect(
                 Collectors.groupingBy(VirtualHost::getFarmId)).keySet();
         long farmIdVirtualHost = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
 

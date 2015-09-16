@@ -122,7 +122,7 @@ public class CheckFarms {
                     final long ruleCount = getRules(farm).count();
 
                     getRules(farm).forEach(rule -> {
-                        Stream<VirtualHost> virtualhosts =  StreamSupport.stream(rule.getVirtualhosts().spliterator(), false);
+                        Stream<VirtualHost> virtualhosts =  StreamSupport.stream(rule.getParents().spliterator(), false);
                         Properties properties = getProperties(farm,
                                                               rule,
                                                               "rule",
@@ -138,12 +138,10 @@ public class CheckFarms {
 
                     getTargets(farm).forEach(target -> {
                         String targetTypeName = target.getTargetType().getName();
-                        Stream<Target> parents =  StreamSupport.stream(target.getParents().spliterator(), false);
                         Properties properties = getProperties(farm,
                                                               target,
                                                               target.getTargetType().getName().toLowerCase(),
-                                                              targetsCountMap.get(targetTypeName),
-                                                              parents);
+                                                              targetsCountMap.get(targetTypeName));
                         boolean lastStatus = isOk.get();
                         isOk.set(driver.status(properties).equals(StatusFarm.OK) && lastStatus);
                     });
@@ -179,7 +177,7 @@ public class CheckFarms {
     private Stream<Rule> getRules(Farm farm) {
         return StreamSupport.stream(
                 ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
-                .filter(rule -> !rule.getVirtualhosts().isEmpty());
+                .filter(rule -> !rule.getParents().isEmpty());
     }
 
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {

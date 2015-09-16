@@ -23,9 +23,10 @@ import java.util.Set;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "targettype")
+@Table(name = "targettype", uniqueConstraints = { @UniqueConstraint(name = "UK_name_targettype", columnNames = { "name" }) })
 public class TargetType extends AbstractEntity<TargetType> {
 
     private static final long serialVersionUID = 5596582746795373013L;

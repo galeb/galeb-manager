@@ -32,6 +32,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.Assert;
 
@@ -42,6 +45,7 @@ import io.galeb.manager.repository.custom.AccountRepositoryImpl;
 
 @NamedQuery(name="Account.findAll", query = AccountRepositoryImpl.FIND_ALL)
 @Entity
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_account", columnNames = { "name" }) })
 public class Account extends AbstractEntity<Account> {
 
     private static final long serialVersionUID = -2745836665462717899L;

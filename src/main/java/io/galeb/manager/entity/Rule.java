@@ -32,6 +32,8 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
@@ -44,7 +46,8 @@ import io.galeb.manager.repository.custom.RuleRepositoryImpl;
 @NamedQuery(name="Rule.findAll", query = RuleRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
-public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_rule", columnNames = { "name" }) })
+public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, WithParents<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373020L;
 
@@ -55,8 +58,8 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_virtualhost")),
-    inverseJoinColumns=@JoinColumn(name = "virtualhost_id", nullable = true, foreignKey = @ForeignKey(name="FK_virtualhost_rule")))
-    private Set<VirtualHost> virtualhosts = new HashSet<>();
+    inverseJoinColumns=@JoinColumn(name = "parents_id", nullable = true, foreignKey = @ForeignKey(name="FK_parents_rule")))
+    private Set<VirtualHost> parents = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "target_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
@@ -98,13 +101,15 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule> {
         return this;
     }
 
-    public Set<VirtualHost> getVirtualhosts() {
-        return virtualhosts;
+    @Override
+    public Set<VirtualHost> getParents() {
+        return parents;
     }
 
-    public Rule setVirtualhosts(Set<VirtualHost> virtualhosts) {
-        if (virtualhosts != null) {
-            this.virtualhosts = virtualhosts;
+    public Rule setParents(Set<VirtualHost> parents) {
+        if (parents != null) {
+            this.parents.clear();
+            this.parents.addAll(parents);
         }
         return this;
     }

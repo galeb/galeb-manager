@@ -18,18 +18,6 @@
 
 package io.galeb.manager.engine.farm;
 
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
-import io.galeb.manager.service.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +27,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.Driver;
+import io.galeb.manager.engine.DriverBuilder;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.security.CurrentUser;
+import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.service.GenericEntityService;
 
 @Component
 public class RuleEngine extends AbstractEngine {
@@ -66,7 +67,7 @@ public class RuleEngine extends AbstractEngine {
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getVirtualhosts().stream().forEach(virtualhost -> {
+        rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
 
             try {
@@ -84,7 +85,7 @@ public class RuleEngine extends AbstractEngine {
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getVirtualhosts().stream().forEach(virtualhost -> {
+        rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
 
             try {
@@ -102,7 +103,7 @@ public class RuleEngine extends AbstractEngine {
     public void remove(Rule rule) {
         LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getVirtualhosts().stream().forEach(virtualhost -> {
+        rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
 
             try {
