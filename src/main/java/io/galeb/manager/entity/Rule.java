@@ -57,8 +57,8 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     private RuleType ruleType;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_virtualhost")),
-    inverseJoinColumns=@JoinColumn(name = "parents_id", nullable = true, foreignKey = @ForeignKey(name="FK_parents_rule")))
+    @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent")),
+    inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_rule")))
     private Set<VirtualHost> parents = new HashSet<>();
 
     @ManyToOne
