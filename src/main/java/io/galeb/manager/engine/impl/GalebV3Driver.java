@@ -82,9 +82,10 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean create(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
-        String uriPath = "http://" + api + "/" + path;
+        String uriPath = api + "/" + path;
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
 
@@ -102,9 +103,10 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean update(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
-        String uriPath = "http://" + api + "/" + path;
+        String uriPath = api + "/" + path;
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
 
@@ -123,9 +125,10 @@ public class GalebV3Driver implements Driver {
     public boolean remove(Properties properties) {
         boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
-        String uriPath = "http://" + api + "/" + path;
+        String uriPath = api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
 
@@ -149,6 +152,7 @@ public class GalebV3Driver implements Driver {
     public boolean reload(Properties properties) throws IOException {
         boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
+        api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
         String[] apiWithPort = api.split(":");
         String hostName = apiWithPort[0];
         int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
@@ -168,6 +172,7 @@ public class GalebV3Driver implements Driver {
     @Override
     public StatusFarm status(Properties properties) {
         String api = properties.getOrDefault("api", "localhost:9090").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
         String path = properties.getOrDefault("path", "").toString();
         String name = properties.getOrDefault("name", "UNDEF").toString();
         Stream<? extends AbstractEntity<?>> parents =
@@ -175,7 +180,7 @@ public class GalebV3Driver implements Driver {
         int expectedId = properties.getOrDefault("id", -1);
         long expectedNumElements = properties.getOrDefault("numElements", -1L);
 
-        String basePath = "http://" + api + "/" + path;
+        String basePath = api + "/" + path;
         String nameEncoded = name;
         try {
             nameEncoded = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
@@ -323,7 +328,9 @@ public class GalebV3Driver implements Driver {
     @Override
     public Map<String, String> diff(Map<String, Object> properties) {
 
-        final String api = properties.getOrDefault("api", "localhost:9090").toString();
+        String api = properties.getOrDefault("api", "localhost:9090").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
+
         final Set<AbstractEntity<?>> virtualhosts = (Set<AbstractEntity<?>>)
                 properties.getOrDefault("virtualhosts", Collections.emptySet());
         final Set<AbstractEntity<?>> backendpools = (Set<AbstractEntity<?>>)
