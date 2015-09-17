@@ -2,6 +2,7 @@ package io.galeb.manager.scheduler.tasks;
 
 import static io.galeb.manager.scheduler.SchedulerConfiguration.GALEB_DISABLE_SCHED;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -15,6 +16,8 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
@@ -55,6 +58,9 @@ public class CheckFarms {
 
     @Autowired
     JmsTemplate jms;
+
+    private final ObjectMapper mapper = new ObjectMapper();
+
 
     private boolean disableJms = Boolean.getBoolean(System.getProperty(
                                     JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
@@ -183,6 +189,42 @@ public class CheckFarms {
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {
         return StreamSupport.stream(
                 virtualHostRepository.findByFarmId(farm.getId()).spliterator(), false);
+    }
+
+    @Scheduled(fixedRate = 10000)
+    private void diff() {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+
+        StreamSupport.stream(farmRepository.findAll().spliterator(), false)
+                     .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
+                     .forEach(farm ->
+        {
+            final Driver driver = DriverBuilder.getDriver(farm);
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("api", farm.getApi());
+            properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
+            properties.put("backendpools", getTargets(farm)
+                    .filter(target -> target.getTargetType().getName().equals("BackendPool"))
+                    .collect(Collectors.toSet()));
+            properties.put("backends", getTargets(farm)
+                    .filter(target -> target.getTargetType().getName().equals("Backend"))
+                    .collect(Collectors.toSet()));
+            properties.put("rules", getRules(farm).collect(Collectors.toSet()));
+
+            try {
+                String json = mapper.writeValueAsString(driver.diff(properties));
+                LOGGER.warn("----------------------");
+                LOGGER.warn(json);
+                LOGGER.warn("----------------------");
+            } catch (Exception e) {
+                LOGGER.error(e);
+                e.printStackTrace();
+            }
+
+        });
+
+        SystemUserService.runAs(currentUser);
     }
 
 }
