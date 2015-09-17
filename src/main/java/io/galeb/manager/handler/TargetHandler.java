@@ -41,6 +41,7 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.exceptions.ConflictException;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.CurrentUser;
@@ -94,6 +95,12 @@ public class TargetHandler extends RoutableToEngine<Target> {
     @HandleBeforeCreate
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
+        if (target.getParent() == null) {
+            Target targetPersisted = targetRepository.findByName(target.getName());
+            if (targetPersisted != null && targetPersisted.getParent() == null) {
+                throw new ConflictException("Duplicate entry");
+            }
+        }
         beforeCreate(target, LOGGER);
         setProject(target);
         setEnvironment(target);
