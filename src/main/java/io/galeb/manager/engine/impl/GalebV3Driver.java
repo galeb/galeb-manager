@@ -18,10 +18,9 @@
 
 package io.galeb.manager.engine.impl;
 
-import java.io.InputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -71,7 +70,6 @@ import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.entity.AbstractEntity;
-import scala.annotation.meta.getter;
 
 public class GalebV3Driver implements Driver {
 
