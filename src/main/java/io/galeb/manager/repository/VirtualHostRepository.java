@@ -54,6 +54,6 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Iterable<VirtualHost> findByFarmId(long id);
+    Iterable<VirtualHost> findByFarmId(@Param("id") long id);
 
 }

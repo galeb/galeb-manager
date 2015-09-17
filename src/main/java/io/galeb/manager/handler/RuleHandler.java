@@ -26,9 +26,11 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
+import org.springframework.data.rest.core.annotation.HandleAfterLinkSave;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
+import org.springframework.data.rest.core.annotation.HandleBeforeLinkSave;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.jms.core.JmsTemplate;
@@ -85,7 +87,6 @@ public class RuleHandler extends RoutableToEngine<Rule> {
     public void beforeCreate(Rule rule) throws Exception {
         beforeCreate(rule, LOGGER);
         setTargetGlobalIfNecessary(rule);
-
     }
 
     @HandleAfterCreate
@@ -99,9 +100,21 @@ public class RuleHandler extends RoutableToEngine<Rule> {
         setTargetGlobalIfNecessary(rule);
     }
 
+    @HandleBeforeLinkSave
+    public void beforeLinkSave(Rule rule) throws Exception {
+        LOGGER.info(Rule.class.getSimpleName()+": HandleBeforeLinkSave");
+        beforeCreate(rule);
+    }
+
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
         afterSave(rule, jms, LOGGER);
+    }
+
+    @HandleAfterLinkSave
+    public void afterLinkSave(Rule rule) throws Exception {
+        LOGGER.info(Rule.class.getSimpleName()+": HandleAfterLinkSave");
+        afterCreate(rule);
     }
 
     @HandleBeforeDelete

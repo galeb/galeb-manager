@@ -186,6 +186,7 @@ createFarm () {
               "name": "'$NAME'",
               "domain": "'$DOMAIN'",
               "api": "'$API'",
+              "autoReload": true,
               "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
               "provider": "'$PROTOCOL'://'$SERVER'/provider/'$PROVIDER_ID'"
           }' \
@@ -456,9 +457,9 @@ createProvider $TOKEN $PROVIDER_NAME
 # CREATE A ENVIRONMENT
 createEnvironment $TOKEN $ENV_NAME
 
-# CREATE TARGET TYPES
-createTargetType $TOKEN $TARGETTYPE_POOL_NAME
-createTargetType $TOKEN $TARGETTYPE_BACKEND_NAME
+# CREATE TARGET TYPES (unnecessary for now)
+#createTargetType $TOKEN $TARGETTYPE_POOL_NAME
+#createTargetType $TOKEN $TARGETTYPE_BACKEND_NAME
 
 # CREATE A RULE TYPE
 createRuleType $TOKEN $RULETYPE_NAME

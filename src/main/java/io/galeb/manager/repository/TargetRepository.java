@@ -55,7 +55,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Iterable<Target> findByFarmId(long id);
+    Iterable<Target> findByFarmId(@Param("id") long id);
 
     @Query("SELECT ta FROM Target ta "
             + "INNER JOIN ta.project.teams t "
