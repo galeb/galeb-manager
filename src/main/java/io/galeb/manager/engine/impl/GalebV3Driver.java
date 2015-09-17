@@ -250,10 +250,10 @@ public class GalebV3Driver implements Driver {
                         element.get("id").asText("defaultTextIfAbsent").equals(name))
                 .forEach(element -> {
                     if ((parent == null) ||
-                                (!(parent != null) &&
-                                 element.get("parentId") != null &&
-                                 element.get("parentId").asText("defaultTextIfAbsent").equals(parent))) {
-
+                        (parent != null &&
+                             element.get("parentId") != null &&
+                             element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
+                    {
                         entity.setVersion(element.get("version").asInt(-1));
                     } else {
                         LOGGER.debug("CHECK FAIL >>>>  "+fullPath+" : "+" parent="+parent+" expectedId="+expectedId);
