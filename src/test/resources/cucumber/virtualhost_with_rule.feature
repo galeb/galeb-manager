@@ -83,7 +83,7 @@ Feature: Virtualhost with Rule Support
         And request json body has:
             | name         | ruleOne                            |
             | ruleType     | http://localhost/ruletype/1        |
-            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | parents      | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send POST /rule
         Then the response status is 201
@@ -112,19 +112,19 @@ Feature: Virtualhost with Rule Support
         And a REST client authenticated as accountOne
         When request uri-list body has:
             | http://localhost/virtualhost/1 |
-        And send PATCH /rule/1/virtualhosts
+        And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne
         When request uri-list body has:
             | http://localhost/virtualhost/2 |
-        And send PATCH /rule/1/virtualhosts
+        And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/1
+        When send GET /rule/1/parents/1
         Then the response status is 200
         And property name contains virtOne
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/2
+        When send GET /rule/1/parents/2
         Then the response status is 200
         And property name contains virtTwo
         And a REST client authenticated as accountOne
@@ -147,19 +147,19 @@ Feature: Virtualhost with Rule Support
         And a REST client authenticated as accountOne
         When request uri-list body has:
             | http://localhost/virtualhost/1 |
-        And send PATCH /rule/1/virtualhosts
+        And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne
         When request uri-list body has:
             | http://localhost/virtualhost/2 |
-        And send PATCH /rule/1/virtualhosts
+        And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/1
+        When send GET /rule/1/parents/1
         Then the response status is 200
         And property name contains virtOne
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/2
+        When send GET /rule/1/parents/2
         Then the response status is 200
         And property name contains virtTwo
         And a REST client authenticated as accountOne
@@ -171,13 +171,13 @@ Feature: Virtualhost with Rule Support
         Then the response status is 200
         And property name contains ruleOne
         And a REST client authenticated as accountOne
-        When send DELETE /rule/1/virtualhosts/1
+        When send DELETE /rule/1/parents/1
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/1
+        When send GET /rule/1/parents/1
         Then the response status is 404
         And a REST client authenticated as accountOne
-        When send GET /rule/1/virtualhosts/2
+        When send GET /rule/1/parents/2
         Then the response status is 200
         And a REST client authenticated as accountOne
         When send GET /virtualhost/2

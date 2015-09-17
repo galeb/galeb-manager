@@ -55,7 +55,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo              |
             | targetType | TargetType=targetTypeOne  |
-            | parents    | [ Target=targetOne ]      |
+            | parent     | Target=targetOne          |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
@@ -78,7 +78,7 @@ Feature: Target Support
         And request json body has:
             | name       | newTargetTwo              |
             | targetType | TargetType=targetTypeOne  |
-            | parents    | [ Target=targetOne ]      |
+            | parent     | Target=targetOne          |
             | project    | Project=projTwo           |
         And send POST /target
         Then the response status is 400
@@ -93,15 +93,36 @@ Feature: Target Support
         And request json body has:
             | name        | newTargetTwo              |
             | targetType  | TargetType=targetTypeOne  |
-            | parents     | [ Target=targetOne ]      |
+            | parent      | Target=targetOne          |
             | environment | Environment=envTwo        |
         And send POST /target
         Then the response status is 400
 
-    Scenario: Create duplicated Target
+    @ignore @todo
+    Scenario: Create duplicated Target without parent
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | targetOne                |
+            | targetType  | TargetType=targetTypeOne |
+            | environment | Environment=envOne       |
+            | project     | Project=projOne          |
+        And send POST /target
+        Then the response status is 409
+
+    Scenario: Create duplicated Target with parent
+        Given a REST client authenticated as accountOne
+        When request json body has:
+            | name        | targetTwo                |
+            | parent      | Target=targetOne         |
+            | targetType  | TargetType=targetTypeOne |
+            | environment | Environment=envOne       |
+            | project     | Project=projOne          |
+        And send POST /target
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request json body has:
+            | name        | targetTwo                |
+            | parent      | Target=targetOne         |
             | targetType  | TargetType=targetTypeOne |
             | environment | Environment=envOne       |
             | project     | Project=projOne          |
@@ -182,42 +203,12 @@ Feature: Target Support
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
-        When request uri-list body has:
-            | Target=targetParentOne |
-        And send PATCH /target/1/parents
+        When request json body has:
+            | parent | Target=targetParentOne |
+        And send PATCH Target=targetOne
         Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /target/1/parents/2
-        Then the response status is 200
-        And property name contains targetParentOne
         And a REST client authenticated as accountOne
         When send GET /target/2/children/1
         Then the response status is 200
         And property name contains targetOne
 
-    Scenario: Remove a parent target from a target
-        Given a REST client authenticated as accountOne
-        And request json body has:
-            | name        | targetParentOne          |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
-        And send POST /target
-        Then the response status is 201
-        And a REST client authenticated as accountOne
-        When request uri-list body has:
-            | Target=targetParentOne |
-        And send PATCH /target/1/parents
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /target/1/parents/2
-        Then the response status is 200
-        And a REST client authenticated as accountOne
-        When send DELETE /target/1/parents/2
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET /target/1/parents/2
-        Then the response status is 404
-        And a REST client authenticated as accountOne
-        When send GET Target=targetParentOne
-        Then the response status is 200

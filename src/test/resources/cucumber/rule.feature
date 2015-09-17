@@ -76,7 +76,7 @@ Feature: Rule Support
         And request json body has:
             | name         | ruleOne                            |
             | ruleType     | http://localhost/ruletype/1        |
-            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | parents      | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
             | default      | true                               |
             | order        | 0                                  |
@@ -90,7 +90,7 @@ Feature: Rule Support
         When request json body has:
             | name         | ruleOne                            |
             | ruleType     | http://localhost/ruletype/1        |
-            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | parents      | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send POST /rule
         Then the response status is 409
@@ -122,7 +122,7 @@ Feature: Rule Support
         And request json body has:
             | name         | ruleTwo                            |
             | ruleType     | http://localhost/ruletype/1        |
-            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | parents      | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/2          |
         And send POST /rule
         Then the response status is 400
@@ -143,7 +143,7 @@ Feature: Rule Support
         When request json body has:
             | name         | ruleOne                            |
             | ruleType     | http://localhost/ruletype/1        |
-            | virtualhosts | [ http://localhost/virtualhost/1 ] |
+            | parents      | [ http://localhost/virtualhost/1 ] |
             | target       | http://localhost/target/1          |
         And send PUT /rule/1
         Then the response status is 204
