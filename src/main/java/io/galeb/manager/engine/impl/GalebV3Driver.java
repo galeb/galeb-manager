@@ -18,7 +18,11 @@
 
 package io.galeb.manager.engine.impl;
 
+import java.io.InputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +30,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +42,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpHost;
@@ -48,9 +54,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -62,6 +71,7 @@ import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.entity.AbstractEntity;
+import scala.annotation.meta.getter;
 
 public class GalebV3Driver implements Driver {
 
@@ -90,9 +100,133 @@ public class GalebV3Driver implements Driver {
             URI uri = new URI(uriPath);
             RequestEntity<String> request = RequestEntity.post(uri).contentType(MediaType.APPLICATION_JSON).body(json);
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = response.getStatusCode().value() < 400;
+            result = getResultFromStatusCode(request, response);
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unused")
+    private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
+        InputStream content = null;
+        try {
+            content = request.getEntity().getContent();
+        } catch (IOException e) {
+            LOGGER.error(e);
+        }
+        BufferedReader bufferedReader = null;
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        try {
+            bufferedReader = new BufferedReader(new InputStreamReader(content));
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException e) {
+            LOGGER.error(e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            }
+        }
+        String body = stringBuilder.toString();
+
+        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newMapOfHeaders =
+                (Map<String, List<String>>) Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        headers.putAll(newMapOfHeaders);
+        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
+                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
+
+        RequestEntity<String> newRequest = new RequestEntity<String>(body,
+                                                                     headers,
+                                                                     httpMethod,
+                                                                     URI.create(request.getRequestLine().getUri()));
+
+
+        InputStream responseContent = null;
+        try {
+            responseContent = response.getEntity().getContent();
+        } catch (IOException e) {
+            LOGGER.error(e);
+        }
+        bufferedReader = null;
+        stringBuilder = new StringBuilder();
+        line = "";
+        try {
+            bufferedReader = new BufferedReader(new InputStreamReader(content));
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException e) {
+            LOGGER.error(e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            }
+        }
+        String responseBody = stringBuilder.toString();
+
+        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newResponseMapOfHeaders =
+                (Map<String, List<String>>) Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        responseHeaders.putAll(newResponseMapOfHeaders);
+        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
+                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
+
+        ResponseEntity<String> newResponse = new ResponseEntity<String>(responseBody,
+                                                                        responseHeaders,
+                                                                        responseStatusCode);
+
+        return getResultFromStatusCode(newRequest, newResponse);
+    }
+
+    private boolean getResultFromStatusCode(RequestEntity<String> request, ResponseEntity<String> response) {
+        boolean result = false;
+        HttpStatus statusCode = response.getStatusCode();
+        String status = "HTTP/1.? " + statusCode.value()+" " + statusCode.getReasonPhrase();
+        if (statusCode.value() < 400) {
+            result = true;
+            LOGGER.info(request.getMethod().toString() + " " + request.getUrl().toString());
+            request.getHeaders().entrySet().forEach(entry -> {
+                LOGGER.debug(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
+            });
+            LOGGER.info(request.getBody());
+            LOGGER.info("---");
+            LOGGER.info(status);
+            response.getHeaders().entrySet().forEach(entry -> {
+                LOGGER.info(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
+            });
+            String body = request.getBody();
+            if (body != null) {
+                LOGGER.info(body);
+            }
+        } else {
+            LOGGER.error(request.getMethod().toString() + " " + request.getUrl().toString());
+            request.getHeaders().entrySet().forEach(entry -> {
+                LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
+            });
+            String body = request.getBody();
+            if (body != null) {
+                LOGGER.error(body);
+            }
+            LOGGER.error("---");
+            LOGGER.error(status);
+            response.getHeaders().entrySet().forEach(entry -> {
+                LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
+            });
+            LOGGER.error(response.getBody());
         }
         return result;
     }
@@ -110,7 +244,7 @@ public class GalebV3Driver implements Driver {
             URI uri = new URI(uriPath);
             RequestEntity<String> request = RequestEntity.put(uri).contentType(MediaType.APPLICATION_JSON).body(json);
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = response.getStatusCode().value() < 400;
+            result = getResultFromStatusCode(request, response);
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("PUT "+uriPath+" ("+e.getMessage()+")");
         }
@@ -135,7 +269,7 @@ public class GalebV3Driver implements Driver {
             delete.setEntity(new StringEntity(json));
             HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
             httpClient.close();
-            result = response.getStatusLine().getStatusCode() < 400;
+            result = getResultFromStatusCode(delete, response);
         } catch (IOException e) {
             e.printStackTrace();
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
