@@ -27,7 +27,7 @@ public class TeamRepositoryImpl extends AbstractRepositoryImplementation<Team>
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<Team, ?> entityInformation;
 
     @PostConstruct

@@ -124,23 +124,17 @@ public class FarmEngine extends AbstractEngine {
             Iterable<VirtualHost> virtualhosts = virtualHostRepository.findByFarmId(farmId);
             SystemUserService.runAs(currentUser);
             if (targets != null) {
-                targets.forEach(target -> {
-                    jms.convertAndSend(TargetEngine.QUEUE_CREATE, target);
-                });
+                targets.forEach(target -> jms.convertAndSend(TargetEngine.QUEUE_CREATE, target));
             } else {
                 LOGGER.warn("targets is null");
             }
             if (rules != null) {
-                rules.forEach(rule -> {
-                    jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule);
-                });
+                rules.forEach(rule -> jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule));
             } else {
                 LOGGER.warn("rules is null");
             }
             if (virtualhosts != null) {
-                virtualhosts.forEach(virtualhost -> {
-                    jms.convertAndSend(VirtualHostEngine.QUEUE_CREATE, virtualhost);
-                });
+                virtualhosts.forEach(virtualhost -> jms.convertAndSend(VirtualHostEngine.QUEUE_CREATE, virtualhost));
             } else {
                 LOGGER.warn("virtualhosts is null");
             }
@@ -172,7 +166,6 @@ public class FarmEngine extends AbstractEngine {
     }
 
     private Properties makeProperties(Farm farm) {
-        Properties properties = fromEntity(farm);
-        return properties;
+        return fromEntity(farm);
     }
 }

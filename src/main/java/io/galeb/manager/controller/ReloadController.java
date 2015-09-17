@@ -31,7 +31,7 @@ public class ReloadController extends RoutableToEngine<Farm> {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value="/{id}", method = RequestMethod.GET)
     public ResponseEntity<String> reload(@PathVariable long id) throws Exception {
-        String result = "";
+        String result;
         JsonMapper json = new JsonMapper();
         Farm farm = farmRepository.findOne(id);
         if (farm != null) {
@@ -42,7 +42,7 @@ public class ReloadController extends RoutableToEngine<Farm> {
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<String>(result, HttpStatus.ACCEPTED);
+        return new ResponseEntity<>(result, HttpStatus.ACCEPTED);
     }
 
     @Override

@@ -27,7 +27,7 @@ public class AccountRepositoryImpl extends AbstractRepositoryImplementation<Acco
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<Account, ?> entityInformation;
 
     @PostConstruct

@@ -29,7 +29,7 @@ public class TargetRepositoryImpl extends AbstractRepositoryImplementation<Targe
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<Target, ?> entityInformation;
 
     @PostConstruct

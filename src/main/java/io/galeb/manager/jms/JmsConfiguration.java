@@ -13,9 +13,7 @@ public class JmsConfiguration {
 
     @Bean
     public DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory() {
-        DefaultJmsListenerContainerFactory defaultJmsListenerContainerFactory =
-                new DefaultJmsListenerContainerFactory();
-        return defaultJmsListenerContainerFactory;
+        return new DefaultJmsListenerContainerFactory();
     }
 
 }

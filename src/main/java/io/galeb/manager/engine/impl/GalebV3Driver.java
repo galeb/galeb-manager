@@ -18,34 +18,17 @@
 
 package io.galeb.manager.engine.impl;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.galeb.core.model.Entity;
+import io.galeb.manager.common.EmptyStream;
+import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.Driver;
+import io.galeb.manager.entity.AbstractEntity;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.Header;
-import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.*;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
 import org.apache.http.annotation.NotThreadSafe;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -53,23 +36,21 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.*;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.galeb.core.model.Entity;
-import io.galeb.manager.common.EmptyStream;
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.entity.AbstractEntity;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class GalebV3Driver implements Driver {
 
@@ -136,13 +117,13 @@ public class GalebV3Driver implements Driver {
 
         MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
         Map<String, List<String>> newMapOfHeaders =
-                (Map<String, List<String>>) Arrays.asList(request.getAllHeaders()).stream().collect(
+                Arrays.asList(request.getAllHeaders()).stream().collect(
                         Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
         headers.putAll(newMapOfHeaders);
         HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
                 .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
 
-        RequestEntity<String> newRequest = new RequestEntity<String>(body,
+        RequestEntity<String> newRequest = new RequestEntity<>(body,
                                                                      headers,
                                                                      httpMethod,
                                                                      URI.create(request.getRequestLine().getUri()));
@@ -158,7 +139,7 @@ public class GalebV3Driver implements Driver {
         stringBuilder = new StringBuilder();
         line = "";
         try {
-            bufferedReader = new BufferedReader(new InputStreamReader(content));
+            bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
             while ((line = bufferedReader.readLine()) != null) {
                 stringBuilder.append(line);
             }
@@ -177,13 +158,13 @@ public class GalebV3Driver implements Driver {
 
         MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
         Map<String, List<String>> newResponseMapOfHeaders =
-                (Map<String, List<String>>) Arrays.asList(request.getAllHeaders()).stream().collect(
+                Arrays.asList(request.getAllHeaders()).stream().collect(
                         Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
         responseHeaders.putAll(newResponseMapOfHeaders);
         HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
                 .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
 
-        ResponseEntity<String> newResponse = new ResponseEntity<String>(responseBody,
+        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
                                                                         responseHeaders,
                                                                         responseStatusCode);
 
@@ -197,33 +178,29 @@ public class GalebV3Driver implements Driver {
         if (statusCode.value() < 400) {
             result = true;
             LOGGER.info(request.getMethod().toString() + " " + request.getUrl().toString());
-            request.getHeaders().entrySet().forEach(entry -> {
-                LOGGER.debug(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
-            });
+            request.getHeaders().entrySet().forEach(entry ->
+                    LOGGER.debug(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
             LOGGER.info(request.getBody());
             LOGGER.info("---");
             LOGGER.info(status);
-            response.getHeaders().entrySet().forEach(entry -> {
-                LOGGER.info(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
-            });
+            response.getHeaders().entrySet().forEach(entry ->
+                    LOGGER.info(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
             String body = request.getBody();
             if (body != null) {
                 LOGGER.info(body);
             }
         } else {
             LOGGER.error(request.getMethod().toString() + " " + request.getUrl().toString());
-            request.getHeaders().entrySet().forEach(entry -> {
-                LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
-            });
+            request.getHeaders().entrySet().forEach(entry ->
+                    LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
             String body = request.getBody();
             if (body != null) {
                 LOGGER.error(body);
             }
             LOGGER.error("---");
             LOGGER.error(status);
-            response.getHeaders().entrySet().forEach(entry -> {
-                LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(",")));
-            });
+            response.getHeaders().entrySet().forEach(entry ->
+                    LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
             LOGGER.error(response.getBody());
         }
         return result;
@@ -277,7 +254,6 @@ public class GalebV3Driver implements Driver {
 
     @Override
     public boolean reload(Properties properties) throws IOException {
-        boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
         String[] apiWithPort = api.split(":");
         String hostName = apiWithPort[0];
@@ -288,7 +264,7 @@ public class GalebV3Driver implements Driver {
         delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
         HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
 
-        result = response.getStatusLine().getStatusCode() < 400;
+        boolean result = response.getStatusLine().getStatusCode() < 400;
         httpClient.close();
 
         return result;
@@ -306,7 +282,7 @@ public class GalebV3Driver implements Driver {
         long expectedNumElements = properties.getOrDefault("numElements", -1L);
 
         String basePath = "http://" + api + "/" + path;
-        String nameEncoded = name;
+        String nameEncoded;
         try {
             nameEncoded = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e1) {
@@ -351,7 +327,7 @@ public class GalebV3Driver implements Driver {
         return result.get() ? StatusFarm.OK : StatusFarm.FAIL;
     }
 
-    private JsonNode getJson(String path) throws URISyntaxException, IOException, JsonProcessingException {
+    private JsonNode getJson(String path) throws URISyntaxException, IOException {
         JsonNode json = null;
         RestTemplate restTemplate = new RestTemplate();
         URI uri = new URI(path);
@@ -365,13 +341,12 @@ public class GalebV3Driver implements Driver {
         return json;
     }
 
-    private boolean isSyncronized(String fullPath, String name, String parent, int expectedId) throws URISyntaxException, JsonProcessingException, IOException {
+    private boolean isSyncronized(String fullPath, String name, String parent, int expectedId) throws URISyntaxException, IOException {
         JsonNode json = getJson(fullPath);
         if (json == null) {
             return false;
         }
 
-        boolean syncronized = false;
         final Entity entity = new Entity();
 
         entity.setVersion(-1);
@@ -393,7 +368,7 @@ public class GalebV3Driver implements Driver {
                     }
             });
         }
-        syncronized = expectedId == entity.getVersion();
+        boolean syncronized = expectedId == entity.getVersion();
         if (!syncronized) {
             LOGGER.error(fullPath+" : VERSION NOT MATCH (manager:"+expectedId+" != farm:"+entity.getVersion()+")");
         }
@@ -401,19 +376,18 @@ public class GalebV3Driver implements Driver {
         return syncronized;
     }
 
-    private boolean isOkNumElements(String pathBase, long expectedNumElements) throws URISyntaxException, JsonProcessingException, IOException {
+    private boolean isOkNumElements(String pathBase, long expectedNumElements) throws URISyntaxException, IOException {
         JsonNode json = getJson(pathBase);
         if (json == null) {
             return false;
         }
 
-        boolean resultCount = false;
         int numElements = 0;
 
         if (json.isArray()) {
             numElements = json.size();
         }
-        resultCount = expectedNumElements == numElements;
+        boolean resultCount = expectedNumElements == numElements;
         if (!resultCount) {
             LOGGER.error(pathBase+" : COUNT NOT MATCH (manager:"+expectedNumElements+" != farm:"+numElements+")");
         }

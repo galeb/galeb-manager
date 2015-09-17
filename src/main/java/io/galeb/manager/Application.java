@@ -42,7 +42,7 @@ public class Application {
 
         Properties defaultProperties = new Properties();
         defaultProperties.put("spring.datasource.testWhileIdle",
-                testWhileIdle != null ? Boolean.parseBoolean(testWhileIdle) : true);
+                testWhileIdle == null || Boolean.parseBoolean(testWhileIdle));
         defaultProperties.put("spring.jpa.hibernate.ddl-auto",
                 ddlAuto != null ? ddlAuto : "validate");
         defaultProperties.put("spring.jpa.hibernate.hbm2ddl.auto",
@@ -52,7 +52,7 @@ public class Application {
         defaultProperties.put("spring.jpa.properties.hibernate.dialect",
                 dialect != null ? dialect : "org.hibernate.dialect.H2Dialect");
         defaultProperties.put("spring.jpa.show-sql",
-                showSql != null ? Boolean.parseBoolean(showSql) : false);
+                showSql != null && Boolean.parseBoolean(showSql));
         defaultProperties.put("spring.jpa.hibernate.naming-strategy",
                 namingStrategy != null ? namingStrategy : "org.hibernate.cfg.ImprovedNamingStrategy");
 

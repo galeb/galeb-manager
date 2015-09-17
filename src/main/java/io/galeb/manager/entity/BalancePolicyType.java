@@ -48,8 +48,8 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
 
     public BalancePolicyType setBalancePolicies(Set<BalancePolicy> balancePolicies) {
         if (balancePolicies != null) {
-            balancePolicies.clear();
-            balancePolicies.addAll(balancePolicies);
+            this.balancePolicies.clear();
+            this.balancePolicies.addAll(balancePolicies);
         }
         return this;
     }
