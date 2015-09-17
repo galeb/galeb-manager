@@ -15,7 +15,7 @@ FARM_NAME='farm1'
 BALANCEPOLICYTYPE_NAME='RoundRobin'
 BALANCEPOLICY_NAME='RoundRobin'
 DOMAIN="${FARM_NAME}.localhost"
-API='localhost:9090'
+API='http://localhost:9090'
 
 PROJECT_NAME='xxxxxx'
 VIRTUALHOST_NAME='test.localhost'
