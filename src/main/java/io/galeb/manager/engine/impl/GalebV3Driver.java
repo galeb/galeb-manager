@@ -321,11 +321,11 @@ public class GalebV3Driver implements Driver {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Properties> diff(Properties properties) {
+    public Map<String, String> diff(Map<String, Object> properties) {
 
         final String api = properties.getOrDefault("api", "localhost:9090").toString();
         final Set<AbstractEntity<?>> virtualhosts = (Set<AbstractEntity<?>>)
-                            properties.getOrDefault("virtualhosts", Collections.emptySet());
+                properties.getOrDefault("virtualhosts", Collections.emptySet());
         final Set<AbstractEntity<?>> backendpools = (Set<AbstractEntity<?>>)
                 properties.getOrDefault("backendpools", Collections.emptySet());
         final Set<AbstractEntity<?>> backends = (Set<AbstractEntity<?>>)
@@ -339,18 +339,18 @@ public class GalebV3Driver implements Driver {
         entitiesMap.put("backend", backends);
         entitiesMap.put("rule", rules);
 
-        final Map<String, Properties> fullMap = extractRemoteMap(api, properties);
-        final Map<String, Properties> diffMap = makeDiffMap(api, entitiesMap, fullMap);
+        final Map<String, Map<String, String>> fullMap = extractRemoteMap(api, properties);
+        final Map<String, String> diffMap = makeDiffMap(api, entitiesMap, fullMap);
 
         return diffMap;
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Properties> makeDiffMap(final String api,
+    private Map<String, String> makeDiffMap(final String api,
                                                 final Map<String, Set<AbstractEntity<?>>> entitiesMap,
-                                                final Map<String, Properties> fullMap) {
+                                                final Map<String, Map<String, String>> fullMap) {
 
-        final Map<String, Properties> diffMap = new HashMap<>();
+        final Map<String, String> diffMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
         pathList.stream().forEach(path ->
@@ -363,7 +363,7 @@ public class GalebV3Driver implements Driver {
                               .forEach(entry ->
             {
                 final String key = entry.getKey();
-                final Properties entityProperties = entry.getValue();
+                final Map<String, String> entityProperties = entry.getValue();
                 final String id = entityProperties.getOrDefault("id", "UNDEF").toString();
                 final String parentId = entityProperties.getOrDefault("parentId", "UNDEF").toString();
                 final String version = entityProperties.getOrDefault("version", "UNDEF").toString();
@@ -382,30 +382,34 @@ public class GalebV3Driver implements Driver {
                                  .forEach(entity ->
                 {
                     hasId.set(true);
+                    LOGGER.debug("Check CHANGE");
                     if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
-                        changeAction(key, entityProperties, diffMap);
+                        changeAction(key, diffMap);
                     }
                 });
 
+                LOGGER.debug("Check DEL");
                 if (!hasId.get()) {
-                    delAction(key, entityProperties, diffMap);
+                    delAction(key, diffMap);
                 }
             });
 
             entities.stream().forEach(entity -> {
                 String id = entity.getName();
+                LOGGER.debug("Check ADD");
                 if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
-                    addAction(api, path, id, "", fullMap, diffMap);
+                    addAction(api, path, id, "", fullMap.keySet(), diffMap);
                 }
                 if (entity instanceof WithParent) {
-                    String parentId = ((WithParent<AbstractEntity<?>>) entity).getParent().getName();
-                    addAction(api, path, id, parentId, fullMap, diffMap);
+                    AbstractEntity<?> parentInstance = ((WithParent<AbstractEntity<?>>) entity).getParent();
+                    String parentId = parentInstance != null ? parentInstance.getName() : "";
+                    addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
                 }
                 if (entity instanceof WithParents) {
                     ((WithParents<AbstractEntity<?>>) entity).getParents().forEach(aParent ->
                     {
                         String parentId = aParent.getName();
-                        addAction(api, path, id, parentId, fullMap, diffMap);
+                        addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
                     });
                 }
             });
@@ -413,9 +417,9 @@ public class GalebV3Driver implements Driver {
         return diffMap;
     }
 
-    private Map<String, Properties> extractRemoteMap(final String api,
-            Properties properties) {
-        final Map<String, Properties> fullMap = new HashMap<>();
+    private Map<String, Map<String, String>> extractRemoteMap(final String api,
+                                                     final Map<String, Object> properties) {
+        final Map<String, Map<String, String>> fullMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
         pathList.stream().map(path -> api + "/" + path).forEach(fullPath ->
@@ -424,7 +428,7 @@ public class GalebV3Driver implements Driver {
                 JsonNode json = getJson(fullPath);
                 if (json.isArray()) {
                     json.forEach(element -> {
-                        Properties entityProperties = new Properties();
+                        Map<String, String> entityProperties = new HashMap<>();
                         String id = element.get("id").asText();
                         JsonNode parentIdObj = element.get("parentId");
                         String parentId = parentIdObj != null ? parentIdObj.asText() : "";
@@ -451,28 +455,22 @@ public class GalebV3Driver implements Driver {
                            final String path,
                            final String id,
                            final String parentId,
-                           final Map<String, Properties> fullMap,
-                           final Map<String, Properties> diffMap) {
+                           final Set<String> setOfKeys,
+                           final Map<String, String> diffMap) {
         String key = api + "/" + path + "/" + id + "@" + parentId;
-        if (!fullMap.containsKey(key)) {
-            Properties entityProperties = new Properties();
-            entityProperties.put("action", "ADD");
-            diffMap.put(key, entityProperties);
+        if (!setOfKeys.contains(key)) {
+            diffMap.put(key, "ADD");
         }
     }
 
     private void changeAction(final String key,
-                              final Properties entityProperties,
-                              final Map<String, Properties> diffMap) {
-        entityProperties.put("action", "CHANGE");
-        diffMap.put(key, entityProperties);
+                              final Map<String, String> diffMap) {
+        diffMap.put(key, "CHANGE");
     }
 
     private void delAction(final String key,
-                           final Properties entityProperties,
-                           final Map<String, Properties> diffMap) {
-        entityProperties.put("action", "DELETE");
-        diffMap.put(key, entityProperties);
+                           final Map<String, String> diffMap) {
+        diffMap.put(key, "DELETE");
     }
 
 }

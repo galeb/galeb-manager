@@ -59,7 +59,7 @@ public interface Driver {
         return StatusFarm.UNKNOWN;
     }
 
-    default Map<String, Properties> diff(Properties properties) {
+    default Map<String, String> diff(Map<String, Object> properties) {
         return Collections.emptyMap();
     }
 
