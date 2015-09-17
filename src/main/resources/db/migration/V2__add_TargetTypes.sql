@@ -21,7 +21,7 @@
 
 LOCK TABLES `targettype` WRITE;
 /*!40000 ALTER TABLE `targettype` DISABLE KEYS */;
-INSERT INTO `targettype` VALUES (3,'2015-09-14 23:05:55','admin','2015-09-14 23:05:55','admin','Backend',1,0,NULL),(4,'2015-09-14 23:06:02','admin','2015-09-14 23:06:02','admin','BackendPool',1,0,NULL);
+INSERT INTO `targettype` VALUES (1,NOW(),'admin',NOW(),'admin','Backend',1,0,NULL), (2,NOW(),'admin',NOW(),'admin','BackendPool',1,0,NULL);
 /*!40000 ALTER TABLE `targettype` ENABLE KEYS */;
 UNLOCK TABLES;
 
