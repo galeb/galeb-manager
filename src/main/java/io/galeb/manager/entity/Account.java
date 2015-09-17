@@ -45,7 +45,7 @@ import io.galeb.manager.repository.custom.AccountRepositoryImpl;
 
 @NamedQuery(name="Account.findAll", query = AccountRepositoryImpl.FIND_ALL)
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_account", columnNames = { "name" }) })
 public class Account extends AbstractEntity<Account> {
 
     private static final long serialVersionUID = -2745836665462717899L;

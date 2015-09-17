@@ -31,7 +31,7 @@ import io.galeb.manager.repository.custom.TeamRepositoryImpl;
 
 @NamedQuery(name="Team.findAll", query= TeamRepositoryImpl.FIND_ALL)
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_team", columnNames = { "name" }) })
 public class Team extends AbstractEntity<Team> {
 
     private static final long serialVersionUID = -4278444359290384175L;

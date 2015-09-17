@@ -26,7 +26,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "ruletype", uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(name = "ruletype", uniqueConstraints = { @UniqueConstraint(name = "UK_name_ruletype", columnNames = { "name" }) })
 public class RuleType extends AbstractEntity<RuleType> {
 
     private static final long serialVersionUID = 5596582746795373010L;

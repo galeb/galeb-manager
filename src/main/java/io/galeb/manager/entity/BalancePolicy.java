@@ -31,7 +31,7 @@ import javax.persistence.UniqueConstraint;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
-@Table(name = "balancepolicy", uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(name = "balancepolicy", uniqueConstraints = { @UniqueConstraint(name = "UK_name_balancepolicy", columnNames = { "name" }) })
 public class BalancePolicy extends AbstractEntity<BalancePolicy> {
 
     private static final long serialVersionUID = 5596582746795373030L;

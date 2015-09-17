@@ -37,8 +37,8 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     @Override
     @Query("SELECT ta FROM Target ta "
-           + "INNER JOIN ta.project.teams t "
-           + "INNER JOIN t.accounts a "
+           + "LEFT JOIN ta.project.teams t "
+           + "LEFT JOIN t.accounts a "
            + "WHERE ta.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                + "ta.global = TRUE OR "
@@ -65,4 +65,8 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
                 + "ta.global = TRUE OR "
                 + "a.name = ?#{principal.username})")
     Iterable<Target> findByTargetTypeName(@Param("name") String name);
+
+    @Query
+    Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
+
 }

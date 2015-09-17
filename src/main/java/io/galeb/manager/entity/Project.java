@@ -36,7 +36,7 @@ import io.galeb.manager.repository.custom.ProjectRepositoryImpl;
 
 @NamedQuery(name="Project.findAll", query = ProjectRepositoryImpl.FIND_ALL)
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_project", columnNames = { "name" }) })
 public class Project extends AbstractEntity<Project> {
 
     private static final long serialVersionUID = 5596582746795373018L;

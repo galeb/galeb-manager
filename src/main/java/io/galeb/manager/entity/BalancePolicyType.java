@@ -26,7 +26,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "balancepolicytype", uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(name = "balancepolicytype", uniqueConstraints = { @UniqueConstraint(name = "UK_name_balancepolicytype", columnNames = { "name" }) })
 public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
 
     private static final long serialVersionUID = 5596582746795373010L;

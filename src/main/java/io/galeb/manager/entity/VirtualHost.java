@@ -41,7 +41,7 @@ import io.galeb.manager.repository.custom.VirtualHostRepositoryImpl;
 
 @NamedQuery(name = "VirtualHost.findAll", query = VirtualHostRepositoryImpl.FIND_ALL)
 @Entity
-@Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
@@ -62,7 +62,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     @JsonIgnore
     private long farmId;
 
-    @ManyToMany(mappedBy = "virtualhosts")
+    @ManyToMany(mappedBy = "parents")
     private final Set<Rule> rules = new HashSet<>();
 
     public VirtualHost(String name, Environment environment, Project project) {

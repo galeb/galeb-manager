@@ -46,7 +46,7 @@ import io.galeb.manager.repository.custom.RuleRepositoryImpl;
 @NamedQuery(name="Rule.findAll", query = RuleRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_rule", columnNames = { "name" }) })
 public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, WithParents<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373020L;
@@ -57,8 +57,8 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     private RuleType ruleType;
 
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_virtualhost")),
-    inverseJoinColumns=@JoinColumn(name = "virtualhost_id", nullable = true, foreignKey = @ForeignKey(name="FK_virtualhost_rule")))
+    @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent")),
+    inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_rule")))
     private Set<VirtualHost> parents = new HashSet<>();
 
     @ManyToOne

@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name", columnNames = { "name" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;

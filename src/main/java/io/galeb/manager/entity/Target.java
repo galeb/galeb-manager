@@ -45,7 +45,7 @@ import io.galeb.manager.repository.custom.TargetRepositoryImpl;
 @NamedQuery(name = "Target.findAll", query = TargetRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
-@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_parent_name", columnNames = { "name", "parent" }) })
+@Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_parent_id_target", columnNames = { "name", "parent_id" }) })
 public class Target extends AbstractEntity<Target> implements WithFarmID<Target>, WithParent<Target> {
 
     private static final long serialVersionUID = 5596582746795373012L;

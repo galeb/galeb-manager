@@ -285,27 +285,11 @@ createBackend() {
               "name": "'$NAME'",
               "targetType": "'$PROTOCOL'://'$SERVER'/targettype/'$TARGETTYPE_BACKEND_ID'",
               "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
-              "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'"
+              "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'",
+              "parent": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'"
           }' \
        -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target
   echo
-
-  local BACKEND_ID="$(getId $TOKEN target $NAME)"
-  curl -k -v -XPATCH -H 'Content-Type: text/uri-list' \
-       -d "$PROTOCOL://$SERVER/target/$POOL_ID" \
-       -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target/$BACKEND_ID/parents
-  echo
-
-  # OR :
-  # curl -k -v -XPOST -H $HEADER \
-  #      -d '{
-  #             "name": "'$NAME'",
-  #             "targetType": "'$PROTOCOL'://'$SERVER'/targettype/'$TARGETTYPE_BACKEND_ID'",
-  #             "environment": "'$PROTOCOL'://'$SERVER'/environment/'$ENV_ID'",
-  #             "project": "'$PROTOCOL'://'$SERVER'/project/'$PROJECT_ID'",
-  #             "parents": [ "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'" ]
-  #         }' \
-  #      -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/target
 }
 
 createRule() {
@@ -332,7 +316,7 @@ createRule() {
   local RULE_ID="$(getId $TOKEN rule $NAME)"
   curl -k -v -XPATCH -H 'Content-Type: text/uri-list' \
        -d "$PROTOCOL://$SERVER/virtualhost/$VIRTUALHOST_ID" \
-       -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule/$RULE_ID/virtualhosts
+       -H"x-auth-token: $TOKEN" $PROTOCOL://$SERVER/rule/$RULE_ID/parents
   echo
 
   # OR:
@@ -341,7 +325,7 @@ createRule() {
   #            "name": "'$NAME'",
   #            "ruleType": "'$PROTOCOL'://'$SERVER'/ruletype/'$RULETYPE_URLPATH_ID'",
   #            "target": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'",
-  #            "virtualhosts": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
+  #            "parents": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
   #            "default": true,
   #            "order": 0,
   #            "properties": {
