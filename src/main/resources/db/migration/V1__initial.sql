@@ -663,7 +663,7 @@ CREATE TABLE `target` (
   `name` varchar(255) NOT NULL,
   `_status` int(11) NOT NULL,
   `_version` bigint(20) DEFAULT NULL,
-  `farm_id` bigint(20) NOT NULL,
+  `farm_id` bigint(20) NOT NULL DEFAULT -1,
   `global` bit(1) DEFAULT 0,
   `balancepolicy_id` bigint(20) DEFAULT NULL,
   `environment_id` bigint(20) DEFAULT NULL,
