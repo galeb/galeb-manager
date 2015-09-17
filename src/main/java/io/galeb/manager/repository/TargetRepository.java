@@ -37,8 +37,8 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     @Override
     @Query("SELECT ta FROM Target ta "
-           + "INNER JOIN ta.project.teams t "
-           + "INNER JOIN t.accounts a "
+           + "LEFT JOIN ta.project.teams t "
+           + "LEFT JOIN t.accounts a "
            + "WHERE ta.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                + "ta.global = TRUE OR "
