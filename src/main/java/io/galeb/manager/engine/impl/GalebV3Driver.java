@@ -470,10 +470,9 @@ public class GalebV3Driver implements Driver {
         entitiesMap.put("backend", backends);
         entitiesMap.put("rule", rules);
 
-        final Map<String, Map<String, String>> fullMap = extractRemoteMap(api, properties);
-        final Map<String, String> diffMap = makeDiffMap(api, entitiesMap, fullMap);
+        final Map<String, Map<String, String>> fullMap = extractRemoteMap(api);
 
-        return diffMap;
+        return makeDiffMap(api, entitiesMap, fullMap);
     }
 
     @SuppressWarnings("unchecked")
@@ -495,10 +494,10 @@ public class GalebV3Driver implements Driver {
             {
                 final String key = entry.getKey();
                 final Map<String, String> entityProperties = entry.getValue();
-                final String id = entityProperties.getOrDefault("id", "UNDEF").toString();
-                final String parentId = entityProperties.getOrDefault("parentId", "UNDEF").toString();
-                final String version = entityProperties.getOrDefault("version", "UNDEF").toString();
-                final String pk = entityProperties.getOrDefault("pk", "UNDEF").toString();
+                final String id = entityProperties.getOrDefault("id", "UNDEF");
+                final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
+                final String version = entityProperties.getOrDefault("version", "UNDEF");
+                final String pk = entityProperties.getOrDefault("pk", "UNDEF");
                 AtomicBoolean hasId = new AtomicBoolean(false);
 
                 entities.stream().filter(entity -> entity.getName().equals(id))
@@ -548,8 +547,8 @@ public class GalebV3Driver implements Driver {
         return diffMap;
     }
 
-    private Map<String, Map<String, String>> extractRemoteMap(final String api,
-                                                     final Map<String, Object> properties) {
+    private Map<String, Map<String, String>> extractRemoteMap(final String api) {
+
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
@@ -568,10 +567,10 @@ public class GalebV3Driver implements Driver {
                         String entityType = element.get("_entity_type").asText();
                         String etag = element.get("_etag").asText();
 
-                        properties.put("pk", pk);
-                        properties.put("version", version);
-                        properties.put("entity_type", entityType);
-                        properties.put("etag", etag);
+                        entityProperties.put("pk", pk);
+                        entityProperties.put("version", version);
+                        entityProperties.put("entity_type", entityType);
+                        entityProperties.put("etag", etag);
                         fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
                     });
                 }
