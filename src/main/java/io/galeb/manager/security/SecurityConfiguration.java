@@ -197,7 +197,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 long id = Long.MAX_VALUE;
                 if (account != null) {
                     localRoles = account.getRoles().stream()
-                            .map(role -> role.toString())
+                            .map(Enum::toString)
                             .collect(Collectors.toList());
                     id = account.getId();
                 } else {

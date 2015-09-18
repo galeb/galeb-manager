@@ -27,13 +27,13 @@ import io.galeb.manager.engine.farm.EntityFarm;
 
 public interface Driver {
 
-    public enum StatusFarm {
+    enum StatusFarm {
         OK,
         FAIL,
         UNKNOWN
     }
 
-    public static final String DEFAULT_DRIVER_NAME = "NULL";
+    String DEFAULT_DRIVER_NAME = "NULL";
 
     default EntityFarm info(Properties properties) {
         return null;

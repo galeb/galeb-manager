@@ -154,7 +154,7 @@ public class RuleEngine extends AbstractEngine {
             jsonMapper.addToNode("properties", "default", String.valueOf(rule.isRuleDefault()));
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.equals(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
         final Properties properties = fromEntity(rule);
         properties.put("json", json);

@@ -42,7 +42,7 @@ public abstract class AbstractRepositoryImplementation<T extends AbstractEntity<
 
     public Page<T> findAll(Pageable pageable) {
         final List<T> entity = (List<T>) findAll();
-        return new PageImpl<T>(entity, pageable, entity.size());
+        return new PageImpl<>(entity, pageable, entity.size());
     }
 
     public T findByName(String name) {

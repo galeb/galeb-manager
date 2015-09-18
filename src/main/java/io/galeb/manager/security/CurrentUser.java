@@ -69,7 +69,7 @@ public class CurrentUser implements UserDetails {
         user = new User(account.getName(),
                         account.getPassword(),
                         AuthorityUtils.createAuthorityList(account.getRoles().stream()
-                                          .map(role -> role.toString()).collect(Collectors.toList())
+                                          .map(Enum::toString).collect(Collectors.toList())
                                           .toArray(new String[account.getRoles().size()-1]))
               );
         id = account.getId();
@@ -120,7 +120,7 @@ public class CurrentUser implements UserDetails {
 
     @Override
     public boolean equals(Object obj) {
-        return user.equals(obj);
+        return obj.getClass().equals(this.getClass()) && user.equals(obj);
     }
 
     @Override

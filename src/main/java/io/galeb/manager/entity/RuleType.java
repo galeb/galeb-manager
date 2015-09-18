@@ -48,8 +48,8 @@ public class RuleType extends AbstractEntity<RuleType> {
 
     public RuleType setRules(Set<Rule> rules) {
         if (rules != null) {
-            rules.clear();
-            rules.addAll(rules);
+            this.rules.clear();
+            this.rules.addAll(rules);
         }
         return this;
     }

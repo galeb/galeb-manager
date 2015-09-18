@@ -159,7 +159,7 @@ public class TargetEngine extends AbstractEngine {
             }
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.equals(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
         final Properties properties = fromEntity(target);
         properties.put("json", json);

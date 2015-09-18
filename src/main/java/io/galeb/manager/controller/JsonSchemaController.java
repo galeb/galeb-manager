@@ -21,7 +21,7 @@ public class JsonSchemaController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value = "/{model}", method = RequestMethod.GET)
     public ResponseEntity<String> schema(@PathVariable String model) throws Exception {
-        String result = "";
+        String result;
         try {
             Class<?> clazz = Class.forName(AbstractEntity.class.getPackage().getName()+"."+model);
             ObjectMapper m = new ObjectMapper();
@@ -30,9 +30,9 @@ public class JsonSchemaController {
             JsonSchema jsonSchema = visitor.finalSchema();
             result = m.writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
         } catch (Exception ignore) {
-            return new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity<String>(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
 }

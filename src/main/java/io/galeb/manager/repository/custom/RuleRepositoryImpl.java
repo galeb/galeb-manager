@@ -29,7 +29,7 @@ public class RuleRepositoryImpl extends AbstractRepositoryImplementation<Rule>
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<Rule, ?> entityInformation;
 
     @PostConstruct
