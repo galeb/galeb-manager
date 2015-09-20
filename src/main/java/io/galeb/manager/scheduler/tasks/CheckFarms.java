@@ -1,3 +1,23 @@
+/*
+ * Galeb - Load Balance as a Service Plataform
+ *
+ * Copyright (C) 2014-2015 Globo.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ *
+ */
+
 package io.galeb.manager.scheduler.tasks;
 
 import static io.galeb.manager.scheduler.SchedulerConfiguration.GALEB_DISABLE_SCHED;
@@ -9,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,23 +65,31 @@ public class CheckFarms {
 
     private static final Log LOGGER = LogFactory.getLog(CheckFarms.class);
 
-    @Autowired
-    FarmRepository farmRepository;
+    private static final String CHECK_FARMS_RUN_LOCKNAME = "CheckFarms.run";
+
+    private static final String CHECK_FARMS_DIFF_LOCKNAME = "CheckFarms.newReload";
+
+    private static final long INTERVAL = 10000;
 
     @Autowired
-    VirtualHostRepository virtualHostRepository;
+    private FarmRepository farmRepository;
 
     @Autowired
-    RuleRepository ruleRepository;
+    private VirtualHostRepository virtualHostRepository;
 
     @Autowired
-    TargetRepository targetRepository;
+    private RuleRepository ruleRepository;
 
     @Autowired
-    JmsTemplate jms;
+    private TargetRepository targetRepository;
+
+    @Autowired
+    private JmsTemplate jms;
+
+    @Autowired
+    private DistributedLocker distributedLocker;
 
     private final ObjectMapper mapper = new ObjectMapper();
-
 
     private boolean disableJms = Boolean.getBoolean(System.getProperty(
                                     JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
@@ -91,12 +120,30 @@ public class CheckFarms {
         return properties;
     }
 
-    @Scheduled(fixedRate = 10000)
+    public boolean getLock(String key, long ttl) {
+        if (distributedLocker == null) {
+            LOGGER.warn(DistributedLocker.class.getSimpleName() + " is NULL");
+            return false;
+        } else {
+            if (!distributedLocker.getLock(key, ttl)) {
+                LOGGER.warn(key + " is locked by other process. Aborting task");
+                return false;
+            }
+        }
+        LOGGER.debug(key + " locked by me (" + this + ")");
+        return true;
+    }
+
+    @Scheduled(fixedRate = INTERVAL)
     private void run() {
 
         String disableSchedulerStr = System.getenv(GALEB_DISABLE_SCHED);
         if (disableSchedulerStr != null && Boolean.parseBoolean(disableSchedulerStr)) {
-            LOGGER.warn(GALEB_DISABLE_SCHED+" is true");
+            LOGGER.warn(GALEB_DISABLE_SCHED + " is true");
+            return;
+        }
+
+        if (!getLock(CHECK_FARMS_RUN_LOCKNAME, INTERVAL/1000)) {
             return;
         }
 
@@ -161,18 +208,20 @@ public class CheckFarms {
                     if (farm.isAutoReload() && !disableJms) {
                         jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
                     } else {
-                        LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): "+farm.getName()+" ["+farm.getApi()+"]");
+                        LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): " + farm.getName() + " [" + farm.getApi() + "]");
                     }
                 } else {
-                    LOGGER.info("FARM STATUS OK: "+farm.getName()+" ["+farm.getApi()+"]");
+                    LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
                 }
             });
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            distributedLocker.release(CHECK_FARMS_RUN_LOCKNAME);
             SystemUserService.runAs(currentUser);
             LOGGER.debug("TASK checkFarm finished");
         }
+
     }
 
     private Stream<Target> getTargets(Farm farm) {
@@ -191,40 +240,51 @@ public class CheckFarms {
                 virtualHostRepository.findByFarmId(farm.getId()).spliterator(), false);
     }
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = INTERVAL)
     private void diff() {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
 
-        StreamSupport.stream(farmRepository.findAll().spliterator(), false)
-                     .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
-                     .forEach(farm ->
-        {
-            final Driver driver = DriverBuilder.getDriver(farm);
-            Map<String, Object> properties = new HashMap<>();
-            properties.put("api", farm.getApi());
-            properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
-            properties.put("backendpools", getTargets(farm)
-                    .filter(target -> target.getTargetType().getName().equals("BackendPool"))
-                    .collect(Collectors.toSet()));
-            properties.put("backends", getTargets(farm)
-                    .filter(target -> target.getTargetType().getName().equals("Backend"))
-                    .collect(Collectors.toSet()));
-            properties.put("rules", getRules(farm).collect(Collectors.toSet()));
+        if (!getLock(CHECK_FARMS_DIFF_LOCKNAME, INTERVAL/1000)) {
+            return;
+        }
 
-            try {
-                String json = mapper.writeValueAsString(driver.diff(properties));
-                LOGGER.warn("----------------------");
-                LOGGER.warn(json);
-                LOGGER.warn("----------------------");
-            } catch (Exception e) {
-                LOGGER.error(e);
-                e.printStackTrace();
-            }
+        try {
+            Authentication currentUser = CurrentUser.getCurrentAuth();
+            SystemUserService.runAs();
 
-        });
+            StreamSupport.stream(farmRepository.findAll().spliterator(), false)
+                    .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
+                    .forEach(farm ->
+                    {
+                        final Driver driver = DriverBuilder.getDriver(farm);
+                        Map<String, Object> properties = new HashMap<>();
+                        properties.put("api", farm.getApi());
+                        properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
+                        properties.put("backendpools", getTargets(farm)
+                                .filter(target -> target.getTargetType().getName().equals("BackendPool"))
+                                .collect(Collectors.toSet()));
+                        properties.put("backends", getTargets(farm)
+                                .filter(target -> target.getTargetType().getName().equals("Backend"))
+                                .collect(Collectors.toSet()));
+                        properties.put("rules", getRules(farm).collect(Collectors.toSet()));
 
-        SystemUserService.runAs(currentUser);
+                        try {
+                            String json = mapper.writeValueAsString(driver.diff(properties));
+                            LOGGER.warn("----------------------");
+                            LOGGER.warn(json);
+                            LOGGER.warn("----------------------");
+                        } catch (Exception e) {
+                            LOGGER.error(e);
+                            e.printStackTrace();
+                        }
+
+                    });
+
+            SystemUserService.runAs(currentUser);
+        } catch (Exception e) {
+            LOGGER.error(e);
+        } finally {
+            distributedLocker.release(CHECK_FARMS_DIFF_LOCKNAME);
+        }
     }
 
 }
