@@ -55,7 +55,7 @@ public class DistributedLocker {
             if (redisSetNxPx(key, ttl)) {
                 redis.setEx(key.getBytes(), ttl, "lock".getBytes());
                 return redis.get(key.getBytes()) != null;
-            };
+            }
         } catch (Exception e) {
             LOGGER.error(e);
         }
@@ -90,7 +90,7 @@ public class DistributedLocker {
         } catch (Exception e) {
             LOGGER.error(e);
         }
-        return out.size() > 5;
+        return out != null && out.size() > 5;
     }
 
 }

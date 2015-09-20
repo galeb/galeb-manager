@@ -120,16 +120,16 @@ public class CheckFarms {
         return properties;
     }
 
-    public boolean getLock(String key, long ttl) {
+    public boolean registerLock(String key, long ttl) {
         if (distributedLocker == null) {
             LOGGER.warn(DistributedLocker.class.getSimpleName() + " is NULL");
             return false;
-        } else {
-            if (!distributedLocker.getLock(key, ttl)) {
-                LOGGER.warn(key + " is locked by other process. Aborting task");
-                return false;
-            }
         }
+        if (!distributedLocker.getLock(key, ttl)) {
+            LOGGER.warn(key + " is locked by other process. Aborting task");
+            return false;
+        }
+
         LOGGER.debug(key + " locked by me (" + this + ")");
         return true;
     }
@@ -143,7 +143,7 @@ public class CheckFarms {
             return;
         }
 
-        if (!getLock(CHECK_FARMS_RUN_LOCKNAME, INTERVAL/1000)) {
+        if (!registerLock(CHECK_FARMS_RUN_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
 
@@ -243,7 +243,7 @@ public class CheckFarms {
     @Scheduled(fixedRate = INTERVAL)
     private void diff() {
 
-        if (!getLock(CHECK_FARMS_DIFF_LOCKNAME, INTERVAL/1000)) {
+        if (!registerLock(CHECK_FARMS_DIFF_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
 
