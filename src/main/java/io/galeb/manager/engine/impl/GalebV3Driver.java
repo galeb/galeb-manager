@@ -119,9 +119,13 @@ public class GalebV3Driver implements Driver {
         StringBuilder stringBuilder = new StringBuilder();
         String line;
         try {
-            bufferedReader = new BufferedReader(new InputStreamReader(content));
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuilder.append(line);
+            if (content != null) {
+                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+            } else {
+                LOGGER.warn("Content is null.");
             }
         } catch (IOException e) {
             LOGGER.error(e);
@@ -145,9 +149,9 @@ public class GalebV3Driver implements Driver {
                 .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
 
         RequestEntity<String> newRequest = new RequestEntity<>(body,
-                                                                     headers,
-                                                                     httpMethod,
-                                                                     URI.create(request.getRequestLine().getUri()));
+                                                               headers,
+                                                               httpMethod,
+                                                               URI.create(request.getRequestLine().getUri()));
 
 
         InputStream responseContent = null;
@@ -158,11 +162,14 @@ public class GalebV3Driver implements Driver {
         }
         bufferedReader = null;
         stringBuilder = new StringBuilder();
-        line = "";
         try {
-            bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
-            while ((line = bufferedReader.readLine()) != null) {
-                stringBuilder.append(line);
+            if (responseContent != null) {
+                bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+            } else {
+                LOGGER.warn("ResponseContent is null");
             }
         } catch (IOException e) {
             LOGGER.error(e);
@@ -382,9 +389,8 @@ public class GalebV3Driver implements Driver {
                         element.get("id").asText("defaultTextIfAbsent").equals(name))
                 .forEach(element -> {
                     if ((parent == null) ||
-                        (parent != null &&
-                             element.get("parentId") != null &&
-                             element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
+                        (element.get("parentId") != null &&
+                            element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
                     {
                         entity.setVersion(element.get("version").asInt(-1));
                     } else {
@@ -421,7 +427,7 @@ public class GalebV3Driver implements Driver {
     }
 
     @NotThreadSafe
-    private class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
+    private static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
 
         @Override
         public String getMethod() {
