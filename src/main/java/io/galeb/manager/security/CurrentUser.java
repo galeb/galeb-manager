@@ -119,8 +119,14 @@ public class CurrentUser implements UserDetails {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return obj.getClass().equals(this.getClass()) && user.equals(obj);
+    public boolean equals(Object o) {
+        if (o != null) {
+            if (this.getClass() != o.getClass()) return false;
+            CurrentUser that = (CurrentUser) o;
+            return user.getUsername().equals(that.user.getUsername());
+        } else {
+            return false;
+        }
     }
 
     @Override
