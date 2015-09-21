@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import io.galeb.manager.common.LoggerUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -53,6 +54,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,6 +89,29 @@ public class GalebV3Driver implements Driver {
     }
 
     @Override
+    public boolean exist(Properties properties) {
+        String api = properties.getOrDefault("api", "NULL").toString();
+        api = !api.startsWith("http") ? "http://" + api : api;
+        String json = properties.getOrDefault("json", "{}").toString();
+        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String uriPath = api + "/" + path;
+        RestTemplate restTemplate = new RestTemplate();
+
+        boolean result = false;
+
+        try {
+            URI uri = new URI(uriPath);
+            RequestEntity<Void> request = RequestEntity.get(uri).build();
+            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+            result = getResultFromStatusCode(request, response);
+        } catch (RuntimeException|URISyntaxException e) {
+            LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+        }
+
+        return result;
+    }
+
+    @Override
     public boolean create(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
@@ -103,133 +128,6 @@ public class GalebV3Driver implements Driver {
             result = getResultFromStatusCode(request, response);
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
-        }
-        return result;
-    }
-
-    @SuppressWarnings("unused")
-    private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
-        InputStream content = null;
-        try {
-            content = request.getEntity().getContent();
-        } catch (IOException e) {
-            LOGGER.error(e);
-        }
-        BufferedReader bufferedReader = null;
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        try {
-            if (content != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-            } else {
-                LOGGER.warn("Content is null.");
-            }
-        } catch (IOException e) {
-            LOGGER.error(e);
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
-        }
-        String body = stringBuilder.toString();
-
-        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        headers.putAll(newMapOfHeaders);
-        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
-                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
-
-        RequestEntity<String> newRequest = new RequestEntity<>(body,
-                                                               headers,
-                                                               httpMethod,
-                                                               URI.create(request.getRequestLine().getUri()));
-
-
-        InputStream responseContent = null;
-        try {
-            responseContent = response.getEntity().getContent();
-        } catch (IOException e) {
-            LOGGER.error(e);
-        }
-        bufferedReader = null;
-        stringBuilder = new StringBuilder();
-        try {
-            if (responseContent != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-            } else {
-                LOGGER.warn("ResponseContent is null");
-            }
-        } catch (IOException e) {
-            LOGGER.error(e);
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
-        }
-        String responseBody = stringBuilder.toString();
-
-        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newResponseMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        responseHeaders.putAll(newResponseMapOfHeaders);
-        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
-                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
-
-        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
-                                                                        responseHeaders,
-                                                                        responseStatusCode);
-
-        return getResultFromStatusCode(newRequest, newResponse);
-    }
-
-    private boolean getResultFromStatusCode(RequestEntity<String> request, ResponseEntity<String> response) {
-        boolean result = false;
-        HttpStatus statusCode = response.getStatusCode();
-        String status = "HTTP/1.? " + statusCode.value()+" " + statusCode.getReasonPhrase();
-        if (statusCode.value() < 400) {
-            result = true;
-            LOGGER.info(request.getMethod().toString() + " " + request.getUrl().toString());
-            request.getHeaders().entrySet().forEach(entry ->
-                    LOGGER.debug(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
-            LOGGER.info(request.getBody());
-            LOGGER.info("---");
-            LOGGER.info(status);
-            response.getHeaders().entrySet().forEach(entry ->
-                    LOGGER.info(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
-            String body = request.getBody();
-            if (body != null) {
-                LOGGER.info(body);
-            }
-        } else {
-            LOGGER.error(request.getMethod().toString() + " " + request.getUrl().toString());
-            request.getHeaders().entrySet().forEach(entry ->
-                    LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
-            String body = request.getBody();
-            if (body != null) {
-                LOGGER.error(body);
-            }
-            LOGGER.error("---");
-            LOGGER.error(status);
-            response.getHeaders().entrySet().forEach(entry ->
-                    LOGGER.error(entry.getKey()+": "+entry.getValue().stream().collect(Collectors.joining(","))));
-            LOGGER.error(response.getBody());
         }
         return result;
     }
@@ -608,5 +506,128 @@ public class GalebV3Driver implements Driver {
                            final Map<String, String> diffMap) {
         diffMap.put(key, "DELETE");
     }
+
+    private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
+        InputStream content = null;
+        try {
+            content = request.getEntity().getContent();
+        } catch (IOException e) {
+            LOGGER.error(e);
+        }
+        BufferedReader bufferedReader = null;
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        try {
+            if (content != null) {
+                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+            } else {
+                LOGGER.warn("Content is null.");
+            }
+        } catch (IOException e) {
+            LOGGER.error(e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            }
+        }
+        String body = stringBuilder.toString();
+
+        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newMapOfHeaders =
+                Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        headers.putAll(newMapOfHeaders);
+        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
+                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
+
+        RequestEntity<String> newRequest = new RequestEntity<>(body,
+                headers,
+                httpMethod,
+                URI.create(request.getRequestLine().getUri()));
+
+
+        InputStream responseContent = null;
+        try {
+            responseContent = response.getEntity().getContent();
+        } catch (IOException e) {
+            LOGGER.error(e);
+        }
+        bufferedReader = null;
+        stringBuilder = new StringBuilder();
+        try {
+            if (responseContent != null) {
+                bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+            } else {
+                LOGGER.warn("ResponseContent is null");
+            }
+        } catch (IOException e) {
+            LOGGER.error(e);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException e) {
+                    LOGGER.error(e);
+                }
+            }
+        }
+        String responseBody = stringBuilder.toString();
+
+        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newResponseMapOfHeaders =
+                Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        responseHeaders.putAll(newResponseMapOfHeaders);
+        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
+                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
+
+        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
+                responseHeaders,
+                responseStatusCode);
+
+        return getResultFromStatusCode(newRequest, newResponse);
+    }
+
+    private boolean getResultFromStatusCode(RequestEntity<?> request, ResponseEntity<String> response) {
+        if (response.getStatusCode().value() < 400) {
+            logRequestResponse(request, response, LogLevel.INFO);
+            return true;
+        } else {
+            logRequestResponse(request, response, LogLevel.ERROR);
+            return false;
+        }
+    }
+
+    private void logRequestResponse(RequestEntity<?> request, ResponseEntity<String> response, LogLevel logLevel) {
+        HttpStatus statusCode = response.getStatusCode();
+        String status = "HTTP/1.? " + statusCode.value()+" " + statusCode.getReasonPhrase();
+
+        LoggerUtils.logger(LOGGER, logLevel, request.getMethod().toString() + " " + request.getUrl().toString());
+        request.getHeaders().entrySet().forEach(entry ->
+                LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
+        Object requestBody = request.getBody();
+        if (requestBody instanceof String && requestBody != null) {
+            LoggerUtils.logger(LOGGER, logLevel, requestBody);
+        }
+        LoggerUtils.logger(LOGGER, logLevel, "---");
+        LoggerUtils.logger(LOGGER, logLevel, status);
+        response.getHeaders().entrySet().forEach(entry ->
+                LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
+        String responseBody = response.getBody();
+        if (responseBody != null) {
+            LoggerUtils.logger(LOGGER, logLevel, response.getBody());
+        }
+    }
+
 
 }
