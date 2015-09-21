@@ -41,6 +41,8 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
+import java.sql.SQLException;
+
 @Component
 public class RuleEngine extends AbstractEngine {
 
@@ -69,8 +71,11 @@ public class RuleEngine extends AbstractEngine {
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
-
             try {
+                if (driver.exist(makeProperties(rule, virtualhost))) {
+                    jms.convertAndSend(QUEUE_UPDATE, rule);
+                    return;
+                }
                 isOk = driver.create(makeProperties(rule, virtualhost));
             } catch (Exception e) {
                 LOGGER.error(e);
@@ -89,6 +94,10 @@ public class RuleEngine extends AbstractEngine {
             boolean isOk = false;
 
             try {
+                if (!driver.exist(makeProperties(rule, virtualhost))) {
+                    jms.convertAndSend(QUEUE_CREATE, rule);
+                    return;
+                }
                 isOk = driver.update(makeProperties(rule, virtualhost));
             } catch (Exception e) {
                 LOGGER.error(e);
@@ -101,7 +110,7 @@ public class RuleEngine extends AbstractEngine {
 
     @JmsListener(destination = QUEUE_REMOVE)
     public void remove(Rule rule) {
-        LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
+        LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
@@ -126,7 +135,11 @@ public class RuleEngine extends AbstractEngine {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         rule.setSaveOnly(true);
-        ruleRepository.save(rule);
+        try {
+            ruleRepository.save(rule);
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
         setFarmStatusOnError(rule);
         SystemUserService.runAs(currentUser);
         rule.setSaveOnly(false);
