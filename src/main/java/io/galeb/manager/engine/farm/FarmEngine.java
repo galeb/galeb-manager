@@ -43,6 +43,12 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
 @Component
 public class FarmEngine extends AbstractEngine {
 
@@ -107,37 +113,23 @@ public class FarmEngine extends AbstractEngine {
         LOGGER.warn("Reloading "+farm.getClass().getSimpleName()+" "+farm.getName());
         Driver driver = DriverBuilder.getDriver(farm);
         boolean isOk = false;
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("api", farm.getApi());
+        properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
+        properties.put("backendpools", getTargets(farm)
+                .filter(target -> target.getTargetType().getName().equals("BackendPool"))
+                .collect(Collectors.toSet()));
+        properties.put("backends", getTargets(farm)
+                .filter(target -> target.getTargetType().getName().equals("Backend"))
+                .collect(Collectors.toSet()));
+        properties.put("rules", getRules(farm).collect(Collectors.toSet()));
         try {
-            isOk = driver.reload(makeProperties(farm));
+            isOk = driver.reload(makeProperties(farm, driver.diff(properties)));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             jms.convertAndSend(QUEUE_CALLBK, farm);
-        }
-        if (isOk) {
-            long farmId = farm.getId();
-            Authentication currentUser = CurrentUser.getCurrentAuth();
-            SystemUserService.runAs();
-            Iterable<Target> targets = targetRepository.findByFarmId(farmId);
-            Iterable<Rule> rules = ruleRepository.findByFarmId(farmId);
-            Iterable<VirtualHost> virtualhosts = virtualHostRepository.findByFarmId(farmId);
-            SystemUserService.runAs(currentUser);
-            if (targets != null) {
-                targets.forEach(target -> jms.convertAndSend(TargetEngine.QUEUE_CREATE, target));
-            } else {
-                LOGGER.warn("targets is null");
-            }
-            if (rules != null) {
-                rules.forEach(rule -> jms.convertAndSend(RuleEngine.QUEUE_CREATE, rule));
-            } else {
-                LOGGER.warn("rules is null");
-            }
-            if (virtualhosts != null) {
-                virtualhosts.forEach(virtualhost -> jms.convertAndSend(VirtualHostEngine.QUEUE_CREATE, virtualhost));
-            } else {
-                LOGGER.warn("virtualhosts is null");
-            }
         }
     }
 
@@ -166,6 +158,33 @@ public class FarmEngine extends AbstractEngine {
     }
 
     private Properties makeProperties(Farm farm) {
-        return fromEntity(farm);
+        return makeProperties(farm, null);
     }
+
+    private Properties makeProperties(Farm farm, Map<String, Map<String, String>> diff) {
+        Properties properties = fromEntity(farm);
+        properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
+        properties.put("targets", getTargets(farm).collect(Collectors.toSet()));
+        properties.put("rules", getRules(farm).collect(Collectors.toSet()));
+        properties.put("diff", diff);
+
+        return properties;
+    }
+
+    private Stream<Target> getTargets(Farm farm) {
+        return StreamSupport.stream(
+                targetRepository.findByFarmId(farm.getId()).spliterator(), false);
+    }
+
+    private Stream<Rule> getRules(Farm farm) {
+        return StreamSupport.stream(
+                ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
+                .filter(rule -> !rule.getParents().isEmpty());
+    }
+
+    private Stream<VirtualHost> getVirtualhosts(Farm farm) {
+        return StreamSupport.stream(
+                virtualHostRepository.findByFarmId(farm.getId()).spliterator(), false);
+    }
+
 }

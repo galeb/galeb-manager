@@ -27,19 +27,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.galeb.manager.common.LoggerUtils;
+import io.galeb.manager.entity.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -70,9 +65,6 @@ import io.galeb.core.model.Entity;
 import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.WithParent;
-import io.galeb.manager.entity.WithParents;
 
 public class GalebV3Driver implements Driver {
 
@@ -183,20 +175,23 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean reload(Properties properties) throws IOException {
         String api = properties.getOrDefault("api", "NULL").toString();
+        Map<String, Map<String, String>> diff =
+                (Map<String, Map<String, String>>) properties.getOrDefault("diff", new HashMap<>());
+        Set<VirtualHost> virtualHosts =
+                (Set<VirtualHost>)properties.getOrDefault("virtualhosts", new HashSet<>());
+        Set<Target> targets =
+                (Set<Target>)properties.getOrDefault("targets", new HashSet<>());
+        Set<Rule> rules =
+                (Set<Rule>)properties.getOrDefault("rules", new HashSet<>());
+
         api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
         String[] apiWithPort = api.split(":");
         String hostName = apiWithPort[0];
         int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
-        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
 
-        HttpDelete delete = new HttpDelete("/farm");
-        delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
-        HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
+        // TODO: Fix inconsistencies
 
-        boolean result = response.getStatusLine().getStatusCode() < 400;
-        httpClient.close();
-
-        return result;
+        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -354,7 +349,7 @@ public class GalebV3Driver implements Driver {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, String> diff(Map<String, Object> properties) {
+    public Map<String, Map<String, String>> diff(Map<String, Object> properties) {
 
         String api = properties.getOrDefault("api", "localhost:9090").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
@@ -380,11 +375,11 @@ public class GalebV3Driver implements Driver {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, String> makeDiffMap(final String api,
+    private Map<String, Map<String, String>> makeDiffMap(final String api,
                                             final Map<String, Set<AbstractEntity<?>>> entitiesMap,
                                             final Map<String, Map<String, String>> fullMap) {
 
-        final Map<String, String> diffMap = new HashMap<>();
+        final Map<String, Map<String, String>> diffMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
         pathList.stream().forEach(path ->
@@ -417,21 +412,21 @@ public class GalebV3Driver implements Driver {
                                  .forEach(entity ->
                                  {
                                      hasId.set(true);
-                                     LOGGER.debug("Check CHANGE");
+                                     LOGGER.debug("Check if is necessary UPDATE");
                                      if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
-                                         changeAction(key, diffMap);
+                                         changeAction(api, path, id, parentId, diffMap);
                                      }
                                  });
 
-                LOGGER.debug("Check DEL");
+                LOGGER.debug("Check if is necessary REMOVE");
                 if (!hasId.get()) {
-                    delAction(key, diffMap);
+                    delAction(api, path, id, parentId, diffMap);
                 }
             });
 
             entities.stream().forEach(entity -> {
                 String id = entity.getName();
-                LOGGER.debug("Check ADD");
+                LOGGER.debug("Check if is necessary CREATE");
                 if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
                     addAction(api, path, id, "", fullMap.keySet(), diffMap);
                 }
@@ -493,21 +488,44 @@ public class GalebV3Driver implements Driver {
                            final String id,
                            final String parentId,
                            final Set<String> setOfKeys,
-                           final Map<String, String> diffMap) {
+                           final Map<String, Map<String, String>> diffMap) {
         String key = api + "/" + path + "/" + id + "@" + parentId;
         if (!setOfKeys.contains(key)) {
-            diffMap.put(key, "ADD");
+            Map<String, String> attributes = new HashMap<>();
+            attributes.put("ACTION", "CREATE");
+            attributes.put("ID", id);
+            attributes.put("PARENT_ID", parentId);
+            attributes.put("ENTITY_TYPE", path);
+            diffMap.put(key, attributes);
         }
     }
 
-    private void changeAction(final String key,
-                              final Map<String, String> diffMap) {
-        diffMap.put(key, "CHANGE");
+    private void changeAction(final String api,
+                              final String path,
+                              final String id,
+                              final String parentId,
+                              final Map<String, Map<String, String>> diffMap) {
+        Map<String, String> attributes = new HashMap<>();
+        String key = api + "/" + path + "/" + id + "@" + parentId;
+        attributes.put("ACTION", "UPDATE");
+        attributes.put("ID", id);
+        attributes.put("PARENT_ID", parentId);
+        attributes.put("ENTITY_TYPE", path);
+        diffMap.put(key, attributes);
     }
 
-    private void delAction(final String key,
-                           final Map<String, String> diffMap) {
-        diffMap.put(key, "DELETE");
+    private void delAction(final String api,
+                           final String path,
+                           final String id,
+                           final String parentId,
+                           final Map<String, Map<String, String>> diffMap) {
+        Map<String, String> attributes = new HashMap<>();
+        String key = api + "/" + path + "/" + id + "@" + parentId;
+        attributes.put("ACTION", "REMOVE");
+        attributes.put("ID", id);
+        attributes.put("PARENT_ID", parentId);
+        attributes.put("ENTITY_TYPE", path);
+        diffMap.put(key, attributes);
     }
 
     private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
