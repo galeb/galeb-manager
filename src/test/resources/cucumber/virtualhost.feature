@@ -130,3 +130,17 @@ Feature: VirtualHost Support
         Then the response status is 200
         And property name contains projOne
 
+    Scenario: Invalid environment is Forbidden
+        Given a REST client authenticated as admin
+        When request json body has:
+          | name | two |
+        And send POST /environment
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request json body has:
+          | name        | two             |
+          | environment | Environment=two |
+          | project     | Project=projOne |
+        And send POST /virtualhost
+        Then the response status is 400
+

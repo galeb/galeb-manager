@@ -22,6 +22,8 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
+import io.galeb.manager.entity.WithFarmID;
+import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.jms.JmsException;
@@ -104,6 +106,9 @@ public abstract class RoutableToEngine<T extends AbstractEntity<?>> {
     public void beforeCreate(T entity, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
+        if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
+            throw new BadRequestException();
+        }
         entity.setStatus(PENDING);
     }
 
