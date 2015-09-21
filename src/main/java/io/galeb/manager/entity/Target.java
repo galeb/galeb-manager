@@ -79,7 +79,6 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "balancepolicy_id", foreignKey = @ForeignKey(name="FK_target_balancepolicy"))
-    @JsonProperty("balancepolicy")
     private BalancePolicy balancePolicy;
 
     @Column(insertable = false, updatable = false, nullable = false)
