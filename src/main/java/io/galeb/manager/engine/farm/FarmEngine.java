@@ -114,6 +114,7 @@ public class FarmEngine extends AbstractEngine {
         Driver driver = DriverBuilder.getDriver(farm);
         boolean isOk = false;
         Map<String, Object> properties = new HashMap<>();
+        SystemUserService.runAs();
         properties.put("api", farm.getApi());
         properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
         properties.put("backendpools", getTargets(farm)
@@ -130,6 +131,7 @@ public class FarmEngine extends AbstractEngine {
         } finally {
             farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             jms.convertAndSend(QUEUE_CALLBK, farm);
+            SystemUserService.clearContext();
         }
     }
 
@@ -167,7 +169,6 @@ public class FarmEngine extends AbstractEngine {
         properties.put("targets", getTargets(farm).collect(Collectors.toSet()));
         properties.put("rules", getRules(farm).collect(Collectors.toSet()));
         properties.put("diff", diff);
-
         return properties;
     }
 
