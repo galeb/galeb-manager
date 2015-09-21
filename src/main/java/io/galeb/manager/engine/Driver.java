@@ -39,6 +39,10 @@ public interface Driver {
         return null;
     }
 
+    default boolean exist(Properties properties) {
+        return false;
+    }
+
     default boolean create(Properties properties) {
         return true;
     }
