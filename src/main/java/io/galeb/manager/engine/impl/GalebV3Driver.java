@@ -381,8 +381,8 @@ public class GalebV3Driver implements Driver {
 
     @SuppressWarnings("unchecked")
     private Map<String, String> makeDiffMap(final String api,
-                                                final Map<String, Set<AbstractEntity<?>>> entitiesMap,
-                                                final Map<String, Map<String, String>> fullMap) {
+                                            final Map<String, Set<AbstractEntity<?>>> entitiesMap,
+                                            final Map<String, Map<String, String>> fullMap) {
 
         final Map<String, String> diffMap = new HashMap<>();
         final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
@@ -406,21 +406,22 @@ public class GalebV3Driver implements Driver {
 
                 entities.stream().filter(entity -> entity.getName().equals(id))
                                  .filter(entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
-                                                   (entity instanceof WithParent) &&
-                                                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                                        ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId) ||
-                                                   (entity instanceof WithParents) &&
-                                                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
-                                                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                                            .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
+                                         (entity instanceof WithParent) && (
+                                                 (((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                                         ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
+                                                 !((WithParent<AbstractEntity<?>>) entity).getChildren().isEmpty()) ||
+                                         (entity instanceof WithParents) &&
+                                                 !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                                                 ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                                         .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
                                  .forEach(entity ->
-                {
-                    hasId.set(true);
-                    LOGGER.debug("Check CHANGE");
-                    if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
-                        changeAction(key, diffMap);
-                    }
-                });
+                                 {
+                                     hasId.set(true);
+                                     LOGGER.debug("Check CHANGE");
+                                     if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
+                                         changeAction(key, diffMap);
+                                     }
+                                 });
 
                 LOGGER.debug("Check DEL");
                 if (!hasId.get()) {
@@ -471,8 +472,10 @@ public class GalebV3Driver implements Driver {
                         String entityType = element.get("_entity_type").asText();
                         String etag = element.get("_etag").asText();
 
+                        entityProperties.put("id", id);
                         entityProperties.put("pk", pk);
                         entityProperties.put("version", version);
+                        entityProperties.put("parentId", parentId);
                         entityProperties.put("entity_type", entityType);
                         entityProperties.put("etag", etag);
                         fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
