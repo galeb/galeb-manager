@@ -72,10 +72,6 @@ public class RuleEngine extends AbstractEngine {
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
             try {
-                if (driver.exist(makeProperties(rule, virtualhost))) {
-                    jms.convertAndSend(QUEUE_UPDATE, rule);
-                    return;
-                }
                 isOk = driver.create(makeProperties(rule, virtualhost));
             } catch (Exception e) {
                 LOGGER.error(e);
