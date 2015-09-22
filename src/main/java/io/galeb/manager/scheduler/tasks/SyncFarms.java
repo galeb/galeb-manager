@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.redis.DistributedLocker;
@@ -49,6 +50,8 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
+
+import static java.util.AbstractMap.*;
 
 @Component
 public class SyncFarms {
@@ -139,7 +142,7 @@ public class SyncFarms {
                                 .collect(Collectors.toSet()));
                         entitiesMap.put("rule", getRules(farm).collect(Collectors.toSet()));
 
-                        final Map<String, Object> properties = new HashMap<>();
+                        final Properties properties = new Properties();
                         properties.put("api", farm.getApi());
                         properties.put("entitiesMap", entitiesMap);
 
@@ -147,11 +150,18 @@ public class SyncFarms {
                             Map<String, Map<String, String>> diff = driver.diff(properties);
                             if (diff.isEmpty()) {
                                 LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
+                                farm.setStatus(EntityStatus.OK);
+                                farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+
                             } else {
                                 String json = mapper.writeValueAsString(diff);
                                 LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: \n" + json);
+                                farm.setStatus(EntityStatus.ERROR);
+                                farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+
                                 if (farm.isAutoReload() && !disableJms) {
-                                    farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, farm);
+                                    Map.Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
+                                    farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, entrySet);
                                 } else {
                                     LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): " + farm.getName() + " [" + farm.getApi() + "]");
                                 }
