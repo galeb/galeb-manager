@@ -361,38 +361,15 @@ public class GalebV3Driver implements Driver {
     @Override
     public Map<String, Map<String, String>> diff(Map<String, Object> properties) {
 
-        String api = properties.getOrDefault("api", "localhost:9090").toString();
-        api = !api.startsWith("http") ? "http://" + api : api;
-
-        final Set<AbstractEntity<?>> virtualhosts = (Set<AbstractEntity<?>>)
-                properties.getOrDefault("virtualhosts", Collections.emptySet());
-        final Set<AbstractEntity<?>> backendpools = (Set<AbstractEntity<?>>)
-                properties.getOrDefault("backendpools", Collections.emptySet());
-        final Set<AbstractEntity<?>> backends = (Set<AbstractEntity<?>>)
-                properties.getOrDefault("backends", Collections.emptySet());
-        final Set<AbstractEntity<?>> rules = (Set<AbstractEntity<?>>)
-                properties.getOrDefault("rules", Collections.emptySet());
-
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
-        entitiesMap.put("virtualhost", virtualhosts);
-        entitiesMap.put("backendpool", backendpools);
-        entitiesMap.put("backend", backends);
-        entitiesMap.put("rule", rules);
+        final String apiFromProperties = properties.getOrDefault("api", "localhost:9090").toString();
+        final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
+        final Map <String, Set<AbstractEntity<?>>> entitiesMap =
+                (Map <String, Set<AbstractEntity<?>>>)properties.getOrDefault("entitiesMap", Collections.emptyMap());
 
         final Map<String, Map<String, String>> fullMap = extractRemoteMap(api);
-
-        return makeDiffMap(api, entitiesMap, fullMap);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, String>> makeDiffMap(final String api,
-                                            final Map<String, Set<AbstractEntity<?>>> entitiesMap,
-                                            final Map<String, Map<String, String>> fullMap) {
-
         final Map<String, Map<String, String>> diffMap = new HashMap<>();
-        final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
 
-        pathList.stream().forEach(path ->
+        entitiesMap.keySet().stream().forEach(path ->
         {
             Set<AbstractEntity<?>> entities = entitiesMap.get(path);
 
@@ -401,7 +378,6 @@ public class GalebV3Driver implements Driver {
                                   entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
                               .forEach(entry ->
             {
-                final String key = entry.getKey();
                 final Map<String, String> entityProperties = entry.getValue();
                 final String id = entityProperties.getOrDefault("id", "UNDEF");
                 final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
@@ -460,7 +436,7 @@ public class GalebV3Driver implements Driver {
     private Map<String, Map<String, String>> extractRemoteMap(final String api) {
 
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final List<String> pathList = Arrays.asList("virtualhost","backendpool","backend","rule");
+        final List<String> pathList = Arrays.asList("virtualhost", "backendpool", "backend", "rule");
 
         pathList.stream().map(path -> api + "/" + path).forEach(fullPath ->
         {

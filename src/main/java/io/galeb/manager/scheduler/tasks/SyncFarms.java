@@ -22,6 +22,7 @@ package io.galeb.manager.scheduler.tasks;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -127,16 +128,20 @@ public class SyncFarms {
                     .forEach(farm ->
                     {
                         final Driver driver = DriverBuilder.getDriver(farm);
-                        Map<String, Object> properties = new HashMap<>();
-                        properties.put("api", farm.getApi());
-                        properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
-                        properties.put("backendpools", getTargets(farm)
+
+                        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
+                        entitiesMap.put("virtualhost", getVirtualhosts(farm).collect(Collectors.toSet()));
+                        entitiesMap.put("backendpool", getTargets(farm)
                                 .filter(target -> target.getTargetType().getName().equals("BackendPool"))
                                 .collect(Collectors.toSet()));
-                        properties.put("backends", getTargets(farm)
+                        entitiesMap.put("backend", getTargets(farm)
                                 .filter(target -> target.getTargetType().getName().equals("Backend"))
                                 .collect(Collectors.toSet()));
-                        properties.put("rules", getRules(farm).collect(Collectors.toSet()));
+                        entitiesMap.put("rule", getRules(farm).collect(Collectors.toSet()));
+
+                        final Map<String, Object> properties = new HashMap<>();
+                        properties.put("api", farm.getApi());
+                        properties.put("entitiesMap", entitiesMap);
 
                         try {
                             Map<String, Map<String, String>> diff = driver.diff(properties);
