@@ -172,23 +172,33 @@ public class GalebV3Driver implements Driver {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public boolean reload(Properties properties) throws IOException {
         String api = properties.getOrDefault("api", "NULL").toString();
         Map<String, Map<String, String>> diff =
                 (Map<String, Map<String, String>>) properties.getOrDefault("diff", new HashMap<>());
-        Set<VirtualHost> virtualHosts =
-                (Set<VirtualHost>)properties.getOrDefault("virtualhosts", new HashSet<>());
-        Set<Target> targets =
-                (Set<Target>)properties.getOrDefault("targets", new HashSet<>());
-        Set<Rule> rules =
-                (Set<Rule>)properties.getOrDefault("rules", new HashSet<>());
+        Set<VirtualHost> virtualHosts = (Set<VirtualHost>)properties.
+                getOrDefault("virtualhosts", new HashSet<>());
+        Set<Target> targets = (Set<Target>)properties.
+                getOrDefault("targets", new HashSet<>());
+        Set<Rule> rules = (Set<Rule>)properties.
+                getOrDefault("rules", new HashSet<>());
 
         api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
         String[] apiWithPort = api.split(":");
         String hostName = apiWithPort[0];
         int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
 
+        diff.entrySet().stream().forEach(entry -> {
+            String key = entry.getKey();
+            Map<String, String> attributes = entry.getValue();
+            String action = attributes.get("ACTION");
+            String entityType = attributes.get("ENTITY_TYPE");
+            String id = attributes.get("ID");
+            String parentId = attributes.get("parentId");
+
+        });
         // TODO: Fix inconsistencies
 
         return false;
