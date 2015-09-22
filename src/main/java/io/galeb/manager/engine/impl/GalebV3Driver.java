@@ -87,6 +87,14 @@ public class GalebV3Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
         String uriPath = api + "/" + path;
+
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = mapper.readTree(json);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        JsonNode parentIdObj = jsonNode != null ? jsonNode.get("parentId") : null;
         RestTemplate restTemplate = new RestTemplate();
 
         boolean result = false;
@@ -96,11 +104,35 @@ public class GalebV3Driver implements Driver {
             RequestEntity<Void> request = RequestEntity.get(uri).build();
             ResponseEntity<String> response = restTemplate.exchange(request, String.class);
             result = getResultFromStatusCode(request, response);
+            if (parentIdObj != null) {
+                result = result && getResultFromParent(response, parentIdObj.asText());
+            }
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
         }
 
         return result;
+    }
+
+    private boolean getResultFromParent(ResponseEntity<String> response, String expectedParent) {
+        AtomicBoolean parentFound = new AtomicBoolean(false);
+
+        try {
+            JsonNode json = mapper.readTree(response.getBody());
+            if (json.isArray()) {
+                json.forEach(jsonNode -> {
+                    JsonNode parentIdObj = jsonNode.get("parentId");
+                    if (parentIdObj != null && parentIdObj.isTextual() && parentIdObj.asText().equals(expectedParent)) {
+                        parentFound.set(true);
+                    }
+                });
+            }
+        } catch (IOException e) {
+            LOGGER.error(e);
+            return false;
+        }
+
+        return parentFound.get();
     }
 
     @Override
