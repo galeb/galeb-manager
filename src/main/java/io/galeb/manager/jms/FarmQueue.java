@@ -22,8 +22,11 @@ package io.galeb.manager.jms;
 
 import io.galeb.manager.entity.Farm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
@@ -43,6 +46,12 @@ public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
         setQueueReloadName(QUEUE_RELOAD);
+    }
+
+    public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) throws JmsException {
+        if (!disableJms) {
+            jms.convertAndSend(queue, entry);
+        }
     }
 
     @Override
