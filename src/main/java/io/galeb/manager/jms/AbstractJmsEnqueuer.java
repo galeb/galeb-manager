@@ -30,7 +30,7 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
 public abstract class AbstractJmsEnqueuer<T> {
 
-    private static boolean disableJms;
+    protected static boolean disableJms;
 
     static {
         disableJms = Boolean.getBoolean(System.getProperty(
