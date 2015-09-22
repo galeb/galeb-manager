@@ -32,7 +32,6 @@ import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -51,11 +50,11 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
 @Component
-public class CheckFarms {
+public class SyncFarms {
 
-    private static final Log LOGGER = LogFactory.getLog(CheckFarms.class);
+    private static final Log LOGGER = LogFactory.getLog(SyncFarms.class);
 
-    private static final String CHECK_FARMS_TASK_LOCKNAME = "CheckFarms.task";
+    private static final String SYNC_FARMS_TASK_LOCKNAME = "SyncFarms.task";
 
     private static final long INTERVAL = 10000;
 
@@ -115,7 +114,7 @@ public class CheckFarms {
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
 
-        if (!registerLock(CHECK_FARMS_TASK_LOCKNAME, INTERVAL / 1000)) {
+        if (!registerLock(SYNC_FARMS_TASK_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
 
@@ -163,7 +162,7 @@ public class CheckFarms {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            distributedLocker.release(CHECK_FARMS_TASK_LOCKNAME);
+            distributedLocker.release(SYNC_FARMS_TASK_LOCKNAME);
             LOGGER.debug("TASK checkFarm finished");
         }
     }
