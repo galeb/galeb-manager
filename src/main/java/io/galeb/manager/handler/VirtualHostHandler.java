@@ -30,10 +30,8 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
-import io.galeb.manager.engine.farm.VirtualHostEngine;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.VirtualHost;
@@ -43,24 +41,15 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
 @RepositoryEventHandler(VirtualHost.class)
-public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
+public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
-
-    @Autowired
-    private JmsTemplate jms;
 
     @Autowired
     private FarmRepository farmRepository;
 
     @Autowired
     private VirtualHostRepository virtualHostRepository;
-
-    public VirtualHostHandler() {
-        setQueueCreateName(VirtualHostEngine.QUEUE_CREATE);
-        setQueueUpdateName(VirtualHostEngine.QUEUE_UPDATE);
-        setQueueRemoveName(VirtualHostEngine.QUEUE_REMOVE);
-    }
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -82,7 +71,7 @@ public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
 
     @HandleAfterCreate
     public void afterCreate(VirtualHost virtualhost) throws Exception {
-        afterCreate(virtualhost, jms, LOGGER);
+        afterCreate(virtualhost, LOGGER);
     }
 
     @HandleBeforeSave
@@ -92,7 +81,7 @@ public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
 
     @HandleAfterSave
     public void afterSave(VirtualHost virtualhost) throws Exception {
-        afterSave(virtualhost, jms, LOGGER);
+        afterSave(virtualhost, LOGGER);
     }
 
     @HandleBeforeDelete
@@ -102,7 +91,7 @@ public class VirtualHostHandler extends RoutableToEngine<VirtualHost> {
 
     @HandleAfterDelete
     public void afterDelete(VirtualHost virtualhost) throws Exception {
-        afterDelete(virtualhost, jms, LOGGER);
+        afterDelete(virtualhost, LOGGER);
     }
 
 }

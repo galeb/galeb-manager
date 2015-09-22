@@ -31,9 +31,7 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
-import org.springframework.jms.core.JmsTemplate;
 
-import io.galeb.manager.engine.farm.RuleEngine;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
@@ -42,25 +40,15 @@ import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
 
 @RepositoryEventHandler(Rule.class)
-public class RuleHandler extends RoutableToEngine<Rule> {
+public class RuleHandler extends AbstractHandler<Rule> {
 
     private static Log LOGGER = LogFactory.getLog(RuleHandler.class);
-
-    @Autowired
-    private JmsTemplate jms;
 
     @Autowired
     private RuleRepository ruleRepository;
 
     @Autowired
     private TargetRepository targetRepository;
-
-
-    public RuleHandler() {
-        setQueueCreateName(RuleEngine.QUEUE_CREATE);
-        setQueueUpdateName(RuleEngine.QUEUE_UPDATE);
-        setQueueRemoveName(RuleEngine.QUEUE_REMOVE);
-    }
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -89,7 +77,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
-        afterCreate(rule, jms, LOGGER);
+        afterCreate(rule, LOGGER);
     }
 
     @HandleBeforeSave
@@ -100,7 +88,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
-        afterSave(rule, jms, LOGGER);
+        afterSave(rule, LOGGER);
     }
 
     @HandleBeforeDelete
@@ -110,7 +98,7 @@ public class RuleHandler extends RoutableToEngine<Rule> {
 
     @HandleAfterDelete
     public void afterDelete(Rule rule) throws Exception {
-        afterDelete(rule, jms, LOGGER);
+        afterDelete(rule, LOGGER);
     }
 
     private void setTargetGlobalIfNecessary(Rule rule) {
