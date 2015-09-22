@@ -9,5 +9,5 @@ public interface ProjectRepositoryCustom {
 
     Page<Project> findAll(Pageable pageable);
 
-    Project findByName(String name);
+    Page<Project> findByName(String name, Pageable pageable);
 }

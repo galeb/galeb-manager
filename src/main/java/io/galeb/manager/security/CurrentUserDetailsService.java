@@ -19,6 +19,8 @@
 package io.galeb.manager.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -38,7 +40,8 @@ public class CurrentUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Account account = accountRepository.findByName(userName);
+        Page<Account> accountPage = accountRepository.findByName(userName, new PageRequest(1, 99999));
+        Account account = accountPage.iterator().hasNext() ? accountPage.iterator().next() : null;
         SystemUserService.runAs(originalAuth);
         if (account == null) {
             throw new UsernameNotFoundException("Account "+userName+" NOT FOUND");

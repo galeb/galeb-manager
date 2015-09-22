@@ -9,6 +9,6 @@ public interface TeamRepositoryCustom {
 
     Page<Team> findAll(Pageable pageable);
 
-    Team findByName(String name);
+    Page<Team> findByName(String name, Pageable pageable);
 
 }

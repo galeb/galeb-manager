@@ -25,6 +25,8 @@ import java.util.Iterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -85,8 +87,9 @@ public class TargetHandler extends AbstractHandler<Target> {
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
         if (target.getParent() == null) {
-            Target targetPersisted = targetRepository.findByName(target.getName());
-            if (targetPersisted != null && targetPersisted.getParent() == null) {
+            Page<Target> targetPersisted = targetRepository.findByName(target.getName(), new PageRequest(1, 9999));
+            Target aTarget = targetPersisted.iterator().hasNext() ? targetPersisted.iterator().next() : null;
+            if (aTarget != null && aTarget.getParent() == null) {
                 throw new ConflictException("Duplicate entry");
             }
         }

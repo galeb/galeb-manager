@@ -49,5 +49,6 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
 
     @Override
     @Query
-    Project findByName(@Param("name") String name);
+    Page<Project> findByName(@Param("name")String name, Pageable pageable);
+
 }

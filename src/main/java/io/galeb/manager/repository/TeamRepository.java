@@ -44,7 +44,7 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
 
     @Override
     @Query
-    Team findByName(@Param("name") String name);
+    Page<Team> findByName(@Param("name")String name, Pageable pageable);
 
     @Override
     @Query
