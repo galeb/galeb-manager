@@ -9,6 +9,6 @@ public interface RuleRepositoryCustom {
 
     Page<Rule> findAll(Pageable pageable);
 
-    Rule findByName(String name);
+    Page<Rule> findByName(String name, Pageable pageable);
 
 }

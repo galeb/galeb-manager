@@ -2,11 +2,13 @@ package io.galeb.manager.repository.custom;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
+import io.galeb.manager.entity.Target;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -45,10 +47,10 @@ public abstract class AbstractRepositoryImplementation<T extends AbstractEntity<
         return new PageImpl<>(entity, pageable, entity.size());
     }
 
-    public T findByName(String name) {
-        Optional<T> anEntity = StreamSupport.stream(findAll().spliterator(), false)
-                .filter(entity -> entity.getName().equals(name)).findFirst();
-        return anEntity.orElse(null);
+    public Page<T> findByName(String name, Pageable pageable) {
+        final List<T> entity = StreamSupport.stream(findAll().spliterator(), false)
+                .filter(e -> e.getName().equals(name)).collect(Collectors.toList());
+        return new PageImpl<>(entity, pageable, entity.size());
     }
 
 }

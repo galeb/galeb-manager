@@ -9,6 +9,6 @@ public interface TargetRepositoryCustom {
 
     Page<Target> findAll(Pageable pageable);
 
-    Target findByName(String name);
+    Page<Target> findByName(String name, Pageable pageable);
 
 }

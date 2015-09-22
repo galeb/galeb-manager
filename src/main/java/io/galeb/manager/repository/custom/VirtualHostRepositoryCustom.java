@@ -9,6 +9,6 @@ public interface VirtualHostRepositoryCustom {
 
     Page<VirtualHost> findAll(Pageable pageable);
 
-    VirtualHost findByName(String name);
+    Page<VirtualHost> findByName(String name, Pageable pageable);
 
 }

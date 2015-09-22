@@ -47,7 +47,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
 
     @Override
     @Query
-    Rule findByName(@Param("name") String name);
+    Page<Rule> findByName(@Param("name") String name, Pageable pageable);
 
     @Query
     Page<Rule> findByTargetName(@Param("name") String name, Pageable pageable);
