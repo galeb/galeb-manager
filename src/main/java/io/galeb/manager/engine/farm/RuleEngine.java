@@ -43,7 +43,7 @@ import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
 @Component
-public class RuleEngine extends AbstractEngine {
+public class RuleEngine extends AbstractEngine<Rule> {
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 

@@ -42,7 +42,7 @@ import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
 @Component
-public class VirtualHostEngine extends AbstractEngine {
+public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostEngine.class);
 

@@ -35,7 +35,13 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
-public abstract class AbstractEngine {
+public abstract class AbstractEngine<T> {
+
+    protected abstract void create(T entity);
+
+    protected abstract void remove(T entity);
+
+    protected abstract void update(T entity);
 
     protected abstract FarmRepository getFarmRepository();
 
