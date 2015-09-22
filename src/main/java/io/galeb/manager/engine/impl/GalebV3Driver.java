@@ -192,6 +192,7 @@ public class GalebV3Driver implements Driver {
 
         try {
             delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
+            api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
             String[] apiWithPort = api.split(":");
             String hostName = apiWithPort[0];
             int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
