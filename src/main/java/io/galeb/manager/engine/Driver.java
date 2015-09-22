@@ -55,15 +55,11 @@ public interface Driver {
         return true;
     }
 
-    default boolean reload(Properties properties) throws IOException {
-        return true;
-    }
-
     default StatusFarm status(Properties properties) {
         return StatusFarm.UNKNOWN;
     }
 
-    default Map<String, Map<String, String>> diff(Map<String, Object> properties) {
+    default Map<String, Map<String, String>> diff(Properties properties) {
         return Collections.emptyMap();
     }
 

@@ -183,7 +183,9 @@ public class GalebV3Driver implements Driver {
         String api = properties.getOrDefault("api", "NULL").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString();
+        String id = getIdEncoded(json);
+        path = !"".equals(id) ? "/" + id : path;
         String uriPath = api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
@@ -193,7 +195,7 @@ public class GalebV3Driver implements Driver {
             String[] apiWithPort = api.split(":");
             String hostName = apiWithPort[0];
             int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
-            delete.setEntity(new StringEntity(json));
+            delete.setEntity(new StringEntity(!"".equals(id) ? json : "{\"id\":\"\",\"version\":0}"));
             HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
             httpClient.close();
             result = getResultFromStatusCode(delete, response);
@@ -202,38 +204,6 @@ public class GalebV3Driver implements Driver {
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
         }
         return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public boolean reload(Properties properties) throws IOException {
-        String api = properties.getOrDefault("api", "NULL").toString();
-        Map<String, Map<String, String>> diff =
-                (Map<String, Map<String, String>>) properties.getOrDefault("diff", new HashMap<>());
-        Set<VirtualHost> virtualHosts = (Set<VirtualHost>)properties.
-                getOrDefault("virtualhosts", new HashSet<>());
-        Set<Target> targets = (Set<Target>)properties.
-                getOrDefault("targets", new HashSet<>());
-        Set<Rule> rules = (Set<Rule>)properties.
-                getOrDefault("rules", new HashSet<>());
-
-        api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
-        String[] apiWithPort = api.split(":");
-        String hostName = apiWithPort[0];
-        int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
-
-        diff.entrySet().stream().forEach(entry -> {
-            String key = entry.getKey();
-            Map<String, String> attributes = entry.getValue();
-            String action = attributes.get("ACTION");
-            String entityType = attributes.get("ENTITY_TYPE");
-            String id = attributes.get("ID");
-            String parentId = attributes.get("parentId");
-
-        });
-        // TODO: Fix inconsistencies
-
-        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -288,7 +258,7 @@ public class GalebV3Driver implements Driver {
             }
         } catch (RuntimeException | IOException | URISyntaxException e) {
             result.set(false);
-            LOGGER.error("STATUS FAIL: "+fullPath);
+            LOGGER.error("STATUS FAIL: " + fullPath);
             LOGGER.error(e);
         }
         return result.get() ? StatusFarm.OK : StatusFarm.FAIL;
@@ -376,8 +346,15 @@ public class GalebV3Driver implements Driver {
     }
 
     private String getIdEncoded(String json) {
+        if (json == null) {
+            return "";
+        }
         try {
-            String id = new ObjectMapper().readTree(json).get("id").asText();
+            JsonNode idObj = mapper.readTree(json).get("id");
+            if (idObj == null) {
+                return "";
+            }
+            String id = idObj.asText();
             if (id!=null) {
                 id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
             } else {
@@ -391,7 +368,7 @@ public class GalebV3Driver implements Driver {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Map<String, String>> diff(Map<String, Object> properties) {
+    public Map<String, Map<String, String>> diff(Properties properties) {
 
         final String apiFromProperties = properties.getOrDefault("api", "localhost:9090").toString();
         final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
