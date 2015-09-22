@@ -18,11 +18,11 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.manager.jms.FarmQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -52,12 +52,6 @@ import java.util.stream.StreamSupport;
 @Component
 public class FarmEngine extends AbstractEngine {
 
-    public static final String QUEUE_CREATE = "queue-farm-create";
-    public static final String QUEUE_UPDATE = "queue-farm-update";
-    public static final String QUEUE_REMOVE = "queue-farm-remove";
-    public static final String QUEUE_RELOAD = "queue-farm-reload";
-    public static final String QUEUE_CALLBK = "queue-farm-callback";
-
     private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
     @Autowired
@@ -76,9 +70,9 @@ public class FarmEngine extends AbstractEngine {
     private TargetRepository targetRepository;
 
     @Autowired
-    private JmsTemplate jms;
+    private FarmQueue farmQueue;
 
-    @JmsListener(destination = QUEUE_CREATE)
+    @JmsListener(destination = FarmQueue.QUEUE_CREATE)
     public void create(Farm farm) {
         LOGGER.info("Creating "+farm.getClass().getSimpleName()+" "+farm.getName());
         Provisioning provisioning = getProvisioning(farm);
@@ -89,13 +83,13 @@ public class FarmEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, farm);
+            farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
-    @JmsListener(destination = QUEUE_REMOVE)
+    @JmsListener(destination = FarmQueue.QUEUE_REMOVE)
     public void remove(Farm farm) {
-        LOGGER.info("Removing "+farm.getClass().getSimpleName()+" "+farm.getName());
+        LOGGER.info("Removing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
         boolean isOk = false;
         try {
@@ -104,11 +98,11 @@ public class FarmEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, farm);
+            farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
-    @JmsListener(destination = QUEUE_RELOAD)
+    @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
     public void reload(Farm farm) {
         LOGGER.warn("Reloading "+farm.getClass().getSimpleName()+" "+farm.getName());
         Driver driver = DriverBuilder.getDriver(farm);
@@ -130,12 +124,12 @@ public class FarmEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, farm);
+            farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
             SystemUserService.clearContext();
         }
     }
 
-    @JmsListener(destination = QUEUE_CALLBK)
+    @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
     public void callBack(Farm farm) {
         if (genericEntityService.isNew(farm)) {
             // farm removed?
@@ -155,8 +149,8 @@ public class FarmEngine extends AbstractEngine {
     }
 
     @Override
-    protected JmsTemplate getJmsTemplate() {
-        return jms;
+    protected FarmQueue farmQueue() {
+        return farmQueue;
     }
 
     private Properties makeProperties(Farm farm) {

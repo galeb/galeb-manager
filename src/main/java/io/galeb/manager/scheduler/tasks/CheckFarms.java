@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import io.galeb.manager.entity.*;
+import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -40,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.DriverBuilder;
-import io.galeb.manager.engine.farm.FarmEngine;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.jms.JmsConfiguration;
 import io.galeb.manager.repository.FarmRepository;
@@ -72,7 +72,7 @@ public class CheckFarms {
     private TargetRepository targetRepository;
 
     @Autowired
-    private JmsTemplate jms;
+    private FarmQueue farmQueue;
 
     @Autowired
     private DistributedLocker distributedLocker;
@@ -147,7 +147,7 @@ public class CheckFarms {
                                 String json = mapper.writeValueAsString(diff);
                                 LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: \n" + json);
                                 if (farm.isAutoReload() && !disableJms) {
-                                    jms.convertAndSend(FarmEngine.QUEUE_RELOAD, farm);
+                                    farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, farm);
                                 } else {
                                     LOGGER.warn("FARM STATUS FAIL (But AutoReload disabled): " + farm.getName() + " [" + farm.getApi() + "]");
                                 }
