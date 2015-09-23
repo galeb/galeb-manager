@@ -185,7 +185,7 @@ public class GalebV3Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
         String id = getIdEncoded(json);
-        path = !"".equals(id) ? "/" + id : path;
+        path = !"".equals(id) ? path + "/" + id : path;
         String uriPath = api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);

@@ -182,8 +182,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     break;
                 case "REMOVE":
                     properties.put("json", "{\"id\":\"" + id + "\"" +
-                            (parentId != null && "".equals(parentId) ? ",\"parentId\":\"" + parentId + "\"" : "") +
+                            (parentId != null && !"".equals(parentId) ? ",\"parentId\":\"" + parentId + "\"" : "") +
                             ",\"version\":0}");
+                    properties.put("path", entityType);
                     driver.remove(properties);
                     break;
                 default:
