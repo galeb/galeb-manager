@@ -34,7 +34,7 @@ public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
     public static final String QUEUE_CREATE = "queue-farm-create";
     public static final String QUEUE_UPDATE = "queue-farm-update";
     public static final String QUEUE_REMOVE = "queue-farm-remove";
-    public static final String QUEUE_RELOAD = "queue-farm-reload";
+    public static final String QUEUE_SYNC   = "queue-farm-sync";
     public static final String QUEUE_CALLBK = "queue-farm-callback";
 
     @Autowired
@@ -45,7 +45,7 @@ public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
-        setQueueReloadName(QUEUE_RELOAD);
+        setQueueSyncName(QUEUE_SYNC);
     }
 
     public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) throws JmsException {

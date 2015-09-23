@@ -36,7 +36,7 @@ public class ReloadController {
         if (farm != null) {
             farm.setStatus(PENDING).setSaveOnly(true);
             farmRepository.save(farm);
-            farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, new SimpleImmutableEntry<>(farm, null));
+            farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, new SimpleImmutableEntry<>(farm, null));
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

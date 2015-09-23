@@ -43,7 +43,7 @@ public abstract class AbstractJmsEnqueuer<T> {
     private String queueUpdateName   = QUEUE_UNDEF;
     private String queueRemoveName   = QUEUE_UNDEF;
     private String queueCallBackName = QUEUE_UNDEF;
-    private String queueReloadName   = QUEUE_UNDEF;
+    private String queueSyncName = QUEUE_UNDEF;
 
     protected abstract JmsTemplate jms();
 
@@ -83,12 +83,12 @@ public abstract class AbstractJmsEnqueuer<T> {
         return this;
     }
 
-    public String getQueueReloadName() {
-        return queueReloadName;
+    public String getQueueSyncName() {
+        return queueSyncName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueReloadName(String queueReloadName) {
-        this.queueReloadName = queueReloadName;
+    protected AbstractJmsEnqueuer<T> setQueueSyncName(String queueSyncName) {
+        this.queueSyncName = queueSyncName;
         return this;
     }
 

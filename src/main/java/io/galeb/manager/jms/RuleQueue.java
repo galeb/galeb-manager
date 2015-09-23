@@ -42,7 +42,7 @@ public class RuleQueue extends AbstractJmsEnqueuer<Rule> {
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
-        setQueueReloadName(QUEUE_RELOAD);
+        setQueueSyncName(QUEUE_RELOAD);
     }
 
     @Override

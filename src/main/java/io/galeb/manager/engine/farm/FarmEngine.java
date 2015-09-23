@@ -24,6 +24,8 @@ import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
@@ -66,6 +68,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private Map<String, AbstractJmsEnqueuer> queues = new HashMap<>();
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
+    private final Pageable pageable = new PageRequest(1, 99999);
 
     @PostConstruct
     public void init() {
@@ -115,7 +118,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
-    @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
+    @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void reload(Map.Entry<Farm, Map<String, Object>> entrySet) {
         if (!isRead.get()) {
             return;
@@ -253,18 +256,18 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private Stream<Target> getTargets(Farm farm) {
         return StreamSupport.stream(
-                targetRepository.findByFarmId(farm.getId()).spliterator(), false);
+                targetRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
     }
 
     private Stream<Rule> getRules(Farm farm) {
         return StreamSupport.stream(
-                ruleRepository.findByFarmId(farm.getId()).spliterator(), false)
+                ruleRepository.findByFarmId(farm.getId(), pageable).spliterator(), false)
                 .filter(rule -> !rule.getParents().isEmpty());
     }
 
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {
         return StreamSupport.stream(
-                virtualHostRepository.findByFarmId(farm.getId()).spliterator(), false);
+                virtualHostRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
     }
 
 }
