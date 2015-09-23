@@ -61,7 +61,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
-        if (target.getParent() != null) {
+        if (target.getParent() != null && !target.getParent().equals(target)) {
             farmId = target.getParent().getFarmId();
         } else {
             final Environment environment = target.getEnvironment();
@@ -86,11 +86,11 @@ public class TargetHandler extends AbstractHandler<Target> {
     @HandleBeforeCreate
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
-        if (target.getParent() == null) {
+        if (target.getParent().equals(target)) {
             Page<Target> targetPersisted = targetRepository.findByName(target.getName(), new PageRequest(1, 9999));
             Target aTarget = targetPersisted.iterator().hasNext() ? targetPersisted.iterator().next() : null;
-            if (aTarget != null && aTarget.getParent() == null) {
-                throw new ConflictException("Duplicate entry");
+            if (aTarget != null) {
+                target.setParent(aTarget.getParent());
             }
         }
         beforeCreate(target, LOGGER);
@@ -126,7 +126,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     private void setProject(Target target) throws Exception {
-        if (target.getParent() != null) {
+        if (target.getParent() != null && !target.getParent().equals(target)) {
             final Project projectOfParent = target.getParent().getProject();
 
             if (target.getProject() == null) {
@@ -148,7 +148,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     private void setEnvironment(Target target) throws Exception {
-        if (target.getParent() != null) {
+        if (target.getParent() != null && !target.getParent().equals(target)) {
             final Environment envOfParent = target.getParent().getEnvironment();
             if (target.getEnvironment() == null) {
                 target.setEnvironment(envOfParent);

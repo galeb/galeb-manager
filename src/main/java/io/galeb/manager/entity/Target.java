@@ -23,16 +23,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
 import org.springframework.util.Assert;
 
@@ -64,7 +55,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
-    private Target parent;
+    private Target parent = this;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "parent")
     private Set<Target> children = new HashSet<>();
@@ -129,7 +120,9 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     public Target setParent(Target parent) {
-        this.parent = parent;
+        if (parent != null) {
+            this.parent = parent;
+        }
         return this;
     }
 
