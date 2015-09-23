@@ -58,6 +58,6 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Iterable<Rule> findByFarmId(@Param("id") long id);
+    Page<Rule> findByFarmId(@Param("id") long id, Pageable pageable);
 
 }

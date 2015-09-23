@@ -55,7 +55,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
 
     @Override
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Iterable<Target> findByFarmId(@Param("id") long id);
+    Page<Target> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @Query("SELECT ta FROM Target ta "
             + "INNER JOIN ta.project.teams t "
@@ -64,7 +64,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
                 + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                 + "ta.global = TRUE OR "
                 + "a.name = ?#{principal.username})")
-    Iterable<Target> findByTargetTypeName(@Param("name") String name);
+    Page<Target> findByTargetTypeName(@Param("name") String name, Pageable pageable);
 
     @Query
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
