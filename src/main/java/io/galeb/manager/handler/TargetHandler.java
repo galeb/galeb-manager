@@ -25,6 +25,8 @@ import java.util.Iterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -32,10 +34,8 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
-import io.galeb.manager.engine.farm.TargetEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
@@ -48,24 +48,15 @@ import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
 @RepositoryEventHandler(Target.class)
-public class TargetHandler extends RoutableToEngine<Target> {
+public class TargetHandler extends AbstractHandler<Target> {
 
     private static Log LOGGER = LogFactory.getLog(TargetHandler.class);
-
-    @Autowired
-    private JmsTemplate jms;
 
     @Autowired
     private TargetRepository targetRepository;
 
     @Autowired
     private FarmRepository farmRepository;
-
-    public TargetHandler() {
-        setQueueCreateName(TargetEngine.QUEUE_CREATE);
-        setQueueUpdateName(TargetEngine.QUEUE_UPDATE);
-        setQueueRemoveName(TargetEngine.QUEUE_REMOVE);
-    }
 
     @Override
     protected void setBestFarm(final Target target) throws Exception {
@@ -96,8 +87,9 @@ public class TargetHandler extends RoutableToEngine<Target> {
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
         if (target.getParent() == null) {
-            Target targetPersisted = targetRepository.findByName(target.getName());
-            if (targetPersisted != null && targetPersisted.getParent() == null) {
+            Page<Target> targetPersisted = targetRepository.findByName(target.getName(), new PageRequest(1, 9999));
+            Target aTarget = targetPersisted.iterator().hasNext() ? targetPersisted.iterator().next() : null;
+            if (aTarget != null && aTarget.getParent() == null) {
                 throw new ConflictException("Duplicate entry");
             }
         }
@@ -109,7 +101,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
 
     @HandleAfterCreate
     public void afterCreate(Target target) throws Exception {
-        afterCreate(target, jms, LOGGER);
+        afterCreate(target, LOGGER);
     }
 
     @HandleBeforeSave
@@ -120,7 +112,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
 
     @HandleAfterSave
     public void afterSave(Target target) throws Exception {
-        afterSave(target, jms, LOGGER);
+        afterSave(target, LOGGER);
     }
 
     @HandleBeforeDelete
@@ -130,7 +122,7 @@ public class TargetHandler extends RoutableToEngine<Target> {
 
     @HandleAfterDelete
     public void afterDelete(Target target) throws Exception {
-        afterDelete(target, jms, LOGGER);
+        afterDelete(target, LOGGER);
     }
 
     private void setProject(Target target) throws Exception {

@@ -112,8 +112,8 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     public void setAliases(Set<String> aliases) {
         if (aliases != null) {
-            aliases.clear();
-            aliases.addAll(aliases);
+            this.aliases.clear();
+            this.aliases.addAll(aliases);
         }
         this.aliases = aliases;
     }

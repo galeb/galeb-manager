@@ -133,6 +133,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
+    @Override
     public Set<Target> getChildren() {
         return children;
     }

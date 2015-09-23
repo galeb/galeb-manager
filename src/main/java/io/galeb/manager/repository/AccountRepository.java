@@ -43,6 +43,5 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
 
     @Override
     @Query
-    Account findByName(@Param("name") String name);
-
+    Page<Account> findByName(@Param("name")String name, Pageable pageable);
 }

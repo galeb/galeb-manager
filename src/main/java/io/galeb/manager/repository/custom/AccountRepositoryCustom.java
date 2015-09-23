@@ -9,6 +9,6 @@ public interface AccountRepositoryCustom {
 
     Page<Account> findAll(Pageable pageable);
 
-    Account findByName(String name);
+    Page<Account> findByName(String name, Pageable pageable);
 
 }

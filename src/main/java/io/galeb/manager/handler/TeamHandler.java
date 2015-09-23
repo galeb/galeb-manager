@@ -64,12 +64,8 @@ public class TeamHandler {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Team team) {
-        team.getAccounts().stream().forEach(account -> {
-            account.getTeams().remove(team);
-        });
-        team.getProjects().stream().forEach(project -> {
-            project.getTeams().remove(team);
-        });
+        team.getAccounts().stream().forEach(account -> account.getTeams().remove(team));
+        team.getProjects().stream().forEach(project -> project.getTeams().remove(team));
         LOGGER.info("Team: HandleBeforeDelete");
     }
 

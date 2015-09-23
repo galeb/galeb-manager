@@ -4,6 +4,6 @@ import java.util.Set;
 
 public interface WithParents<T extends AbstractEntity<?>> {
 
-    public Set<T> getParents();
+    Set<T> getParents();
 
 }

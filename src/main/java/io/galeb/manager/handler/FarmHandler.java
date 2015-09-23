@@ -30,20 +30,15 @@ import org.springframework.data.rest.core.annotation.HandleBeforeCreate;
 import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.manager.engine.farm.FarmEngine;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.repository.FarmRepository;
 
 @RepositoryEventHandler(Farm.class)
-public class FarmHandler extends RoutableToEngine<Farm> {
+public class FarmHandler extends AbstractHandler<Farm> {
 
     private static Log LOGGER = LogFactory.getLog(FarmHandler.class);
-
-    @Autowired
-    private JmsTemplate jms;
 
     @Autowired
     private FarmRepository farmRepository;
@@ -51,12 +46,6 @@ public class FarmHandler extends RoutableToEngine<Farm> {
     @Override
     protected void setBestFarm(Farm entity) {
         // its me !!!
-    }
-
-    public FarmHandler() {
-        setQueueCreateName(FarmEngine.QUEUE_CREATE);
-        setQueueUpdateName(FarmEngine.QUEUE_UPDATE);
-        setQueueRemoveName(FarmEngine.QUEUE_REMOVE);
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -68,7 +57,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
 
     @HandleAfterCreate
     public void afterCreate(Farm farm) throws Exception {
-        afterCreate(farm, jms, LOGGER);
+        afterCreate(farm, LOGGER);
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -79,7 +68,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
 
     @HandleAfterSave
     public void afterSave(Farm farm) throws Exception {
-        afterSave(farm, jms, LOGGER);
+        afterSave(farm, LOGGER);
     }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
@@ -90,7 +79,7 @@ public class FarmHandler extends RoutableToEngine<Farm> {
 
     @HandleAfterDelete
     public void afterDelete(Farm farm) throws Exception {
-        afterDelete(farm, jms, LOGGER);
+        afterDelete(farm, LOGGER);
     }
 
 }

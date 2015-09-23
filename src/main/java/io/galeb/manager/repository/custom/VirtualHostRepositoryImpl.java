@@ -28,7 +28,7 @@ public class VirtualHostRepositoryImpl extends AbstractRepositoryImplementation<
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<VirtualHost, ?> entityInformation;
 
     @PostConstruct

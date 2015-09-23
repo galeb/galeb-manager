@@ -39,6 +39,20 @@ Feature: Target Support
             | teams | [ Team=teamOne ] |
         And send POST /project
         Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name | providerOne |
+        And send POST /provider
+        Then the response status is 201
+        And a REST client authenticated as admin
+        When request json body has:
+            | name        | farmOne              |
+            | domain      | domain               |
+            | api         | api                  |
+            | environment | Environment=envOne   |
+            | provider    | Provider=providerOne |
+        And send POST /farm
+        Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
             | name        | targetOne                |
@@ -212,3 +226,17 @@ Feature: Target Support
         Then the response status is 200
         And property name contains targetOne
 
+    Scenario: Invalid environment is Forbidden
+        Given a REST client authenticated as admin
+        When request json body has:
+          | name | envTwo |
+        And send POST /environment
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        And request json body has:
+          | name        | targetTwo                |
+          | targetType  | TargetType=targetTypeOne |
+          | environment | Environment=envTwo       |
+          | project     | Project=projOne          |
+        And send POST /target
+        Then the response status is 400

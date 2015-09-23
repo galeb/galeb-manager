@@ -18,11 +18,12 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.jms.VirtualHostQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -41,12 +42,7 @@ import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
 @Component
-public class VirtualHostEngine extends AbstractEngine {
-
-    public static final String QUEUE_CREATE = "queue-virtualhost-create";
-    public static final String QUEUE_UPDATE = "queue-virtualhost-update";
-    public static final String QUEUE_REMOVE = "queue-virtualhost-remove";
-    public static final String QUEUE_CALLBK = "queue-virtualhost-callback";
+public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostEngine.class);
 
@@ -54,15 +50,18 @@ public class VirtualHostEngine extends AbstractEngine {
     private FarmRepository farmRepository;
 
     @Autowired
-    private JmsTemplate jms;
-
-    @Autowired
     private VirtualHostRepository virtualHostRepository;
 
     @Autowired
     private GenericEntityService genericEntityService;
 
-    @JmsListener(destination = QUEUE_CREATE)
+    @Autowired
+    private VirtualHostQueue virtualHostQueue;
+
+    @Autowired
+    private FarmQueue farmQueue;
+
+    @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
@@ -73,11 +72,11 @@ public class VirtualHostEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, virtualHost);
+            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
     }
 
-    @JmsListener(destination = QUEUE_UPDATE)
+    @JmsListener(destination = VirtualHostQueue.QUEUE_UPDATE)
     public void update(VirtualHost virtualHost) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
@@ -88,13 +87,13 @@ public class VirtualHostEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, virtualHost);
+            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
     }
 
-    @JmsListener(destination = QUEUE_REMOVE)
+    @JmsListener(destination = VirtualHostQueue.QUEUE_REMOVE)
     public void remove(VirtualHost virtualHost) {
-        LOGGER.info("Removing "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
+        LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
@@ -103,11 +102,11 @@ public class VirtualHostEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, virtualHost);
+            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
     }
 
-    @JmsListener(destination = QUEUE_CALLBK)
+    @JmsListener(destination = VirtualHostQueue.QUEUE_CALLBK)
     public void callBack(VirtualHost virtualHost) {
         if (genericEntityService.isNew(virtualHost)) {
             // virtualHost removed?
@@ -128,8 +127,8 @@ public class VirtualHostEngine extends AbstractEngine {
     }
 
     @Override
-    protected JmsTemplate getJmsTemplate() {
-        return jms;
+    protected FarmQueue farmQueue() {
+        return farmQueue;
     }
 
     private Properties makeProperties(VirtualHost virtualHost) {
@@ -138,7 +137,7 @@ public class VirtualHostEngine extends AbstractEngine {
             JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);
             json = jsonMapper.toString();
         } catch (JsonProcessingException e) {
-            LOGGER.equals(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
         Properties properties = fromEntity(virtualHost);
         properties.put("json", json);

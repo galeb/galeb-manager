@@ -20,6 +20,8 @@ package io.galeb.manager.engine.farm;
 
 import java.util.Optional;
 
+import io.galeb.manager.jms.AbstractJmsEnqueuer;
+import io.galeb.manager.jms.FarmQueue;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
@@ -33,11 +35,17 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
-public abstract class AbstractEngine {
+public abstract class AbstractEngine<T> {
+
+    protected abstract void create(T entity);
+
+    protected abstract void remove(T entity);
+
+    protected abstract void update(T entity);
 
     protected abstract FarmRepository getFarmRepository();
 
-    protected abstract JmsTemplate getJmsTemplate();
+    protected abstract FarmQueue farmQueue();
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
@@ -80,7 +88,7 @@ public abstract class AbstractEngine {
             Optional<Farm> farm = findFarm(entity);
             if (farm.isPresent()) {
                 farm.get().setStatus(EntityStatus.ERROR);
-                getJmsTemplate().convertAndSend(FarmEngine.QUEUE_CALLBK, farm.get());
+                farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm.get());
             }
         }
     }

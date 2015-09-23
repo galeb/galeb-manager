@@ -212,7 +212,7 @@ public class StepDefs {
     public void requestUriListBodyHas(List<String> uriList) throws Throwable {
         request.contentType("text/uri-list");
         if (!uriList.isEmpty()) {
-            String body = uriList.stream().map(uri -> processFullUrl(uri))
+            String body = uriList.stream().map(this::processFullUrl)
                                           .collect(Collectors.joining("\n"));
             request.body(body);
         }

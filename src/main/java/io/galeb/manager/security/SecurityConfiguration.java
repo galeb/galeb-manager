@@ -40,6 +40,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -190,14 +192,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
                 final Authentication originalAuth = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Account account = accountRepository.findByName(username);
+                final Page<Account> accountPage = accountRepository.findByName(username, new PageRequest(1, 99999));
+                final Account account = accountPage.iterator().hasNext() ? accountPage.iterator().next() : null;
                 SystemUserService.runAs(originalAuth);
 
                 List<String> localRoles = new ArrayList<>();
                 long id = Long.MAX_VALUE;
                 if (account != null) {
                     localRoles = account.getRoles().stream()
-                            .map(role -> role.toString())
+                            .map(Enum::toString)
                             .collect(Collectors.toList());
                     id = account.getId();
                 } else {

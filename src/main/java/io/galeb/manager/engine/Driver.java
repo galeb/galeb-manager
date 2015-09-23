@@ -27,16 +27,20 @@ import io.galeb.manager.engine.farm.EntityFarm;
 
 public interface Driver {
 
-    public enum StatusFarm {
+    enum StatusFarm {
         OK,
         FAIL,
         UNKNOWN
     }
 
-    public static final String DEFAULT_DRIVER_NAME = "NULL";
+    String DEFAULT_DRIVER_NAME = "NULL";
 
     default EntityFarm info(Properties properties) {
         return null;
+    }
+
+    default boolean exist(Properties properties) {
+        return false;
     }
 
     default boolean create(Properties properties) {
@@ -51,15 +55,11 @@ public interface Driver {
         return true;
     }
 
-    default boolean reload(Properties properties) throws IOException {
-        return true;
-    }
-
     default StatusFarm status(Properties properties) {
         return StatusFarm.UNKNOWN;
     }
 
-    default Map<String, Properties> diff(Properties properties) {
+    default Map<String, Map<String, String>> diff(Properties properties) {
         return Collections.emptyMap();
     }
 

@@ -18,11 +18,12 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.jms.TargetQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -42,12 +43,7 @@ import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
 @Component
-public class TargetEngine extends AbstractEngine {
-
-    public static final String QUEUE_CREATE = "queue-target-create";
-    public static final String QUEUE_UPDATE = "queue-target-update";
-    public static final String QUEUE_REMOVE = "queue-target-remove";
-    public static final String QUEUE_CALLBK = "queue-target-callback";
+public class TargetEngine extends AbstractEngine<Target> {
 
     private static final Log LOGGER = LogFactory.getLog(TargetEngine.class);
 
@@ -55,15 +51,18 @@ public class TargetEngine extends AbstractEngine {
     private FarmRepository farmRepository;
 
     @Autowired
-    private JmsTemplate jms;
-
-    @Autowired
     private TargetRepository targetRepository;
 
     @Autowired
     private GenericEntityService genericEntityService;
 
-    @JmsListener(destination = QUEUE_CREATE)
+    @Autowired
+    private TargetQueue targetQueue;
+
+    @Autowired
+    private FarmQueue farmQueue;
+
+    @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -78,11 +77,11 @@ public class TargetEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, target);
+            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
-    @JmsListener(destination = QUEUE_UPDATE)
+    @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
     public void update(Target target) {
         LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -97,11 +96,11 @@ public class TargetEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, target);
+            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
-    @JmsListener(destination = QUEUE_REMOVE)
+    @JmsListener(destination = TargetQueue.QUEUE_REMOVE)
     public void remove(Target target) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -117,11 +116,11 @@ public class TargetEngine extends AbstractEngine {
             LOGGER.error(e);
         } finally {
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            jms.convertAndSend(QUEUE_CALLBK, target);
+            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
-    @JmsListener(destination = QUEUE_CALLBK)
+    @JmsListener(destination = TargetQueue.QUEUE_CALLBK)
     public void callBack(Target target) {
         if (genericEntityService.isNew(target)) {
             // target removed?
@@ -142,8 +141,8 @@ public class TargetEngine extends AbstractEngine {
     }
 
     @Override
-    protected JmsTemplate getJmsTemplate() {
-        return jms;
+    protected FarmQueue farmQueue() {
+        return farmQueue;
     }
 
     private Properties makeProperties(Target target, Target parent) {
@@ -159,7 +158,7 @@ public class TargetEngine extends AbstractEngine {
             }
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.equals(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
         final Properties properties = fromEntity(target);
         properties.put("json", json);

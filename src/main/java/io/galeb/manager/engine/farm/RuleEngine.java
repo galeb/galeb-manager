@@ -18,11 +18,12 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.jms.RuleQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -42,12 +43,7 @@ import io.galeb.manager.security.SystemUserService;
 import io.galeb.manager.service.GenericEntityService;
 
 @Component
-public class RuleEngine extends AbstractEngine {
-
-    public static final String QUEUE_CREATE = "queue-rule-create";
-    public static final String QUEUE_UPDATE = "queue-rule-update";
-    public static final String QUEUE_REMOVE = "queue-rule-remove";
-    public static final String QUEUE_CALLBK = "queue-rule-callback";
+public class RuleEngine extends AbstractEngine<Rule> {
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 
@@ -55,33 +51,35 @@ public class RuleEngine extends AbstractEngine {
     private FarmRepository farmRepository;
 
     @Autowired
-    private JmsTemplate jms;
+    private RuleRepository ruleRepository;
 
     @Autowired
-    private RuleRepository ruleRepository;
+    private RuleQueue ruleQueue;
+
+    @Autowired
+    private FarmQueue farmQueue;
 
     @Autowired
     private GenericEntityService genericEntityService;
 
-    @JmsListener(destination = QUEUE_CREATE)
+    @JmsListener(destination = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
-
             try {
                 isOk = driver.create(makeProperties(rule, virtualhost));
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                jms.convertAndSend(QUEUE_CALLBK, rule);
+                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
 
-    @JmsListener(destination = QUEUE_UPDATE)
+    @JmsListener(destination = RuleQueue.QUEUE_UPDATE)
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
@@ -89,19 +87,23 @@ public class RuleEngine extends AbstractEngine {
             boolean isOk = false;
 
             try {
+                if (!driver.exist(makeProperties(rule, virtualhost))) {
+                    ruleQueue.sendToQueue(RuleQueue.QUEUE_CREATE, rule);
+                    return;
+                }
                 isOk = driver.update(makeProperties(rule, virtualhost));
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                jms.convertAndSend(QUEUE_CALLBK, rule);
+                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
 
-    @JmsListener(destination = QUEUE_REMOVE)
+    @JmsListener(destination = RuleQueue.QUEUE_REMOVE)
     public void remove(Rule rule) {
-        LOGGER.info("Removing "+rule.getClass().getSimpleName()+" "+rule.getName());
+        LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
@@ -112,12 +114,12 @@ public class RuleEngine extends AbstractEngine {
                 LOGGER.error(e);
             } finally {
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                jms.convertAndSend(QUEUE_CALLBK, rule);
+                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
 
-    @JmsListener(destination = QUEUE_CALLBK)
+    @JmsListener(destination = RuleQueue.QUEUE_CALLBK)
     public void callBack(Rule rule) {
         if (genericEntityService.isNew(rule)) {
             // rule removed?
@@ -126,7 +128,11 @@ public class RuleEngine extends AbstractEngine {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         rule.setSaveOnly(true);
-        ruleRepository.save(rule);
+        try {
+            ruleRepository.save(rule);
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
         setFarmStatusOnError(rule);
         SystemUserService.runAs(currentUser);
         rule.setSaveOnly(false);
@@ -138,8 +144,8 @@ public class RuleEngine extends AbstractEngine {
     }
 
     @Override
-    protected JmsTemplate getJmsTemplate() {
-        return jms;
+    protected FarmQueue farmQueue() {
+        return farmQueue;
     }
 
     private Properties makeProperties(Rule rule, VirtualHost virtualHost) {
@@ -154,7 +160,7 @@ public class RuleEngine extends AbstractEngine {
             jsonMapper.addToNode("properties", "default", String.valueOf(rule.isRuleDefault()));
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.equals(e.getMessage());
+            LOGGER.error(e.getMessage());
         }
         final Properties properties = fromEntity(rule);
         properties.put("json", json);

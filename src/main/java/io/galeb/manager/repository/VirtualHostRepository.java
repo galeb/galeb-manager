@@ -46,7 +46,7 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
 
     @Override
     @Query
-    VirtualHost findByName(@Param("name") String name);
+    Page<VirtualHost> findByName(@Param("name") String name, Pageable pageable);
 
     @Override
     @Query

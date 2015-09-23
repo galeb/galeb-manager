@@ -28,7 +28,7 @@ public class ProjectRepositoryImpl extends AbstractRepositoryImplementation<Proj
     @PersistenceContext
     private EntityManager em;
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private JpaEntityInformation<Project, ?> entityInformation;
 
     @PostConstruct
