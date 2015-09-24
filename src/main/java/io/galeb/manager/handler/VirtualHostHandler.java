@@ -23,6 +23,7 @@ import java.util.Iterator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -45,17 +46,17 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostHandler.class);
 
-    @Autowired
-    private FarmRepository farmRepository;
+    @Autowired private FarmRepository farmRepository;
+    @Autowired private VirtualHostRepository virtualHostRepository;
 
-    @Autowired
-    private VirtualHostRepository virtualHostRepository;
+    private PageRequest pageable = new PageRequest(1, 99999);
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(virtualhost.getEnvironment(), EntityStatus.OK).iterator();
+        final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(
+                virtualhost.getEnvironment(), EntityStatus.OK, pageable).iterator();
         final Farm farm = farmIterable.hasNext() ? farmIterable.next() : null;
         SystemUserService.runAs(currentUser);
         if (farm!=null) {
