@@ -55,7 +55,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
-    private Target parent = this;
+    private Target parent;
 
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "parent")
     private Set<Target> children = new HashSet<>();
@@ -120,9 +120,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     public Target setParent(Target parent) {
-        if (parent != null) {
-            this.parent = parent;
-        }
+        this.parent = parent;
         return this;
     }
 
