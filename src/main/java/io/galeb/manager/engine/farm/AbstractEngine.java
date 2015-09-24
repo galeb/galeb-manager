@@ -20,9 +20,7 @@ package io.galeb.manager.engine.farm;
 
 import java.util.Optional;
 
-import io.galeb.manager.jms.AbstractJmsEnqueuer;
 import io.galeb.manager.jms.FarmQueue;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;

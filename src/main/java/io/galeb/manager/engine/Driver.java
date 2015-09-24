@@ -18,7 +18,6 @@
 
 package io.galeb.manager.engine;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
