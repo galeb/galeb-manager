@@ -21,7 +21,8 @@
 
 LOCK TABLES `targettype` WRITE;
 /*!40000 ALTER TABLE `targettype` DISABLE KEYS */;
-INSERT INTO `targettype` VALUES (1,NOW(),'admin',NOW(),'admin','Backend',1,0,NULL), (2,NOW(),'admin',NOW(),'admin','BackendPool',1,0,NULL);
+INSERT INTO `targettype` VALUES (1, NOW(), 'admin', NOW(), 'admin', 'Backend', 1, 0, NULL),
+                                (2, NOW(), 'admin', NOW(), 'admin', 'BackendPool', 1, 0, NULL);
 /*!40000 ALTER TABLE `targettype` ENABLE KEYS */;
 UNLOCK TABLES;
 
