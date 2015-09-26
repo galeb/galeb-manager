@@ -44,7 +44,7 @@ Feature: Access policy
             | teams | [ http://localhost/team/1 ] |
         And send POST /project
         And a REST client authenticated as accountOne
-        And send GET /project/1
+        And send GET Project=projOne
         Then the response status is 200
         And property name contains projOne
 
@@ -55,5 +55,5 @@ Feature: Access policy
             | teams | [ http://localhost/team/1 ] |
         And send POST /project
         And a REST client authenticated as accountTwo
-        And send GET /project/1
+        And send GET Project=projOne
         Then the response status is 404
