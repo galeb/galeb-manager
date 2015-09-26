@@ -283,7 +283,7 @@ createBackend() {
               "project": "'${PROTOCOL}'://'${SERVER}'/project/'${PROJECT_ID}'",
               "parent": "'${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'"
           }' \
-       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/pool
+       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/target
   echo
 }
 
