@@ -44,4 +44,7 @@ public interface AccountRepository extends PagingAndSortingRepository<Account, L
     @Override
     @Query
     Page<Account> findByName(@Param("name")String name, Pageable pageable);
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    Page<Account> findByNameContaining(String name, Pageable pageable);
 }

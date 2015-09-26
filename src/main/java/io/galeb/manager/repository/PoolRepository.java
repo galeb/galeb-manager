@@ -21,7 +21,6 @@
 package io.galeb.manager.repository;
 
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.repository.FarmIDable;
 import io.galeb.manager.repository.custom.PoolRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,4 +62,8 @@ public interface PoolRepository extends PagingAndSortingRepository<Pool, Long>,
     @Override
     @Modifying
     Pool getNoParent();
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    Page<Pool> findByNameContaining(String name, Pageable pageable);
+
 }

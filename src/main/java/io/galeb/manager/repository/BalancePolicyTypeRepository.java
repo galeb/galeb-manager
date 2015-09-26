@@ -32,4 +32,6 @@ public interface BalancePolicyTypeRepository extends PagingAndSortingRepository<
 
     Page<BalancePolicyType> findByName(String name, Pageable pageable);
 
+    Page<BalancePolicyType> findByNameContaining(String name, Pageable pageable);
+
 }

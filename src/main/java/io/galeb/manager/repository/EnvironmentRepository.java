@@ -32,4 +32,6 @@ public interface EnvironmentRepository extends PagingAndSortingRepository<Enviro
 
     Page<Environment> findByName(String name, Pageable pageable);
 
+    Page<Environment> findByNameContaining(String name, Pageable pageable);
+
 }

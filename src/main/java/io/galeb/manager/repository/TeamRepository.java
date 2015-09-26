@@ -50,4 +50,7 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
     @Query
     Page<Team> findAll(Pageable pageable);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    Page<Team> findByNameContaining(String name, Pageable pageable);
+
 }

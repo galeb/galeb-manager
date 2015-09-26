@@ -32,4 +32,6 @@ public interface RuleTypeRepository extends PagingAndSortingRepository<RuleType,
 
     Page<RuleType> findByName(String name, Pageable pageable);
 
+    Page<RuleType> findByNameContaining(String name, Pageable pageable);
+
 }

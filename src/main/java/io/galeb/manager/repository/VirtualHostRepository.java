@@ -56,4 +56,7 @@ public interface VirtualHostRepository extends PagingAndSortingRepository<Virtua
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    Page<VirtualHost> findByNameContaining(String name, Pageable pageable);
+
 }

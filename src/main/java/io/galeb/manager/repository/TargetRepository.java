@@ -60,4 +60,7 @@ public interface TargetRepository extends PagingAndSortingRepository<Target, Lon
     @Query
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    Page<Target> findByNameContaining(String name, Pageable pageable);
+
 }

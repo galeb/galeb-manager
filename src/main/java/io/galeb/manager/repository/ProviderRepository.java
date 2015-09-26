@@ -32,4 +32,6 @@ public interface ProviderRepository extends PagingAndSortingRepository<Provider,
 
     Page<Provider> findByName(String name, Pageable pageable);
 
+    Page<Provider> findByNameContaining(String name, Pageable pageable);
+
 }
