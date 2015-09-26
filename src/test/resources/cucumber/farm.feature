@@ -14,11 +14,11 @@ Feature: Farm Support
         And send POST /provider
         And a REST client authenticated as admin
         When request json body has:
-            | name        | farmOne                        |
-            | domain      | domain                         |
-            | api         | api                            |
-            | environment | http://localhost/environment/1 |
-            | provider    | http://localhost/provider/1    |
+            | name        | farmOne              |
+            | domain      | domain               |
+            | api         | api                  |
+            | environment | Environment=envOne   |
+            | provider    | Provider=providerOne |
         And send POST /farm
 
     Scenario: Create Farm
@@ -27,11 +27,11 @@ Feature: Farm Support
     Scenario: Create duplicated Farm
         Given a REST client authenticated as admin
         When request json body has:
-            | name        | farmOne                        |
-            | domain      | domain                         |
-            | api         | api                            |
-            | environment | http://localhost/environment/1 |
-            | provider    | http://localhost/provider/1    |
+            | name        | farmOne              |
+            | domain      | domain               |
+            | api         | api                  |
+            | environment | Environment=envOne   |
+            | provider    | Provider=providerOne |
         And send POST /farm
         Then the response status is 409
 
@@ -49,11 +49,11 @@ Feature: Farm Support
     Scenario: Update Farm
         Given a REST client authenticated as admin
         When request json body has:
-            | name        | farmTwo                        |
-            | domain      | domainTwo                      |
-            | api         | apiTwo                         |
-            | environment | http://localhost/environment/1 |
-            | provider    | http://localhost/provider/1    |
+            | name        | farmTwo              |
+            | domain      | domainTwo            |
+            | api         | apiTwo               |
+            | environment | Environment=envOne   |
+            | provider    | Provider=providerOne |
         And send PUT /farm/1
         Then the response status is 204
         And a REST client authenticated as admin

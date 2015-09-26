@@ -21,6 +21,8 @@ package io.galeb.manager.handler;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.galeb.manager.entity.Pool;
+import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +35,9 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 
 import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.TargetRepository;
 
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler extends AbstractHandler<Rule> {
@@ -48,7 +48,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
     private RuleRepository ruleRepository;
 
     @Autowired
-    private TargetRepository targetRepository;
+    private PoolRepository poolRepository;
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -57,9 +57,9 @@ public class RuleHandler extends AbstractHandler<Rule> {
                 Collectors.groupingBy(VirtualHost::getFarmId)).keySet();
         long farmIdVirtualHost = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
 
-        if (rule.getTarget() != null) {
-            final Target target = rule.getTarget();
-            farmIdTarget = target.getFarmId();
+        if (rule.getPool() != null) {
+            final Pool pool = rule.getPool();
+            farmIdTarget = pool.getFarmId();
         }
         if (farmIdVirtualHost > -1L && farmIdTarget > -1L && farmIdVirtualHost != farmIdTarget) {
             String errorMsg = "VirtualHost.farmId is not equal Target.farmId";
@@ -103,11 +103,11 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     private void setTargetGlobalIfNecessary(Rule rule) {
         if (rule.isGlobal()) {
-            Target target = rule.getTarget();
-            target.setGlobal(true);
-            target.setSaveOnly(true);
-            targetRepository.save(target);
-            target.setSaveOnly(false);
+            Pool pool = rule.getPool();
+            pool.setGlobal(true);
+            pool.setSaveOnly(true);
+            poolRepository.save(pool);
+            pool.setSaveOnly(false);
         }
     }
 

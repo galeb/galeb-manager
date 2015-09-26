@@ -20,9 +20,6 @@ package io.galeb.manager.entity;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import javax.persistence.*;
 
 import org.springframework.util.Assert;
@@ -37,14 +34,9 @@ import io.galeb.manager.repository.custom.TargetRepositoryImpl;
 @Entity
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_parent_id_target", columnNames = { "name", "parent_id" }) })
-public class Target extends AbstractEntity<Target> implements WithFarmID<Target>, WithParent<Target> {
+public class Target extends AbstractEntity<Target> implements WithFarmID<Target>, WithParent<Pool> {
 
     private static final long serialVersionUID = 5596582746795373012L;
-
-    @ManyToOne
-    @JoinColumn(name = "targettype_id", nullable = false, foreignKey = @ForeignKey(name="FK_target_targettype"))
-    @JsonProperty(required = true)
-    private TargetType targetType;
 
     @ManyToOne
     @JoinColumn(name = "environment_id", foreignKey = @ForeignKey(name="FK_target_environment"))
@@ -55,43 +47,21 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @ManyToOne
     @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name="FK_target_parent"))
-    private Target parent;
-
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "parent")
-    private Set<Target> children = new HashSet<>();
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "target", fetch = FetchType.EAGER)
-    private final Set<Rule> rules = new HashSet<>();
+    private Pool parent;
 
     @ManyToOne
     @JoinColumn(name = "project_id", foreignKey = @ForeignKey(name="FK_target_project"))
     private Project project;
 
-    @ManyToOne
-    @JoinColumn(name = "balancepolicy_id", foreignKey = @ForeignKey(name="FK_target_balancepolicy"))
-    private BalancePolicy balancePolicy;
-
     @Column(insertable = false, updatable = false, nullable = false)
     private Boolean global = false;
 
-    public Target(String name, TargetType targetType) {
-        Assert.notNull(targetType);
+    public Target(String name) {
         setName(name);
-        this.targetType = targetType;
     }
 
     protected Target() {
         //
-    }
-
-    public TargetType getTargetType() {
-        return targetType;
-    }
-
-    public Target setTargetType(TargetType targetType) {
-        this.targetType = targetType;
-        return this;
     }
 
     public Environment getEnvironment() {
@@ -114,25 +84,13 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    @Override
-    public Target getParent() {
+    public Pool getParent() {
         return parent;
     }
 
-    public Target setParent(Target parent) {
-        this.parent = parent;
-        return this;
-    }
-
-    @Override
-    public Set<Target> getChildren() {
-        return children;
-    }
-
-    public Target setChildren(Set<Target> children) {
-        if (children != null) {
-            this.children.clear();
-            this.children.addAll(children);
+    public Target setParent(Pool parent) {
+        if (parent != null) {
+            this.parent = parent;
         }
         return this;
     }
@@ -143,15 +101,6 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     public Target setProject(Project project) {
         this.project = project;
-        return this;
-    }
-
-    public BalancePolicy getBalancePolicy() {
-        return balancePolicy;
-    }
-
-    public Target setBalancePolicy(BalancePolicy balancePolicy) {
-        this.balancePolicy = balancePolicy;
         return this;
     }
 

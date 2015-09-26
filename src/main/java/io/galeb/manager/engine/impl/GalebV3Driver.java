@@ -33,8 +33,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Entity;
+import io.galeb.core.model.Rule;
+import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.LoggerUtils;
-import io.galeb.manager.entity.*;
+import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.WithParent;
+import io.galeb.manager.entity.WithParents;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -60,7 +67,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.galeb.core.model.Entity;
 import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
@@ -397,9 +403,8 @@ public class GalebV3Driver implements Driver {
                 entities.stream().filter(entity -> entity.getName().equals(id))
                                  .filter(entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
                                          (entity instanceof WithParent) && (
-                                                 (((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                                 ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
                                                          ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
-                                                 !((WithParent<AbstractEntity<?>>) entity).getChildren().isEmpty()) ||
                                          (entity instanceof WithParents) &&
                                                  !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
                                                  ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
@@ -445,7 +450,11 @@ public class GalebV3Driver implements Driver {
     private Map<String, Map<String, String>> extractRemoteMap(final String api) {
 
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final List<String> pathList = Arrays.asList("virtualhost", "backendpool", "backend", "rule");
+        final List<String> pathList = Arrays.asList(
+                VirtualHost.class.getSimpleName().toLowerCase(),
+                BackendPool.class.getSimpleName().toLowerCase(),
+                Backend.class.getSimpleName().toLowerCase(),
+                Rule.class.getSimpleName().toLowerCase());
 
         pathList.stream().map(path -> api + "/" + path).forEach(fullPath ->
         {

@@ -35,23 +35,23 @@ Feature: BalancePolicyType Support
 
     Scenario: Get BalancePolicyType
         Given a REST client authenticated as accountOne
-        When send GET /balancepolicytype/1
+        When send GET BalancePolicyType=tBalancePolicyOne
         Then the response status is 200
         And property name contains tBalancePolicyOne
 
     Scenario: Get null BalancePolicyType
         Given a REST client authenticated as accountOne
-        When send GET /balancepolicytype/2
+        When send GET BalancePolicyType=NULL
         Then the response status is 404
 
     Scenario: Update BalancePolicyType
         Given a REST client authenticated as admin
         When request json body has:
             | name | tBalancePolicyTwo |
-        And send PUT /balancepolicytype/1
+        And send PUT BalancePolicyType=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicytype/1
+        When send GET BalancePolicyType=tBalancePolicyTwo
         Then the response status is 200
         And property name contains tBalancePolicyTwo
 
@@ -59,17 +59,17 @@ Feature: BalancePolicyType Support
         Given a REST client authenticated as admin
         When request json body has:
             | name | tBalancePolicyThree |
-        And send PATCH /balancepolicytype/1
+        And send PATCH BalancePolicyType=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicytype/1
+        When send GET BalancePolicyType=tBalancePolicyThree
         Then the response status is 200
         And property name contains tBalancePolicyThree
 
     Scenario: Delete BalancePolicyType
         Given a REST client authenticated as admin
-        When send DELETE /balancepolicytype/1
+        When send DELETE BalancePolicyType=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicytype/1
+        When send GET BalancePolicyType=tBalancePolicyOne
         Then the response status is 404

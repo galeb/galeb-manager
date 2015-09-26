@@ -8,8 +8,6 @@ TEAM_NAME='xxxxx'
 ADMIN_TEAM_NAME='AdminTeam'
 PROVIDER_NAME='galeb'
 ENV_NAME='desenv'
-TARGETTYPE_POOL_NAME='BackendPool'
-TARGETTYPE_BACKEND_NAME='Backend'
 RULETYPE_NAME='UrlPath'
 FARM_NAME='farm1'
 BALANCEPOLICYTYPE_NAME='RoundRobin'
@@ -95,7 +93,7 @@ getId() {
   local TYPE=$2
   local NAME=$3
 
-  # TYPE: target, rule, virtualhost, farm, environment, targettype, ruletype,
+  # TYPE: pool, target, rule, virtualhost, farm, environment, targettype, ruletype,
   #       project, account, team, etc.
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
     ${PROTOCOL}://${SERVER}/${TYPE}/search/findByName?name=${NAME} | \
@@ -251,7 +249,6 @@ createVirtualHost() {
 createBackendPool() {
   local TOKEN=$1
   local NAME=$2
-  local TARGETTYPE_POOL_ID="$(getId ${TOKEN} targettype BackendPool)"
   local ENV_ID="$(getId ${TOKEN} environment ${ENV_NAME})"
   local PROJECT_ID="$(getId ${TOKEN} project ${PROJECT_NAME})"
   local BALANCEPOLICY_ID="$(getId ${TOKEN} balancepolicy ${BALANCEPOLICY_NAME})"
@@ -259,7 +256,6 @@ createBackendPool() {
   curl -k -v -XPOST -H ${HEADER} \
        -d '{
               "name": "'${NAME}'",
-              "targetType": "'${PROTOCOL}'://'${SERVER}'/targettype/'${TARGETTYPE_POOL_ID}'",
               "environment": "'${PROTOCOL}'://'${SERVER}'/environment/'${ENV_ID}'",
               "project": "'${PROTOCOL}'://'${SERVER}'/project/'${PROJECT_ID}'",
               "balancePolicy": "'${PROTOCOL}'://'${SERVER}'/balancepolicy/'${BALANCEPOLICY_ID}'",
@@ -269,27 +265,25 @@ createBackendPool() {
                   "hcStatusCode": 200
               }
           }' \
-       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/target
+       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/pool
   echo
 }
 
 createBackend() {
   local TOKEN=$1
   local NAME=$2
-  local TARGETTYPE_BACKEND_ID="$(getId ${TOKEN} targettype Backend)"
   local ENV_ID="$(getId ${TOKEN} environment ${ENV_NAME})"
   local PROJECT_ID="$(getId ${TOKEN} project ${PROJECT_NAME})"
-  local POOL_ID="$(getId ${TOKEN} target ${POOL_NAME})"
+  local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
 
   curl -k -v -XPOST -H ${HEADER} \
        -d '{
               "name": "'${NAME}'",
-              "targetType": "'${PROTOCOL}'://'${SERVER}'/targettype/'${TARGETTYPE_BACKEND_ID}'",
               "environment": "'${PROTOCOL}'://'${SERVER}'/environment/'${ENV_ID}'",
               "project": "'${PROTOCOL}'://'${SERVER}'/project/'${PROJECT_ID}'",
-              "parent": "'${PROTOCOL}'://'${SERVER}'/target/'${POOL_ID}'"
+              "parent": "'${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'"
           }' \
-       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/target
+       -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/pool
   echo
 }
 
@@ -298,13 +292,13 @@ createRule() {
   local NAME=$2
   local RULETYPE_URLPATH_ID="$(getId ${TOKEN} ruletype ${RULETYPE_NAME})"
   local VIRTUALHOST_ID=$(getId ${TOKEN} virtualhost ${VIRTUALHOST_NAME})
-  local POOL_ID="$(getId ${TOKEN} target ${POOL_NAME})"
+  local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
 
   curl -k -v -XPOST -H ${HEADER} \
        -d '{
               "name": "'${NAME}'",
               "ruleType": "'${PROTOCOL}'://'${SERVER}'/ruletype/'${RULETYPE_URLPATH_ID}'",
-              "target": "'${PROTOCOL}'://'${SERVER}'/target/'${POOL_ID}'",
+              "pool": "'${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'",
               "default": true,
               "order": 0,
               "properties": {
@@ -325,7 +319,7 @@ createRule() {
   #     -d '{
   #            "name": "'$NAME'",
   #            "ruleType": "'$PROTOCOL'://'$SERVER'/ruletype/'$RULETYPE_URLPATH_ID'",
-  #            "target": "'$PROTOCOL'://'$SERVER'/target/'$POOL_ID'",
+  #            "pool": "'$PROTOCOL'://'$SERVER'/pool/'$POOL_ID'",
   #            "parents": [ "'$PROTOCOL'://'$SERVER'/virtualhost/'$VIRTUALHOST_ID'" ],
   #            "default": true,
   #            "order": 0,
@@ -357,19 +351,19 @@ removeVirtualHost() {
 getNumBackendsByPool() {
   local TOKEN=$1
   local POOL_NAME=$2
-  local POOL_ID="$(getId ${TOKEN} target ${POOL_NAME})"
+  local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    ${PROTOCOL}://${SERVER}/target/${POOL_ID}/children?size=9999 | \
+    ${PROTOCOL}://${SERVER}/pool/${POOL_ID}/targets?size=9999 | \
   jq '._embedded.target | length'
 }
 
 getFirstTargetIdByPool() {
   local TOKEN=$1
   local POOL_NAME=$2
-  local POOL_ID="$(getId ${TOKEN} target ${POOL_NAME})"
+  local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
 
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    ${PROTOCOL}'://'${SERVER}'/target/'${POOL_ID}'/children?size=99999' | \
+    ${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'/targets?size=99999' | \
   jq ._embedded.target[0].id
 }
 
@@ -391,9 +385,9 @@ removeBackendsOfPool() {
 removeBackendPool() {
   local TOKEN=$1
   local NAME=$2
-  local ID="$(getId ${TOKEN} target ${NAME})"
+  local ID="$(getId ${TOKEN} pool ${NAME})"
 
-  curl -k -v -XDELETE -H ${HEADER} -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/target/${ID}
+  curl -k -v -XDELETE -H ${HEADER} -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/pool/${ID}
   echo
 }
 

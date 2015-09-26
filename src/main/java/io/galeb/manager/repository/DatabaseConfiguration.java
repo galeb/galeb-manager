@@ -1,7 +1,11 @@
 package io.galeb.manager.repository;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
+import io.galeb.manager.entity.BalancePolicy;
+import io.galeb.manager.entity.BalancePolicyType;
+import io.galeb.manager.entity.Pool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

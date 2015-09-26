@@ -59,6 +59,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository ruleRepository;
     @Autowired private TargetRepository targetRepository;
+    @Autowired private PoolRepository poolRepository;
     @Autowired private FarmQueue farmQueue;
     @Autowired private VirtualHostQueue virtualHostQueue;
     @Autowired private TargetQueue targetQueue;
@@ -198,8 +199,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                         .filter(entity -> !(entity instanceof WithParent) && !(entity instanceof WithParents) ||
                                 entity instanceof WithParent && (
                                         ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                                ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId) ||
-                                                !((WithParent<AbstractEntity<?>>) entity).getChildren().isEmpty()) ||
+                                                ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
                                 entity instanceof WithParents &&
                                         !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
                                         ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
@@ -247,9 +247,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private Properties makeProperties(Farm farm, Map<String, Map<String, String>> diff) {
         Properties properties = fromEntity(farm);
-        properties.put("virtualhosts", getVirtualhosts(farm).collect(Collectors.toSet()));
-        properties.put("targets", getTargets(farm).collect(Collectors.toSet()));
-        properties.put("rules", getRules(farm).collect(Collectors.toSet()));
+        properties.put(VirtualHost.class.getSimpleName().toLowerCase(), getVirtualhosts(farm).collect(Collectors.toSet()));
+        properties.put(Target.class.getSimpleName().toLowerCase(), getTargets(farm).collect(Collectors.toSet()));
+        properties.put(Rule.class.getSimpleName().toLowerCase(), getRules(farm).collect(Collectors.toSet()));
+        properties.put(Pool.class.getSimpleName().toLowerCase(), getPools(farm).collect(Collectors.toSet()));
         properties.put("diff", diff);
         return properties;
     }
@@ -268,6 +269,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {
         return StreamSupport.stream(
                 virtualHostRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
+    }
+
+    private Stream<Pool> getPools(Farm farm) {
+        return StreamSupport.stream(
+                poolRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
     }
 
 }

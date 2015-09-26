@@ -16,23 +16,23 @@ Feature: Virtualhost with Rule Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name     | accountOne                  |
-            | password | password                    |
-            | roles    | [ ROLE_USER ]               |
-            | teams    | [ http://localhost/team/1 ] |
-            | email    | test@fake.com               |
+            | name     | accountOne       |
+            | password | password         |
+            | roles    | [ ROLE_USER ]    |
+            | teams    | [ Team=teamOne ] |
+            | email    | test@fake.com    |
         And send POST /account
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name  | projOne                     |
-            | teams | [ http://localhost/team/1 ] |
+            | name  | projOne          |
+            | teams | [ Team=teamOne ] |
         And send POST /project
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name  | projTwo                     |
-            | teams | [ http://localhost/team/1 ] |
+            | name  | projTwo          |
+            | teams | [ Team=teamOne ] |
         And send POST /project
         Then the response status is 201
         And a REST client authenticated as admin
@@ -42,18 +42,18 @@ Feature: Virtualhost with Rule Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name        | farmOne                        |
-            | domain      | domain                         |
-            | api         | api                            |
-            | environment | http://localhost/environment/1 |
-            | provider    | http://localhost/provider/1    |
+            | name        | farmOne              |
+            | domain      | domain               |
+            | api         | api                  |
+            | environment | Environment=oneEnv   |
+            | provider    | Provider=providerOne |
         And send POST /farm
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | name        | virtOne                        |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | virtOne            |
+            | environment | Environment=oneEnv |
+            | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 201
         And a REST client authenticated as admin
@@ -66,52 +66,46 @@ Feature: Virtualhost with Rule Support
             | name | cookie |
         And send POST /ruletype
         Then the response status is 201
-        And a REST client authenticated as admin
-        When request json body has:
-            | name | poolOne |
-        And send POST /targettype
-        Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetOne                      |
-            | environment | http://localhost/environment/1 |
-            | targetType  | TargetType=poolOne  |
-            | project     | http://localhost/project/1     |
-        And send POST /target
+            | name        | poolOne            |
+            | environment | Environment=oneEnv |
+            | project     | Project=projOne    |
+        And send POST /pool
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name         | ruleOne                            |
-            | ruleType     | http://localhost/ruletype/1        |
-            | parents      | [ http://localhost/virtualhost/1 ] |
-            | target       | http://localhost/target/1          |
+            | name         | ruleOne                 |
+            | ruleType     | RuleType=urlPath        |
+            | parents      | [ VirtualHost=virtOne ] |
+            | pool         | Pool=poolOne            |
         And send POST /rule
         Then the response status is 201
 
     Scenario: Delete VirtualHost with Rule not allowed
         Given a REST client authenticated as accountOne
-        When send DELETE /virtualhost/1
+        When send DELETE VirtualHost=virtOne
         Then the response status is 409
 
     Scenario: Delete VirtualHost, deleting Rule before, is allowed
         Given a REST client authenticated as accountOne
-        When send DELETE /rule/1
+        When send DELETE Rule=ruleOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send DELETE /virtualhost/1
+        When send DELETE VirtualHost=virtOne
         Then the response status is 204
 
     Scenario: Add virtualhosts to rule
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | virtTwo                        |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | virtTwo            |
+            | environment | Environment=oneEnv |
+            | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request uri-list body has:
-            | http://localhost/virtualhost/1 |
+            | VirtualHost=virtOne |
         And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne
@@ -139,14 +133,14 @@ Feature: Virtualhost with Rule Support
     Scenario: Remove virtualhosts from rule
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | virtTwo                        |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | virtTwo            |
+            | environment | Environment=oneEnv |
+            | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request uri-list body has:
-            | http://localhost/virtualhost/1 |
+            | VirtualHost=virtOne |
         And send PATCH /rule/1/parents
         Then the response status is 204
         And a REST client authenticated as accountOne

@@ -11,11 +11,11 @@ Feature: BalancePolicy Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name     | accountOne                  |
-            | password | password                    |
-            | email    | test@test.com               |
-            | roles    | [ ROLE_USER ]               |
-            | teams    | [ http://localhost/team/1 ] |
+            | name     | accountOne       |
+            | password | password         |
+            | email    | test@test.com    |
+            | roles    | [ ROLE_USER ]    |
+            | teams    | [ Team=teamOne ] |
         And send POST /account
         Then the response status is 201
         And a REST client authenticated as admin
@@ -25,8 +25,8 @@ Feature: BalancePolicy Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name              | tBalancePolicyOne                    |
-            | balancePolicyType | http://localhost/balancepolicytype/1 |
+            | name              | tBalancePolicyOne                       |
+            | balancePolicyType | BalancePolicyType=tBalancePolicyTypeOne |
         And send POST /balancepolicy
 
     Scenario: Create BalancePolicy
@@ -35,31 +35,31 @@ Feature: BalancePolicy Support
     Scenario: Create duplicated BalancePolicy
         Given a REST client authenticated as admin
         When request json body has:
-            | name              | tBalancePolicyOne                    |
-            | balancePolicyType | http://localhost/balancepolicytype/1 |
+            | name              | tBalancePolicyOne                       |
+            | balancePolicyType | BalancePolicyType=tBalancePolicyTypeOne |
         And send POST /balancepolicy
         Then the response status is 409
 
     Scenario: Get BalancePolicy
         Given a REST client authenticated as accountOne
-        When send GET /balancepolicy/1
+        When send GET BalancePolicy=tBalancePolicyOne
         Then the response status is 200
         And property name contains tBalancePolicyOne
 
     Scenario: Get null BalancePolicy
         Given a REST client authenticated as accountOne
-        When send GET /balancepolicy/2
+        When send GET BalancePolicy=NULL
         Then the response status is 404
 
     Scenario: Update BalancePolicy
         Given a REST client authenticated as admin
         When request json body has:
-            | name              | tBalancePolicyTwo                    |
-            | balancePolicyType | http://localhost/balancepolicytype/1 |
-        And send PUT /balancepolicy/1
+            | name              | tBalancePolicyTwo                       |
+            | balancePolicyType | BalancePolicyType=tBalancePolicyTypeOne |
+        And send PUT BalancePolicy=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicy/1
+        When send GET BalancePolicy=tBalancePolicyTwo
         Then the response status is 200
         And property name contains tBalancePolicyTwo
 
@@ -67,17 +67,17 @@ Feature: BalancePolicy Support
         Given a REST client authenticated as admin
         When request json body has:
             | name | tBalancePolicyThree |
-        And send PATCH /balancepolicy/1
+        And send PATCH BalancePolicy=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicy/1
+        When send GET BalancePolicy=tBalancePolicyThree
         Then the response status is 200
         And property name contains tBalancePolicyThree
 
     Scenario: Delete BalancePolicy
         Given a REST client authenticated as admin
-        When send DELETE /balancepolicy/1
+        When send DELETE BalancePolicy=tBalancePolicyOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /balancepolicy/1
+        When send GET BalancePolicy=tBalancePolicyOne
         Then the response status is 404

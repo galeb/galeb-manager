@@ -29,6 +29,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.util.Assert;
 
 @Entity
 @Table(name = "balancepolicy", uniqueConstraints = { @UniqueConstraint(name = "UK_name_balancepolicy", columnNames = { "name" }) })
@@ -42,7 +43,18 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
     private BalancePolicyType balancePolicyType;
 
     @OneToMany(mappedBy = "balancePolicy")
-    private Set<Target> targets;
+    private Set<Pool> pools;
+
+    public BalancePolicy(String name, BalancePolicyType balancePolicyType) {
+        Assert.hasText(name);
+        Assert.notNull(balancePolicyType);
+        setName(name);
+        this.balancePolicyType = balancePolicyType;
+    }
+
+    protected BalancePolicy() {
+        // Hibernate Requirement
+    }
 
     public BalancePolicyType getBalancePolicyType() {
         return balancePolicyType;
@@ -50,6 +62,15 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
 
     public BalancePolicy setBalancePolicyType(BalancePolicyType balancePolicyType) {
         this.balancePolicyType = balancePolicyType;
+        return this;
+    }
+
+    public Set<Pool> getPools() {
+        return pools;
+    }
+
+    public BalancePolicy setPools(Set<Pool> pools) {
+        this.pools = pools;
         return this;
     }
 }

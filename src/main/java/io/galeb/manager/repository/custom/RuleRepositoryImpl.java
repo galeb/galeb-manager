@@ -17,7 +17,7 @@ public class RuleRepositoryImpl extends AbstractRepositoryImplementation<Rule>
                                 implements RuleRepositoryCustom {
 
     public static final String FIND_ALL = "SELECT r FROM Rule r "
-                                           + "INNER JOIN r.target.project.teams t "
+                                           + "INNER JOIN r.pool.project.teams t "
                                            + "INNER JOIN t.accounts a "
                                            + "WHERE 1 = :hasRoleAdmin OR "
                                                 + "r.global = TRUE OR "

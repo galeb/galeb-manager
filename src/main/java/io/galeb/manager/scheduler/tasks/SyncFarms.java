@@ -28,10 +28,13 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.redis.DistributedLocker;
+import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +50,6 @@ import io.galeb.manager.engine.Driver;
 import io.galeb.manager.engine.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.jms.JmsConfiguration;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.CurrentUser;
 import io.galeb.manager.security.SystemUserService;
 
@@ -67,6 +66,7 @@ public class SyncFarms {
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository        ruleRepository;
     @Autowired private TargetRepository      targetRepository;
+    @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
     @Autowired private DistributedLocker     distributedLocker;
 
@@ -104,6 +104,11 @@ public class SyncFarms {
     private Stream<VirtualHost> getVirtualhosts(Farm farm) {
         return StreamSupport.stream(
                 virtualHostRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
+    }
+
+    private Stream<Pool> getPools(Farm farm) {
+        return StreamSupport.stream(
+                poolRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
     }
 
     @Scheduled(fixedRate = INTERVAL)
@@ -172,14 +177,14 @@ public class SyncFarms {
 
     private Map<String, Set<AbstractEntity<?>>> getEntitiesMap(Farm farm) {
         final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
-        entitiesMap.put("virtualhost", getVirtualhosts(farm).collect(Collectors.toSet()));
-        entitiesMap.put("backendpool", getTargets(farm)
-                .filter(target -> target.getTargetType().getName().equals("BackendPool"))
+        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(), getVirtualhosts(farm)
                 .collect(Collectors.toSet()));
-        entitiesMap.put("backend", getTargets(farm)
-                .filter(target -> target.getTargetType().getName().equals("Backend"))
+        entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(), getPools(farm)
                 .collect(Collectors.toSet()));
-        entitiesMap.put("rule", getRules(farm).collect(Collectors.toSet()));
+        entitiesMap.put(Backend.class.getSimpleName().toLowerCase(), getTargets(farm)
+                .collect(Collectors.toSet()));
+        entitiesMap.put(Rule.class.getSimpleName(), getRules(farm)
+                .collect(Collectors.toSet()));
         return entitiesMap;
     }
 

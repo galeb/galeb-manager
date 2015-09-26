@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.core.model.BackendPool;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.RuleQueue;
 import org.apache.commons.logging.Log;
@@ -154,8 +155,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(rule);
             jsonMapper.putString("parentId", virtualHost.getName());
             jsonMapper.addToNode("properties", "ruleType", rule.getRuleType().getName());
-            jsonMapper.addToNode("properties", "targetType", rule.getTarget().getTargetType().getName());
-            jsonMapper.addToNode("properties", "targetId", rule.getTarget().getName());
+            jsonMapper.addToNode("properties", "targetType", BackendPool.class.getSimpleName());
+            jsonMapper.addToNode("properties", "targetId", rule.getPool().getName());
             jsonMapper.addToNode("properties", "order", String.valueOf(rule.getRuleOrder()));
             jsonMapper.addToNode("properties", "default", String.valueOf(rule.isRuleDefault()));
             json = jsonMapper.toString();

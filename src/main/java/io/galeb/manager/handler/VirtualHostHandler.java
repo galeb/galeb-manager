@@ -55,9 +55,9 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     protected void setBestFarm(final VirtualHost virtualhost) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(
-                virtualhost.getEnvironment(), EntityStatus.OK, pageable).iterator();
-        final Farm farm = farmIterable.hasNext() ? farmIterable.next() : null;
+        final Iterable<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(
+                virtualhost.getEnvironment(), EntityStatus.OK);
+        final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
         SystemUserService.runAs(currentUser);
         if (farm!=null) {
             virtualhost.setFarmId(farm.getId());

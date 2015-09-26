@@ -37,29 +37,29 @@ Feature: Project Support
 
     Scenario: Get Project
         Given a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projOne
         Then the response status is 200
         And property name contains projOne
 
     Scenario: Get Project as Team Member
         Given a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projOne
         Then the response status is 200
         And property name contains projOne
 
     Scenario: Get null Project
         Given a REST client authenticated as accountOne
-        When send GET /project/2
+        When send GET Project=NULL
         Then the response status is 404
 
     Scenario: Update Project
         Given a REST client authenticated as accountOne
         When request json body has:
             | name | projTwo |
-        And send PUT /project/1
+        And send PUT Project=projOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projTwo
         Then the response status is 200
         And property name contains projTwo
 
@@ -67,17 +67,17 @@ Feature: Project Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name | projThree |
-        And send PATCH /project/1
+        And send PATCH Project=projOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projThree
         Then the response status is 200
         And property name contains projThree
 
     Scenario: Delete Project
         Given a REST client authenticated as accountOne
-        When send DELETE /project/1
+        When send DELETE Project=projOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projOne
         Then the response status is 404

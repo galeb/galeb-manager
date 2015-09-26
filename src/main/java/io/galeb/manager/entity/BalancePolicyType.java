@@ -39,7 +39,7 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
     }
 
     protected BalancePolicyType() {
-        //
+        // Hibernate Requirement
     }
 
     public Set<BalancePolicy> getBalancePolicies() {

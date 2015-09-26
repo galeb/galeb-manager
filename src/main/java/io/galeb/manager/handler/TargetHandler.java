@@ -22,6 +22,8 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
 import java.util.Iterator;
 
+import io.galeb.manager.entity.*;
+import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +38,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.core.Authentication;
 
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Project;
-import io.galeb.manager.entity.Target;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
@@ -54,37 +52,29 @@ public class TargetHandler extends AbstractHandler<Target> {
     private static Log LOGGER = LogFactory.getLog(TargetHandler.class);
 
     @Autowired private TargetRepository targetRepository;
+    @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
 
-    private Target noParent = null;
-    private PageRequest pageable = new PageRequest(1, 99999);
-
-    @PostConstruct
-    public void init() {
-        SystemUserService.runAs();
-        Page<Target> targets = targetRepository.findByName("NoParent", pageable);
-        noParent = targets.iterator().hasNext() ? targets.iterator().next() : null;
-        SystemUserService.clearContext();
-    }
+    private PageRequest pageable = new PageRequest(0, 99999);
 
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
-        if (target.getParent() != null && !target.getParent().equals(noParent)) {
+        if (target.getParent() != null && !target.getParent().equals(poolRepository.getNoParent())) {
             farmId = target.getParent().getFarmId();
         } else {
             final Environment environment = target.getEnvironment();
             if (environment != null) {
                 Authentication currentUser = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Iterator<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(environment, OK, pageable).iterator();
-                final Farm farm = farmIterable.hasNext() ? farmIterable.next() : null;
+                final Iterable<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(environment, OK);
+                final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
                 SystemUserService.runAs(currentUser);
                 if (farm != null) {
                     farmId = farm.getId();
                 }
             } else {
-                final String errorMgs = "Target.environment and Target.parent are null";
+                final String errorMgs = "Target.environment and Target.pool are null";
                 LOGGER.error(errorMgs);
                 throw new BadRequestException(errorMgs);
             }
@@ -130,21 +120,21 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     private void setProject(Target target) throws Exception {
-        if (target.getParent() != null && !target.getParent().equals(noParent)) {
+        if (target.getParent() != null && !target.getParent().equals(poolRepository.getNoParent())) {
             final Project projectOfParent = target.getParent().getProject();
 
             if (target.getProject() == null) {
                 target.setProject(projectOfParent);
             } else {
                 if (!target.getProject().equals(projectOfParent)) {
-                    final String errorMsg = "Target Project is not equal of the Parent's Project";
+                    final String errorMsg = "Target.project is not equal of the Pool's Project";
                     LOGGER.error(errorMsg);
                     throw new BadRequestException(errorMsg);
                 }
             }
         } else {
             if (target.getProject() == null) {
-                final String errorMsg = "Target Project and Parent is UNDEF";
+                final String errorMsg = "Target.project and Target.pool are NULL";
                 LOGGER.error(errorMsg);
                 throw new BadRequestException(errorMsg);
             }
@@ -152,7 +142,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     private void setEnvironment(Target target) throws Exception {
-        if (target.getParent() != null && !target.getParent().equals(noParent)) {
+        if (target.getParent() != null && !target.getParent().equals(poolRepository.getNoParent())) {
             final Environment envOfParent = target.getParent().getEnvironment();
             if (target.getEnvironment() == null) {
                 target.setEnvironment(envOfParent);
@@ -173,14 +163,12 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     private void setGlobalIfNecessary(Target target) {
-        if (target.getParent() != null) {
-            target.setGlobal(target.getParent().isGlobal());
-        }
+        target.setGlobal(target.getParent() != null && target.getParent().isGlobal());
     }
 
     private void setParentIfNull(Target target) {
         if (target.getParent() == null) {
-            target.setParent(noParent);
+            target.setParent(poolRepository.getNoParent());
         }
     }
 }

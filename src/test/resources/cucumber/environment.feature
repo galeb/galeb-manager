@@ -35,41 +35,41 @@ Feature: Environment Support
 
     Scenario: Get Environment
         Given a REST client authenticated as accountOne
-        When send GET /environment/1
+        When send GET Environment=envOne
         Then the response status is 200
         And property name contains envOne
 
     Scenario: Get null Environment
         Given a REST client authenticated as accountOne
-        When send GET /environment/2
+        When send GET Environment=NULL
         Then the response status is 404
 
     Scenario: Update Environment
         Given a REST client authenticated as admin
         When request json body has:
             | name | envTwo |
-        And send PUT /environment/1
+        And send PUT Environment=envOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /environment/1
+        When send GET Environment=envTwo
         Then the response status is 200
         And property name contains envTwo
 
     Scenario: Update one field of Environment
         Given a REST client authenticated as admin
         When request json body has:
-            | name | envTree |
-        And send PATCH /environment/1
+            | name | envThree |
+        And send PATCH Environment=envOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /environment/1
+        When send GET Environment=envThree
         Then the response status is 200
-        And property name contains envTree
+        And property name contains envThree
 
     Scenario: Delete Environment
         Given a REST client authenticated as admin
-        When send DELETE /environment/1
+        When send DELETE Environment=envOne
         Then the response status is 204
         And a REST client authenticated as admin
-        When send GET /environment/1
+        When send GET Environment=envOne
         Then the response status is 404

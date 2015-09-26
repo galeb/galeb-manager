@@ -20,6 +20,8 @@ package io.galeb.manager.repository;
 
 import javax.annotation.PostConstruct;
 
+import io.galeb.manager.entity.*;
+import io.galeb.manager.handler.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,33 +29,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.rest.core.config.RepositoryRestConfiguration;
 import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
-import io.galeb.manager.entity.Account;
-import io.galeb.manager.entity.BalancePolicy;
-import io.galeb.manager.entity.BalancePolicyType;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Project;
-import io.galeb.manager.entity.Provider;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.RuleType;
-import io.galeb.manager.entity.Target;
-import io.galeb.manager.entity.TargetType;
-import io.galeb.manager.entity.Team;
-import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.handler.AccountHandler;
-import io.galeb.manager.handler.BalancePolicyHandler;
-import io.galeb.manager.handler.BalancePolicyTypeHandler;
-import io.galeb.manager.handler.EnvironmentHandler;
-import io.galeb.manager.handler.FarmHandler;
-import io.galeb.manager.handler.ProjectHandler;
-import io.galeb.manager.handler.ProviderHandler;
-import io.galeb.manager.handler.RuleHandler;
-import io.galeb.manager.handler.RuleTypeHandler;
-import io.galeb.manager.handler.TargetHandler;
-import io.galeb.manager.handler.TargetTypeHandler;
-import io.galeb.manager.handler.TeamHandler;
-import io.galeb.manager.handler.VirtualHostHandler;
 
 @Configuration
 @Import(RepositoryRestMvcConfiguration.class)
@@ -73,14 +48,13 @@ public class RepositoryConfiguration {
                                                  Rule.class,
                                                  RuleType.class,
                                                  Target.class,
-                                                 TargetType.class,
                                                  VirtualHost.class,
                                                  Account.class,
                                                  Provider.class,
                                                  Team.class,
                                                  BalancePolicyType.class,
-                                                 BalancePolicy.class);
-
+                                                 BalancePolicy.class,
+                                                 Pool.class);
     }
 
     @Bean
@@ -96,11 +70,6 @@ public class RepositoryConfiguration {
     @Bean
     public RuleTypeHandler ruleTypeHandler() {
         return new RuleTypeHandler();
-    }
-
-    @Bean
-    public TargetTypeHandler targetTypeHandler() {
-        return new TargetTypeHandler();
     }
 
     @Bean
@@ -146,6 +115,11 @@ public class RepositoryConfiguration {
     @Bean
     public BalancePolicyHandler balancePolicyHandler() {
         return new BalancePolicyHandler();
+    }
+
+    @Bean
+    public PoolHandler poolHandler() {
+        return new PoolHandler();
     }
 
 }

@@ -18,6 +18,8 @@
 
 package io.galeb.manager.engine.farm;
 
+import io.galeb.core.model.Backend;
+import io.galeb.manager.entity.Pool;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.TargetQueue;
 import org.apache.commons.logging.Log;
@@ -29,7 +31,6 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
@@ -69,10 +70,10 @@ public class TargetEngine extends AbstractEngine<Target> {
         createTarget(target, target.getParent(), driver);
     }
 
-    private void createTarget(Target target, Target parent, final Driver driver) {
+    private void createTarget(Target target, Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(target, parent));
+            isOk = driver.create(makeProperties(target, pool));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -88,10 +89,10 @@ public class TargetEngine extends AbstractEngine<Target> {
         updateTarget(target, target.getParent(), driver);
     }
 
-    private void updateTarget(final Target target, final Target parent, final Driver driver) {
+    private void updateTarget(final Target target, final Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(target, parent));
+            isOk = driver.update(makeProperties(target, pool));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -107,11 +108,11 @@ public class TargetEngine extends AbstractEngine<Target> {
         removeTarget(target, target.getParent(), driver);
     }
 
-    private void removeTarget(final Target target, final Target parent, final Driver driver) {
+    private void removeTarget(final Target target, final Pool pool, final Driver driver) {
         boolean isOk = false;
 
         try {
-            isOk = driver.remove(makeProperties(target, parent));
+            isOk = driver.remove(makeProperties(target, pool));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -145,16 +146,12 @@ public class TargetEngine extends AbstractEngine<Target> {
         return farmQueue;
     }
 
-    private Properties makeProperties(Target target, Target parent) {
+    private Properties makeProperties(Target target, Pool pool) {
         String json = "{}";
         try {
-            if (target.getBalancePolicy() != null) {
-                target.getProperties().put(BackendPool.PROP_LOADBALANCE_POLICY, target.getBalancePolicy().getBalancePolicyType().getName());
-                target.getProperties().putAll(target.getBalancePolicy().getProperties());
-            }
             final JsonMapper jsonMapper = new JsonMapper().makeJson(target);
-            if (parent != null) {
-                jsonMapper.putString("parentId", parent.getName());
+            if (pool != null) {
+                jsonMapper.putString("parentId", pool.getName());
             }
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
@@ -162,7 +159,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
         final Properties properties = fromEntity(target);
         properties.put("json", json);
-        properties.put("path", target.getTargetType().getName().toLowerCase());
+        properties.put("path", Backend.class.getSimpleName().toLowerCase());
         return properties;
     }
 }

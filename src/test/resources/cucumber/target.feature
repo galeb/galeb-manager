@@ -6,16 +6,6 @@ Feature: Target Support
     Background:
         Given a REST client authenticated as admin
         When request json body has:
-            | name | targetTypeOne |
-        And send POST /targettype
-        Then the response status is 201
-        And a REST client authenticated as admin
-        When request json body has:
-            | name | targetTypeTwo |
-        And send POST /targettype
-        Then the response status is 201
-        And a REST client authenticated as admin
-        When request json body has:
             | name | envOne |
         And send POST /environment
         Then the response status is 201
@@ -55,29 +45,27 @@ Feature: Target Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name        | targetOne                |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
+            | name        | poolOne            |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
+        And send POST /pool
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        And request json body has:
+            | name        | targetOne          |
+            | parent      | Pool=poolOne       |
         And send POST /target
 
     Scenario: Create Target
         Then the response status is 201
 
-    Scenario: Create Target with Parent
+    Scenario: Target with Parent
         Given a REST client authenticated as accountOne
-        And request json body has:
-            | name       | newTargetTwo              |
-            | targetType | TargetType=targetTypeOne  |
-            | parent     | Target=targetOne          |
-        And send POST /target
-        Then the response status is 201
-        And a REST client authenticated as accountOne
-        When send GET /target/2/environment/1
+        When send GET /target/1/environment/1
         Then the response status is 200
         And property name contains envOne
         And a REST client authenticated as accountOne
-        When send GET /target/2/project/1
+        When send GET /target/1/project/1
         Then the response status is 200
         And property name contains projOne
 
@@ -90,10 +78,9 @@ Feature: Target Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name       | newTargetTwo              |
-            | targetType | TargetType=targetTypeOne  |
-            | parent     | Target=targetOne          |
-            | project    | Project=projTwo           |
+            | name       | newTargetTwo    |
+            | parent     | Pool=poolOne    |
+            | project    | Project=projTwo |
         And send POST /target
         Then the response status is 400
 
@@ -105,41 +92,39 @@ Feature: Target Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-            | name        | newTargetTwo              |
-            | targetType  | TargetType=targetTypeOne  |
-            | parent      | Target=targetOne          |
-            | environment | Environment=envTwo        |
+            | name        | newTargetTwo       |
+            | parent      | Pool=poolOne       |
+            | environment | Environment=envTwo |
         And send POST /target
         Then the response status is 400
 
-    @ignore @todo
     Scenario: Create duplicated Target without parent
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetOne                |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
+            | name        | targetTwo          |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
+        And send POST /target
+        Then the response status is 201
+        And a REST client authenticated as accountOne
+        When request json body has:
+            | name        | targetTwo          |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
         And send POST /target
         Then the response status is 409
 
     Scenario: Create duplicated Target with parent
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetTwo                |
-            | parent      | Target=targetOne         |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
+            | name        | targetTwo    |
+            | parent      | Pool=poolOne |
         And send POST /target
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetTwo                |
-            | parent      | Target=targetOne         |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
+            | name        | targetTwo    |
+            | parent      | Pool=poolOne |
         And send POST /target
         Then the response status is 409
 
@@ -157,38 +142,24 @@ Feature: Target Support
     Scenario: Update Target
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | targetOne                |
-            | targetType  | TargetType=targetTypeTwo |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
+            | name        | targetTwo       |
+            | parent      | Pool=poolOne    |
         And send PUT Target=targetOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET Target=targetOne
+        When send GET Target=targetTwo
         Then the response status is 200
-        And property name contains targetOne
 
     Scenario: Update name field of Target
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name | targetOne |
+            | name | targetTwo |
         And send PATCH Target=targetOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET Target=targetOne
+        When send GET Target=targetTwo
         Then the response status is 200
-        And property name contains targetOne
-
-    Scenario: Update targetType field of Target
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | targetType  | TargetType=targetTypeTwo |
-        And send PATCH Target=targetOne
-        Then the response status is 204
-        And a REST client authenticated as accountOne
-        When send GET Target=targetOne
-        Then the response status is 200
-        And property name contains targetOne
+        And property name contains targetTwo
 
     Scenario: Delete Target
         Given a REST client authenticated as accountOne
@@ -198,7 +169,7 @@ Feature: Target Support
         When send GET Target=targetOne
         Then the response status is 404
         And a REST client authenticated as accountOne
-        When send GET TargetType=targetTypeOne
+        When send GET Pool=poolOne
         Then the response status is 200
         And a REST client authenticated as accountOne
         When send GET Environment=envOne
@@ -207,22 +178,21 @@ Feature: Target Support
         When send GET Project=projOne
         Then the response status is 200
 
-    Scenario: Add a new parent target to a target
+    Scenario: Add a new parent to a target
         Given a REST client authenticated as accountOne
         And request json body has:
-            | name        | targetParentOne          |
-            | targetType  | TargetType=targetTypeOne |
-            | environment | Environment=envOne       |
-            | project     | Project=projOne          |
-        And send POST /target
+            | name        | parentTwo          |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
+        And send POST /pool
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | parent | Target=targetParentOne |
+            | parent | Pool=poolTwo |
         And send PATCH Target=targetOne
         Then the response status is 204
         And a REST client authenticated as accountOne
-        When send GET /target/2/children/1
+        When send GET /pool/2/targets/1
         Then the response status is 200
         And property name contains targetOne
 
@@ -234,9 +204,9 @@ Feature: Target Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         And request json body has:
-          | name        | targetTwo                |
-          | targetType  | TargetType=targetTypeOne |
-          | environment | Environment=envTwo       |
-          | project     | Project=projOne          |
+          | name        | targetTwo          |
+          | parent      | Pool=poolOne       |
+          | environment | Environment=envTwo |
+          | project     | Project=projOne    |
         And send POST /target
         Then the response status is 400

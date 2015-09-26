@@ -62,9 +62,9 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     private Set<VirtualHost> parents = new HashSet<>();
 
     @ManyToOne
-    @JoinColumn(name = "target_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_target"))
+    @JoinColumn(name = "pool_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_pool"))
     @JsonProperty(required = true)
-    private Target target;
+    private Pool pool;
 
     @Column
     @JsonProperty("order")
@@ -80,12 +80,12 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     @JsonIgnore
     private long farmId;
 
-    public Rule(String name, RuleType ruleType, Target target) {
+    public Rule(String name, RuleType ruleType, Pool pool) {
         Assert.notNull(ruleType);
-        Assert.notNull(target);
+        Assert.notNull(pool);
         setName(name);
         this.ruleType = ruleType;
-        this.target = target;
+        this.pool = pool;
     }
 
     protected Rule() {
@@ -114,13 +114,13 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
         return this;
     }
 
-    public Target getTarget() {
-        return target;
+    public Pool getPool() {
+        return pool;
     }
 
-    public Rule setTarget(Target target) {
-        Assert.notNull(target);
-        this.target = target;
+    public Rule setPool(Pool pool) {
+        Assert.notNull(pool);
+        this.pool = pool;
         return this;
     }
 

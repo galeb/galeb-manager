@@ -32,9 +32,8 @@ import io.galeb.manager.entity.Farm;
 @RepositoryRestResource(collectionResourceRel = "farm", path = "farm")
 public interface FarmRepository extends PagingAndSortingRepository<Farm, Long> {
 
-    Page<Farm> findByEnvironmentAndStatus(Environment environment,
-                                          EntityStatus status,
-                                          Pageable pageable);
+    Iterable<Farm> findByEnvironmentAndStatus(Environment environment,
+                                          EntityStatus status);
 
     @Override
     Page<Farm> findAll(Pageable pageable);

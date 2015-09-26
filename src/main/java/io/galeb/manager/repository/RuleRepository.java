@@ -37,7 +37,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
 
     @Override
     @Query("SELECT r FROM Rule r "
-           + "INNER JOIN r.target.project.teams t "
+           + "INNER JOIN r.pool.project.teams t "
            + "INNER JOIN t.accounts a "
            + "WHERE r.id = :id AND "
                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
@@ -50,7 +50,7 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
     Page<Rule> findByName(@Param("name") String name, Pageable pageable);
 
     @Query
-    Page<Rule> findByTargetName(@Param("name") String name, Pageable pageable);
+    Page<Rule> findByPoolName(@Param("name") String name, Pageable pageable);
 
     @Override
     @Query

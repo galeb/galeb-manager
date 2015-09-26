@@ -6,7 +6,7 @@ Feature: VirtualHost Support
     Background:
         Given a REST client authenticated as admin
         When request json body has:
-            | name | oneEnv |
+            | name | envOne |
         And send POST /environment
         Then the response status is 201
         And a REST client authenticated as admin
@@ -42,18 +42,18 @@ Feature: VirtualHost Support
         Then the response status is 201
         And a REST client authenticated as admin
         When request json body has:
-            | name        | farmOne                        |
-            | domain      | domain                         |
-            | api         | api                            |
-            | environment | http://localhost/environment/1 |
-            | provider    | http://localhost/provider/1    |
+            | name        | farmOne              |
+            | domain      | domain               |
+            | api         | api                  |
+            | environment | Environment=envOne   |
+            | provider    | Provider=providerOne |
         And send POST /farm
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-            | name        | one                            |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | one                |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
         And send POST /virtualhost
 
     Scenario: Create VirtualHost
@@ -62,9 +62,9 @@ Feature: VirtualHost Support
     Scenario: Create duplicated Virtualhost
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | one                            |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | one                |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 409
 
@@ -82,9 +82,9 @@ Feature: VirtualHost Support
     Scenario: Update VirtualHost
         Given a REST client authenticated as accountOne
         When request json body has:
-            | name        | one                            |
-            | environment | http://localhost/environment/1 |
-            | project     | http://localhost/project/1     |
+            | name        | one                |
+            | environment | Environment=envOne |
+            | project     | Project=projOne    |
         And send PUT /virtualhost/1
         Then the response status is 204
         And a REST client authenticated as accountOne
@@ -106,7 +106,7 @@ Feature: VirtualHost Support
     Scenario: Update project field of VirtualHost (name update is ignored)
         Given a REST client authenticated as accountOne
         When request json body has:
-            | project     | http://localhost/project/2 |
+            | project | Project=projTwo |
         And send PATCH /virtualhost/1
         Then the response status is 204
         And a REST client authenticated as accountOne
@@ -122,11 +122,11 @@ Feature: VirtualHost Support
         When send GET /virtualhost/1
         Then the response status is 404
         And a REST client authenticated as accountOne
-        When send GET /environment/1
+        When send GET Environment=envOne
         Then the response status is 200
-        And property name contains oneEnv
+        And property name contains envOne
         And a REST client authenticated as accountOne
-        When send GET /project/1
+        When send GET Project=projOne
         Then the response status is 200
         And property name contains projOne
 
