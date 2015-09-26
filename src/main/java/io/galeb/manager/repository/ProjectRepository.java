@@ -49,9 +49,9 @@ public interface ProjectRepository extends PagingAndSortingRepository<Project, L
 
     @Override
     @Query
-    Page<Project> findByName(@Param("name")String name, Pageable pageable);
+    Page<Project> findByName(@Param("name") String name, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Page<Project> findByNameContaining(String name, Pageable pageable);
+    Page<Project> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

@@ -44,13 +44,13 @@ public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
 
     @Override
     @Query
-    Page<Team> findByName(@Param("name")String name, Pageable pageable);
+    Page<Team> findByName(@Param("name") String name, Pageable pageable);
 
     @Override
     @Query
     Page<Team> findAll(Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Page<Team> findByNameContaining(String name, Pageable pageable);
+    Page<Team> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

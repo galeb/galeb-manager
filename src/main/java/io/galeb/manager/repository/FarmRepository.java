@@ -38,6 +38,6 @@ public interface FarmRepository extends PagingAndSortingRepository<Farm, Long> {
     @Override
     Page<Farm> findAll(Pageable pageable);
 
-    Page<Farm> findByNameContaining(String name, Pageable pageable);
+    Page<Farm> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

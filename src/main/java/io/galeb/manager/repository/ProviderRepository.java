@@ -30,8 +30,8 @@ import io.galeb.manager.entity.Provider;
 @RepositoryRestResource(collectionResourceRel = "provider", path = "provider")
 public interface ProviderRepository extends PagingAndSortingRepository<Provider, Long> {
 
-    Page<Provider> findByName(String name, Pageable pageable);
+    Page<Provider> findByName(@Param("name") String name, Pageable pageable);
 
-    Page<Provider> findByNameContaining(String name, Pageable pageable);
+    Page<Provider> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

@@ -30,8 +30,8 @@ import io.galeb.manager.entity.BalancePolicyType;
 @RepositoryRestResource(collectionResourceRel = "balancepolicytype", path = "balancepolicytype")
 public interface BalancePolicyTypeRepository extends PagingAndSortingRepository<BalancePolicyType, Long> {
 
-    Page<BalancePolicyType> findByName(String name, Pageable pageable);
+    Page<BalancePolicyType> findByName(@Param("name") String name, Pageable pageable);
 
-    Page<BalancePolicyType> findByNameContaining(String name, Pageable pageable);
+    Page<BalancePolicyType> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

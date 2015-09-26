@@ -61,6 +61,6 @@ public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
     Page<Rule> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Page<Rule> findByNameContaining(String name, Pageable pageable);
+    Page<Rule> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

@@ -30,8 +30,8 @@ import io.galeb.manager.entity.RuleType;
 @RepositoryRestResource(collectionResourceRel = "ruletype", path = "ruletype")
 public interface RuleTypeRepository extends PagingAndSortingRepository<RuleType, Long> {
 
-    Page<RuleType> findByName(String name, Pageable pageable);
+    Page<RuleType> findByName(@Param("name") String name, Pageable pageable);
 
-    Page<RuleType> findByNameContaining(String name, Pageable pageable);
+    Page<RuleType> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

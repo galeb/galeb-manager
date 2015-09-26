@@ -64,6 +64,6 @@ public interface PoolRepository extends PagingAndSortingRepository<Pool, Long>,
     Pool getNoParent();
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    Page<Pool> findByNameContaining(String name, Pageable pageable);
+    Page<Pool> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

@@ -30,8 +30,8 @@ import io.galeb.manager.entity.Environment;
 @RepositoryRestResource(collectionResourceRel = "environment", path = "environment")
 public interface EnvironmentRepository extends PagingAndSortingRepository<Environment, Long> {
 
-    Page<Environment> findByName(String name, Pageable pageable);
+    Page<Environment> findByName(@Param("name") String name, Pageable pageable);
 
-    Page<Environment> findByNameContaining(String name, Pageable pageable);
+    Page<Environment> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }
