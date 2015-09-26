@@ -21,7 +21,6 @@
 package io.galeb.manager.jms;
 
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.entity.Target;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;

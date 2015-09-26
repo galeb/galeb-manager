@@ -21,7 +21,6 @@
 package io.galeb.manager.repository;
 
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.entity.Target;
 import io.galeb.manager.repository.FarmIDable;
 import io.galeb.manager.repository.custom.PoolRepositoryCustom;
 import org.springframework.data.domain.Page;
