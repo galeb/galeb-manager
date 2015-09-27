@@ -81,10 +81,10 @@ public class TargetHandler extends AbstractHandler<Target> {
     public void beforeCreate(Target target) throws Exception {
         target.setFarmId(-1L);
         setParentIfNull(target);
-        beforeCreate(target, LOGGER);
         setProject(target);
         setEnvironment(target);
         setGlobalIfNecessary(target);
+        beforeCreate(target, LOGGER);
     }
 
     @HandleAfterCreate
