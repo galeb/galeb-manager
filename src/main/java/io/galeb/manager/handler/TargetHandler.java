@@ -50,8 +50,6 @@ public class TargetHandler extends AbstractHandler<Target> {
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
 
-    private PageRequest pageable = new PageRequest(0, 99999);
-
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
