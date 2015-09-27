@@ -24,6 +24,7 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.CurrentUser;
@@ -76,6 +77,10 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeSave
     public void beforeSave(Pool pool) throws Exception {
+        if (pool.getName().equals("NoParent")) {
+            LOGGER.info("Pool: HandleBeforeSave");
+            throw new BadRequestException();
+        }
         beforeSave(pool, poolRepository, LOGGER);
         setGlobalIfNecessary(pool);
     }
@@ -87,6 +92,10 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeDelete
     public void beforeDelete(Pool pool) throws Exception {
+        if (pool.getName().equals("NoParent")) {
+            LOGGER.info("Pool: HandleBeforeDelete");
+            throw new BadRequestException();
+        }
         beforeDelete(pool, LOGGER);
     }
 

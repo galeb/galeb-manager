@@ -20,6 +20,7 @@ package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
+import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -52,8 +53,11 @@ public class BalancePolicyTypeHandler {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
-    public void beforeSave(BalancePolicyType balancePolicyType) {
+    public void beforeSave(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeSave");
+        if (balancePolicyType.getName().equals("Default")) {
+            throw new BadRequestException();
+        }
     }
 
     @HandleAfterSave
@@ -63,8 +67,11 @@ public class BalancePolicyTypeHandler {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
-    public void beforeDelete(BalancePolicyType balancePolicyType) {
+    public void beforeDelete(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeDelete");
+        if (balancePolicyType.getName().equals("Default")) {
+            throw new BadRequestException();
+        }
     }
 
     @HandleAfterDelete

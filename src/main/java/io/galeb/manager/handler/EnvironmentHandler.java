@@ -20,6 +20,7 @@ package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
+import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -52,8 +53,11 @@ public class EnvironmentHandler {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
-    public void beforeSave(Environment environment) {
+    public void beforeSave(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeSave");
+        if (environment.getName().equals("Null Environment")) {
+            throw new BadRequestException();
+        }
     }
 
     @HandleAfterSave
@@ -63,8 +67,11 @@ public class EnvironmentHandler {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
-    public void beforeDelete(Environment environment) {
+    public void beforeDelete(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeDelete");
+        if (environment.getName().equals("Null Environment")) {
+            throw new BadRequestException();
+        }
     }
 
     @HandleAfterDelete
