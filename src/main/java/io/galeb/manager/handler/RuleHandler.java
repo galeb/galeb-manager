@@ -52,21 +52,21 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
-        long farmIdTarget = -1L;
+        long farmIdPool = -1L;
         Set<Long> farmIds = rule.getParents().stream().collect(
                 Collectors.groupingBy(VirtualHost::getFarmId)).keySet();
-        long farmIdVirtualHost = farmIds.size() == 1 ? farmIds.iterator().next() : -1L;
-
+        long farmIdVirtualHost = farmIds.size() == 1 && farmIds.iterator().hasNext() ?
+                farmIds.iterator().next() : -1L;
         if (rule.getPool() != null) {
             final Pool pool = rule.getPool();
-            farmIdTarget = pool.getFarmId();
+            farmIdPool = pool.getFarmId();
         }
-        if (farmIdVirtualHost > -1L && farmIdTarget > -1L && farmIdVirtualHost != farmIdTarget) {
-            String errorMsg = "VirtualHost.farmId is not equal Target.farmId";
+        if (farmIdVirtualHost > -1L && farmIdPool > -1L && farmIdVirtualHost != farmIdPool) {
+            String errorMsg = "VirtualHost.farmId is not equal Pool.farmId";
             LOGGER.error(errorMsg);
             throw new BadRequestException(errorMsg);
         }
-        rule.setFarmId(farmIdTarget);
+        rule.setFarmId(farmIdPool);
     }
 
     @HandleBeforeCreate
