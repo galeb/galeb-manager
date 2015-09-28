@@ -26,12 +26,6 @@ import io.galeb.manager.engine.farm.EntityFarm;
 
 public interface Driver {
 
-    enum StatusFarm {
-        OK,
-        FAIL,
-        UNKNOWN
-    }
-
     String DEFAULT_DRIVER_NAME = "NULL";
 
     default EntityFarm info(Properties properties) {
@@ -52,10 +46,6 @@ public interface Driver {
 
     default boolean remove(Properties properties) {
         return true;
-    }
-
-    default StatusFarm status(Properties properties) {
-        return StatusFarm.UNKNOWN;
     }
 
     default Map<String, Map<String, String>> diff(Properties properties) {

@@ -212,64 +212,6 @@ public class GalebV3Driver implements Driver {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public StatusFarm status(Properties properties) {
-        String api = properties.getOrDefault("api", "localhost:9090").toString();
-        api = !api.startsWith("http") ? "http://" + api : api;
-        String path = properties.getOrDefault("path", "").toString();
-        String name = properties.getOrDefault("name", "UNDEF").toString();
-        Stream<? extends AbstractEntity<?>> parents =
-                (Stream<? extends AbstractEntity<?>>) properties.getOrDefault("parents", EmptyStream.get());
-        int expectedId = properties.getOrDefault("id", -1);
-        long expectedNumElements = properties.getOrDefault("numElements", -1L);
-
-        String basePath = api + "/" + path;
-        String nameEncoded;
-        try {
-            nameEncoded = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
-        } catch (UnsupportedEncodingException e1) {
-            LOGGER.error(e1);
-            return StatusFarm.FAIL;
-        }
-        String fullPath = basePath+"/"+nameEncoded;
-
-        AtomicBoolean result = new AtomicBoolean(true);
-        try {
-            if (!isOkNumElements(basePath, expectedNumElements)) {
-                return StatusFarm.FAIL;
-            }
-            List<AbstractEntity<?>> listOfParents = parents.collect(Collectors.toList());
-            if (listOfParents.size()>0) {
-                listOfParents.forEach(parent -> {
-                    try {
-                        if (result.get()) {
-                            boolean isSyncronized = isSyncronized(fullPath, name, parent.getName(), expectedId);
-                            result.set(isSyncronized);
-                        }
-                    } catch (Exception e) {
-                        result.set(false);
-                        LOGGER.error("STATUS FAIL: " + fullPath);
-                        LOGGER.error(e);
-                    }
-                });
-            } else {
-                result.set(isSyncronized(fullPath, name, null, expectedId));
-            }
-
-            if (!result.get()) {
-                LOGGER.warn("STATUS FAIL: "+fullPath);
-            } else {
-                LOGGER.debug("STATUS OK: "+fullPath);
-            }
-        } catch (RuntimeException | IOException | URISyntaxException e) {
-            result.set(false);
-            LOGGER.error("STATUS FAIL: " + fullPath);
-            LOGGER.error(e);
-        }
-        return result.get() ? StatusFarm.OK : StatusFarm.FAIL;
-    }
-
     private JsonNode getJson(String path) throws URISyntaxException, IOException {
         JsonNode json = null;
         RestTemplate restTemplate = new RestTemplate();
@@ -282,59 +224,6 @@ public class GalebV3Driver implements Driver {
             json = mapper.readTree(response.getBody());
         }
         return json;
-    }
-
-    private boolean isSyncronized(String fullPath, String name, String parent, int expectedId) throws URISyntaxException, IOException {
-        JsonNode json = getJson(fullPath);
-        if (json == null) {
-            return false;
-        }
-
-        final Entity entity = new Entity();
-
-        entity.setVersion(-1);
-        if (json.isArray()) {
-            StreamSupport.stream(json.spliterator(), false)
-                .filter(element -> element.isObject() &&
-                        element.get("id") != null &&
-                        element.get("id").asText("defaultTextIfAbsent").equals(name))
-                .forEach(element -> {
-                    if ((parent == null) ||
-                        (element.get("parentId") != null &&
-                            element.get("parentId").asText("defaultTextIfAbsent").equals(parent)))
-                    {
-                        entity.setVersion(element.get("version").asInt(-1));
-                    } else {
-                        LOGGER.debug("CHECK FAIL >>>>  "+fullPath+" : "+" parent="+parent+" expectedId="+expectedId);
-                        LOGGER.debug("           >>>>  "+fullPath+" : "+" parent(remote)="+element.get("parentId").asText()+" id(remote)="+element.get("version").asInt());
-                    }
-            });
-        }
-        boolean syncronized = expectedId == entity.getVersion();
-        if (!syncronized) {
-            LOGGER.error(fullPath+" : VERSION NOT MATCH (manager:"+expectedId+" != farm:"+entity.getVersion()+")");
-        }
-
-        return syncronized;
-    }
-
-    private boolean isOkNumElements(String pathBase, long expectedNumElements) throws URISyntaxException, IOException {
-        JsonNode json = getJson(pathBase);
-        if (json == null) {
-            return false;
-        }
-
-        int numElements = 0;
-
-        if (json.isArray()) {
-            numElements = json.size();
-        }
-        boolean resultCount = expectedNumElements == numElements;
-        if (!resultCount) {
-            LOGGER.error(pathBase+" : COUNT NOT MATCH (manager:"+expectedNumElements+" != farm:"+numElements+")");
-        }
-
-        return resultCount;
     }
 
     @NotThreadSafe
