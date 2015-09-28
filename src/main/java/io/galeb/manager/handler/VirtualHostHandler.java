@@ -47,7 +47,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
 
-    private PageRequest pageable = new PageRequest(1, 99999);
+    private PageRequest pageable = new PageRequest(0, 99999);
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {

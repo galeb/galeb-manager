@@ -69,7 +69,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private Map<String, AbstractJmsEnqueuer> queues = new HashMap<>();
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
-    private final Pageable pageable = new PageRequest(1, 99999);
+    private final Pageable pageable = new PageRequest(0, 99999);
 
     @PostConstruct
     public void init() {

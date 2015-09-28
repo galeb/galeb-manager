@@ -71,7 +71,7 @@ public class SyncFarms {
     @Autowired private DistributedLocker     distributedLocker;
 
     private final ObjectMapper mapper   = new ObjectMapper();
-    private final Pageable     pageable = new PageRequest(1, 99999);
+    private final Pageable     pageable = new PageRequest(0, 99999);
 
     private boolean disableJms = Boolean.getBoolean(System.getProperty(
                                     JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
