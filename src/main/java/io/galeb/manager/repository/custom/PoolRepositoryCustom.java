@@ -21,15 +21,7 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Pool;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 public interface PoolRepositoryCustom {
-
-    Page<Pool> findAll(Pageable pageable);
-
-    Page<Pool> findByName(String name, Pageable pageable);
-
     Pool getNoParent();
-
 }

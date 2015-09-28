@@ -192,7 +192,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
                 final Authentication originalAuth = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Page<Account> accountPage = accountRepository.findByName(username, new PageRequest(1, 99999));
+                final Page<Account> accountPage = accountRepository.findByName(username, new PageRequest(0, 99999));
                 final Account account = accountPage.iterator().hasNext() ? accountPage.iterator().next() : null;
                 SystemUserService.runAs(originalAuth);
 

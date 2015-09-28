@@ -23,7 +23,6 @@ package io.galeb.manager.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.galeb.manager.repository.custom.PoolRepositoryImpl;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -31,7 +30,6 @@ import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-@NamedQuery(name = "Pool.findAll", query = PoolRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_pool", columnNames = { "name" }) })

@@ -31,7 +31,6 @@ import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -41,9 +40,6 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.galeb.manager.repository.custom.AccountRepositoryImpl;
-
-@NamedQuery(name="Account.findAll", query = AccountRepositoryImpl.FIND_ALL)
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_account", columnNames = { "name" }) })
 public class Account extends AbstractEntity<Account> {
