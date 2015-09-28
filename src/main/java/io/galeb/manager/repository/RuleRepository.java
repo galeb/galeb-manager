@@ -20,47 +20,63 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
-import io.galeb.manager.repository.custom.RuleRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
-public interface RuleRepository extends PagingAndSortingRepository<Rule, Long>,
-                                        FarmIDable<Rule>,
-                                        RuleRepositoryCustom {
+public interface RuleRepository extends JpaRepository<Rule, Long>,
+                                        FarmIDable<Rule> {
 
-    @Override
-    @Query("SELECT r FROM Rule r "
-           + "INNER JOIN r.pool.project.teams t "
-           + "INNER JOIN t.accounts a "
-           + "WHERE r.id = :id AND "
-               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "r.global = TRUE OR "
-               + "a.name = ?#{principal.username})")
+    String QUERY_PREFIX = "SELECT r FROM Rule r "
+                        + "INNER JOIN r.pool.project.teams t "
+                        + "INNER JOIN t.accounts a "
+                        + "WHERE ";
+
+    String IS_GLOBAL_FILTER = "r.global = TRUE";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "r.id = :id AND "
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "r.name = :name AND "
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
+
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER;
+
+    String QUERY_FINDBYPOOLNAME = QUERY_PREFIX + "r.pool.name = :name AND "
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
+
+    @Query(QUERY_FINDONE)
     Rule findOne(@Param("id") Long id);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDBYNAME)
     Page<Rule> findByName(@Param("name") String name, Pageable pageable);
 
-    @Query
-    Page<Rule> findByPoolName(@Param("name") String name, Pageable pageable);
-
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
     Page<Rule> findAll(Pageable pageable);
 
-    @Override
+    @Query(QUERY_FINDALL)
+    List<Rule> findAll(Sort sort);
+
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Rule> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Rule> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Query(QUERY_FINDBYPOOLNAME)
+    Page<Rule> findByPoolName(@Param("name") String name, Pageable pageable);
 
 }

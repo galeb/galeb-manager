@@ -20,39 +20,47 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
-public interface VirtualHostRepository extends PagingAndSortingRepository<VirtualHost, Long>,
-                                               FarmIDable<VirtualHost>,
-                                               VirtualHostRepositoryCustom {
+public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
+                                               FarmIDable<VirtualHost> {
 
-    @Override
-    @Query("SELECT v FROM VirtualHost v "
-           + "INNER JOIN v.project.teams t "
-           + "INNER JOIN t.accounts a "
-           + "WHERE v.id = :id AND "
-               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "a.name = ?#{principal.username})")
+    String QUERY_PREFIX = "SELECT v FROM VirtualHost v "
+                        + "INNER JOIN v.project.teams t "
+                        + "INNER JOIN t.accounts a "
+                        + "WHERE ";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "v.id = :id AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "v.name = :name AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
+
+    @Query(QUERY_FINDONE)
     VirtualHost findOne(@Param("id") Long id);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDBYNAME)
     Page<VirtualHost> findByName(@Param("name") String name, Pageable pageable);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
     Page<VirtualHost> findAll(Pageable pageable);
 
-    @Override
+    @Query(QUERY_FINDALL)
+    List<VirtualHost> findAll(Sort sort);
+
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 

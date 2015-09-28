@@ -20,29 +20,41 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Account;
-import io.galeb.manager.repository.custom.AccountRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
-public interface AccountRepository extends PagingAndSortingRepository<Account, Long>,
-                                           AccountRepositoryCustom {
+public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    @Override
+    String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
+
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE '%:name%' AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     Account findOne(@Param("id") Long id);
 
-    @Override
+    @Query(QUERY_FINDALL)
     Page<Account> findAll(Pageable pageable);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
+    List<Account> findAll(Sort sort);
+
+    @Query(QUERY_FINDBYNAME)
     Page<Account> findByName(@Param("name") String name, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")

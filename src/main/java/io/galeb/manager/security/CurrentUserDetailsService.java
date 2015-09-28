@@ -40,7 +40,7 @@ public class CurrentUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String userName) throws UsernameNotFoundException {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Page<Account> accountPage = accountRepository.findByName(userName, new PageRequest(1, 99999));
+        Page<Account> accountPage = accountRepository.findByName(userName, new PageRequest(0, 99999));
         Account account = accountPage.iterator().hasNext() ? accountPage.iterator().next() : null;
         SystemUserService.runAs(originalAuth);
         if (account == null) {

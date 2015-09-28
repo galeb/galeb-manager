@@ -27,9 +27,6 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
-import io.galeb.manager.repository.custom.TeamRepositoryImpl;
-
-@NamedQuery(name="Team.findAll", query= TeamRepositoryImpl.FIND_ALL)
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_team", columnNames = { "name" }) })
 public class Team extends AbstractEntity<Team> {

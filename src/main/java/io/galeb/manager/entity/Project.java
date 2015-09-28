@@ -25,16 +25,12 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
-import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import io.galeb.manager.repository.custom.ProjectRepositoryImpl;
-
-@NamedQuery(name="Project.findAll", query = ProjectRepositoryImpl.FIND_ALL)
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_project", columnNames = { "name" }) })
 public class Project extends AbstractEntity<Project> {

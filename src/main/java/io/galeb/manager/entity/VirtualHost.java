@@ -28,7 +28,6 @@ import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -37,9 +36,6 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.galeb.manager.repository.custom.VirtualHostRepositoryImpl;
-
-@NamedQuery(name = "VirtualHost.findAll", query = VirtualHostRepositoryImpl.FIND_ALL)
 @Entity
 @Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
 public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {

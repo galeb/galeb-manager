@@ -26,9 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.galeb.manager.repository.custom.TargetRepositoryImpl;
-
-@NamedQuery(name = "Target.findAll", query = TargetRepositoryImpl.FIND_ALL)
 @Entity
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_parent_id_target", columnNames = { "name", "parent_id" }) })
