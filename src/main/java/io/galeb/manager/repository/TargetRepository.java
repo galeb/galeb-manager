@@ -44,16 +44,16 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
     String QUERY_FINDONE = QUERY_PREFIX + "ta.id = :id AND "
                             + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                             + "ta.global = TRUE OR "
-                               + "a.id = ?#{#id})";
+                               + "a.id = ?#{principal.id})";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "ta.name = :name AND "
                             + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                             + "ta.global = TRUE OR "
-                           + "a.id = ?#{#id})";
+                           + "a.id = ?#{principal.id})";
 
     String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                             + "ta.global = TRUE OR "
-                            + "a.id = ?#{#id}";
+                            + "a.id = ?#{principal.id}";
 
     @Query(QUERY_FINDONE)
     Target findOne(@Param("id") Long id);

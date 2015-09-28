@@ -42,18 +42,18 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id})";
+                        + "a.id = ?#{principal.id})";
 
     String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id}";
+                        + "a.id = ?#{principal.id}";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id})";
+                        + "a.id = ?#{principal.id})";
 
     String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE '%:name%' AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id})";
+                        + "a.id = ?#{principal.id})";
 
     @Query(QUERY_FINDONE)
     Project findOne(@Param("id") Long id);

@@ -39,15 +39,15 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
 
     String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id}";
+                        + "a.id = ?#{principal.id}";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id})";
+                        + "a.id = ?#{principal.id})";
 
     String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE '%:name%' AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{#id})";
+                        + "a.id = ?#{principal.id})";
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     Account findOne(@Param("id") Long id);
