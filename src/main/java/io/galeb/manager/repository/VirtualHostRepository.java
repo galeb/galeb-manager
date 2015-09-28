@@ -43,14 +43,14 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
 
     String QUERY_FINDONE = QUERY_PREFIX + "v.id = :id AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.name = ?#{principal.username})";
+                        + "a.id = ?#{#id})";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "v.name = :name AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') OR "
-                        + "a.name = ?#{principal.username})";
+                        + "a.id = ?#{#id})";
 
     String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') OR "
-                        + "a.name = ?#{principal.username}";
+                        + "a.id = ?#{#id}";
 
     @Query(QUERY_FINDONE)
     VirtualHost findOne(@Param("id") Long id);

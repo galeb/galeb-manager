@@ -49,16 +49,21 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
     String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                         + "p.global = TRUE OR "
-                        + "a.name = ?#{principal.username})";
+                        + "a.id = ?#{#id})";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
                         + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                         + "p.global = TRUE OR "
-                        + "a.name = ?#{principal.username})";
+                        + "a.id = ?#{#id})";
 
-    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') OR "
+    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
                         + "p.global = TRUE OR "
-                        + "a.name = ?#{principal.username}";
+                        + "a.id = ?#{#id}";
+
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE '%:name%' AND "
+            + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+            + "p.global = TRUE OR "
+            + "a.id = ?#{#id})";
 
     @Query(QUERY_FINDONE)
     Pool findOne(@Param("id") Long id);
