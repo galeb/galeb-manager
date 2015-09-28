@@ -22,20 +22,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
-import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.LoggerUtils;
@@ -67,7 +64,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.galeb.manager.common.EmptyStream;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.Driver;
 
@@ -273,67 +269,103 @@ public class GalebV3Driver implements Driver {
         final Map<String, Map<String, String>> fullMap = extractRemoteMap(api);
         final Map<String, Map<String, String>> diffMap = new HashMap<>();
 
-        entitiesMap.keySet().stream().forEach(path ->
-        {
-            Set<AbstractEntity<?>> entities = entitiesMap.get(path);
-
-            fullMap.entrySet().stream()
-                              .filter(entry ->
-                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
-                              .forEach(entry ->
-            {
-                final Map<String, String> entityProperties = entry.getValue();
-                final String id = entityProperties.getOrDefault("id", "UNDEF");
-                final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
-                final String version = entityProperties.getOrDefault("version", "UNDEF");
-                final String pk = entityProperties.getOrDefault("pk", "UNDEF");
-                AtomicBoolean hasId = new AtomicBoolean(false);
-
-                entities.stream().filter(entity -> entity.getName().equals(id))
-                                 .filter(entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
-                                         (entity instanceof WithParent) && (
-                                                 ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                                         ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
-                                         (entity instanceof WithParents) &&
-                                                 !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
-                                                 ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                                         .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
-                                 .forEach(entity ->
-                                 {
-                                     hasId.set(true);
-                                     LOGGER.debug("Check if is necessary UPDATE");
-                                     if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
-                                         changeAction(api, path, id, parentId, diffMap);
-                                     }
-                                 });
-
-                LOGGER.debug("Check if is necessary REMOVE");
-                if (!hasId.get()) {
-                    delAction(api, path, id, parentId, diffMap);
-                }
-            });
-
-            entities.stream().forEach(entity -> {
-                String id = entity.getName();
-                LOGGER.debug("Check if is necessary CREATE");
-                if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
-                    addAction(api, path, id, "", fullMap.keySet(), diffMap);
-                }
-                if (entity instanceof WithParent) {
-                    AbstractEntity<?> parentInstance = ((WithParent<AbstractEntity<?>>) entity).getParent();
-                    String parentId = parentInstance != null ? parentInstance.getName() : "";
-                    addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
-                }
-                if (entity instanceof WithParents) {
-                    ((WithParents<AbstractEntity<?>>) entity).getParents().forEach(aParent ->
-                    {
-                        String parentId = aParent.getName();
-                        addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
-                    });
-                }
-            });
-        });
+        entitiesMap.keySet().stream().forEach(path -> makeDiffMap(api, path, entitiesMap, fullMap, diffMap));
         return diffMap;
+    }
+
+    private void makeDiffMap(String api,
+                             String path,
+                             final Map<String, Set<AbstractEntity<?>>> entitiesMap,
+                             final Map<String, Map<String, String>> fullMap,
+                             final Map<String, Map<String, String>> diffMap) {
+
+        Set<AbstractEntity<?>> entities = entitiesMap.get(path);
+
+        fullMap.entrySet().stream()
+                          .filter(entry ->
+                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
+                          .forEach(entry ->
+                          {
+                              final Map<String, String> entityProperties = entry.getValue();
+                              final String id = entityProperties.getOrDefault("id", "UNDEF");
+                              final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
+                              AtomicBoolean hasId = new AtomicBoolean(false);
+
+                              entities.stream().filter(entity -> entity.getName().equals(id))
+                                      .filter(getAbstractEntityPredicate(parentId))
+                                      .forEach(entity ->
+                                      {
+                                          hasId.set(true);
+                                          updateIfNecessary(api, path, id, parentId, entity, entityProperties, diffMap);
+                                      });
+                              removeEntityIfNecessary(api, path, id, parentId, hasId, diffMap);
+                          });
+
+        entities.stream().forEach(entity -> createEntityIfNecessary(api, path, entity, fullMap, diffMap));
+    }
+
+    private void updateIfNecessary(String api,
+                                   String path,
+                                   String id,
+                                   String parentId,
+                                   final AbstractEntity<?> entity,
+                                   final Map<String, String> entityProperties,
+                                   final Map<String, Map<String, String>> diffMap) {
+        final String version = entityProperties.getOrDefault("version", "UNDEF");
+        final String pk = entityProperties.getOrDefault("pk", "UNDEF");
+        LOGGER.debug("Check if is necessary UPDATE");
+        if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
+            changeAction(api, path, id, parentId, diffMap);
+        }
+    }
+
+    private void removeEntityIfNecessary(String api,
+                                         String path,
+                                         String id,
+                                         String parentId,
+                                         final AtomicBoolean hasId,
+                                         final Map<String, Map<String, String>> diffMap) {
+        LOGGER.debug("Check if is necessary REMOVE");
+        if (!hasId.get()) {
+            delAction(api, path, id, parentId, diffMap);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void createEntityIfNecessary(String api,
+                                         String path,
+                                         final AbstractEntity<?> entity,
+                                         final Map<String, Map<String, String>> fullMap,
+                                         final Map<String, Map<String, String>> diffMap) {
+        String id = entity.getName();
+        LOGGER.debug("Check if is necessary CREATE");
+        if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
+            addAction(api, path, id, "", fullMap.keySet(), diffMap);
+        }
+        if (entity instanceof WithParent) {
+            AbstractEntity<?> parentInstance = ((WithParent<AbstractEntity<?>>) entity).getParent();
+            String parentId = parentInstance != null ? parentInstance.getName() : "";
+            addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
+        }
+        if (entity instanceof WithParents) {
+            ((WithParents<AbstractEntity<?>>) entity).getParents().forEach(aParent ->
+            {
+                String parentId = aParent.getName();
+                addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
+            });
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Predicate<AbstractEntity<?>> getAbstractEntityPredicate(String parentId) {
+        return entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
+                (entity instanceof WithParent) && (
+                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
+                (entity instanceof WithParents) &&
+                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId);
     }
 
     private Map<String, Map<String, String>> extractRemoteMap(final String api) {
@@ -530,7 +562,7 @@ public class GalebV3Driver implements Driver {
         request.getHeaders().entrySet().forEach(entry ->
                 LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
         Object requestBody = request.getBody();
-        if (requestBody instanceof String && requestBody != null) {
+        if (requestBody instanceof String) {
             LoggerUtils.logger(LOGGER, logLevel, requestBody);
         }
         LoggerUtils.logger(LOGGER, logLevel, "---");
