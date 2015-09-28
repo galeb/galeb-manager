@@ -20,44 +20,56 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Target;
-import io.galeb.manager.repository.custom.TargetRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
-public interface TargetRepository extends PagingAndSortingRepository<Target, Long>,
-                                          FarmIDable<Target>,
-                                          TargetRepositoryCustom {
+public interface TargetRepository extends JpaRepository<Target, Long>,
+                                          FarmIDable<Target> {
 
-    @Override
-    @Query("SELECT ta FROM Target ta "
-           + "LEFT JOIN ta.project.teams t "
-           + "LEFT JOIN t.accounts a "
-           + "WHERE ta.id = :id AND "
-               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "ta.global = TRUE OR "
-               + "a.name = ?#{principal.username})")
+    String QUERY_PREFIX = "SELECT ta FROM Target ta "
+                            + "LEFT JOIN ta.project.teams t "
+                            + "LEFT JOIN t.accounts a "
+                            + "WHERE ";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "ta.id = :id AND "
+                            + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                            + "ta.global = TRUE OR "
+                            + "a.name = ?#{principal.username})";
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "ta.name = :name AND "
+                            + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                            + "ta.global = TRUE OR "
+                            + "a.name = ?#{principal.username})";
+
+    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') OR "
+                            + "ta.global = TRUE OR "
+                            + "a.name = ?#{principal.username})";
+
+    @Query(QUERY_FINDONE)
     Target findOne(@Param("id") Long id);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDBYNAME)
     Page<Target> findByName(@Param("name") String name, Pageable pageable);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
     Page<Target> findAll(Pageable pageable);
 
-    @Override
+    @Query(QUERY_FINDALL)
+    List<Target> findAll(Sort sort);
+
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Target> findByFarmId(@Param("id") long id, Pageable pageable);
 
-    @Query
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")

@@ -20,35 +20,47 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Team;
-import io.galeb.manager.repository.custom.TeamRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "team", path = "team")
-public interface TeamRepository extends PagingAndSortingRepository<Team, Long>,
-                                        TeamRepositoryCustom {
+public interface TeamRepository extends JpaRepository<Team, Long> {
 
-    @Override
-    @Query("SELECT t FROM Team t "
-           + "LEFT JOIN t.accounts a "
-           + "WHERE t.id = :id AND "
-               + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-               + "a.name = ?#{principal.username})")
+    String QUERY_PREFIX = "SELECT t FROM Team t "
+                        + "LEFT JOIN t.accounts a "
+                        + "WHERE ";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "t.id = :id AND "
+                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                        + "a.name = ?#{principal.username})";
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "t.name = :name AND "
+                        + "(1 = ?#{hasRole('ROLE_ADMIN') OR "
+                        + "a.name = ?#{principal.username})";
+
+    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') OR "
+                        + "a.name = ?#{principal.username}";
+
+    @Query(QUERY_FINDONE)
     Team findOne(@Param("id") Long id);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDBYNAME)
     Page<Team> findByName(@Param("name") String name, Pageable pageable);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
     Page<Team> findAll(Pageable pageable);
+
+    @Query(QUERY_FINDALL)
+    List<Team> findAll(Sort sort);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Team> findByNameContaining(@Param("name") String name, Pageable pageable);

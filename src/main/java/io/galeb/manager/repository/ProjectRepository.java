@@ -20,35 +20,47 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Project;
-import io.galeb.manager.repository.custom.ProjectRepositoryCustom;
+
+import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
-public interface ProjectRepository extends PagingAndSortingRepository<Project, Long>,
-                                           ProjectRepositoryCustom {
+public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    @Override
-    @Query("SELECT p FROM Project p "
-            + "INNER JOIN p.teams t "
-            + "INNER JOIN t.accounts a "
-            + "WHERE p.id = :id AND "
-                + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                + "a.name = ?#{principal.username})")
+    String QUERY_PREFIX = "SELECT p FROM Project p "
+                        + "INNER JOIN p.teams t "
+                        + "INNER JOIN t.accounts a "
+                        + "WHERE ";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "
+                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                        + "a.name = ?#{principal.username})";
+
+    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') OR "
+                        + "a.name = ?#{principal.username}";
+
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
+                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
+                        + "a.name = ?#{principal.username})";
+
+    @Query(QUERY_FINDONE)
     Project findOne(@Param("id") Long id);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
     Page<Project> findAll(Pageable pageable);
 
-    @Override
-    @Query
+    @Query(QUERY_FINDALL)
+    List<Project> findAll(Sort sort);
+
+    @Query(QUERY_FINDBYNAME)
     Page<Project> findByName(@Param("name") String name, Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
