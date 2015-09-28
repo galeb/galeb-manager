@@ -41,24 +41,22 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
                         + "INNER JOIN t.accounts a "
                         + "WHERE ";
 
+    String IS_GLOBAL_FILTER = "r.global = TRUE";
+
     String QUERY_FINDONE = QUERY_PREFIX + "r.id = :id AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "r.global = TRUE OR "
-                        + "a.id = ?#{principal.id})";
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "r.name = :name AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "r.global = TRUE OR "
-                        + "a.id = ?#{principal.id})";
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "r.global = TRUE OR "
-                        + "a.id = ?#{principal.id}";
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER;
 
     String QUERY_FINDBYPOOLNAME = QUERY_PREFIX + "r.pool.name = :name AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "r.global = TRUE OR "
-                        + "a.id = ?#{principal.id})";
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
     Rule findOne(@Param("id") Long id);

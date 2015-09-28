@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -38,16 +37,13 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
 
-    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id}";
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id})";
+                        + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE '%:name%' AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id})";
+                        + CommonJpaFilters.SECURITY_FILTER;
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     Account findOne(@Param("id") Long id);

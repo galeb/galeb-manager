@@ -41,19 +41,18 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
                             + "LEFT JOIN t.accounts a "
                             + "WHERE ";
 
+    String IS_GLOBAL_FILTER = "ta.global = TRUE";
+
     String QUERY_FINDONE = QUERY_PREFIX + "ta.id = :id AND "
-                            + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                            + "ta.global = TRUE OR "
-                               + "a.id = ?#{principal.id})";
+                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                            + IS_GLOBAL_FILTER + ")";
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "ta.name = :name AND "
-                            + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                            + "ta.global = TRUE OR "
-                           + "a.id = ?#{principal.id})";
+                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                            + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                            + "ta.global = TRUE OR "
-                            + "a.id = ?#{principal.id}";
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
+                            + IS_GLOBAL_FILTER;
 
     @Query(QUERY_FINDONE)
     Target findOne(@Param("id") Long id);

@@ -40,15 +40,12 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
                         + "WHERE ";
 
     String QUERY_FINDONE = QUERY_PREFIX + "t.id = :id AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id})";
+                        + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAME = QUERY_PREFIX + "t.name = :name AND "
-                        + "(1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id})";
+                        + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDALL = QUERY_PREFIX + "1 = ?#{hasRole('ROLE_ADMIN') ? 1 : 0} OR "
-                        + "a.id = ?#{principal.id}";
+    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
     Team findOne(@Param("id") Long id);
