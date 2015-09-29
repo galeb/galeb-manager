@@ -31,8 +31,8 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.manager.engine.DriverBuilder;
-import io.galeb.manager.engine.ProvisioningBuilder;
+import io.galeb.manager.engine.driver.DriverBuilder;
+import io.galeb.manager.engine.provisioning.ProvisioningBuilder;
 import io.galeb.manager.entity.Provider;
 
 @RepositoryEventHandler(Provider.class)

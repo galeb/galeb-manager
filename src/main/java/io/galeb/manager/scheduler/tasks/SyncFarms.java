@@ -46,12 +46,12 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.jms.JmsConfiguration;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
 
 import static java.util.AbstractMap.*;
 

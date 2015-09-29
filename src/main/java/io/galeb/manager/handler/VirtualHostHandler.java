@@ -36,8 +36,8 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
