@@ -183,7 +183,7 @@ public class SyncFarms {
                 .collect(Collectors.toSet()));
         entitiesMap.put(Backend.class.getSimpleName().toLowerCase(), getTargets(farm)
                 .collect(Collectors.toSet()));
-        entitiesMap.put(Rule.class.getSimpleName(), getRules(farm)
+        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(), getRules(farm)
                 .collect(Collectors.toSet()));
         return entitiesMap;
     }

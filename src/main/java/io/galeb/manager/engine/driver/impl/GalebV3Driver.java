@@ -460,8 +460,43 @@ public class GalebV3Driver implements Driver {
         } catch (IOException e) {
             LOGGER.error(e);
         }
-        BufferedReader bufferedReader = null;
+        String body = inputStreamToString(content);
+
+        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newMapOfHeaders =
+                Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        headers.putAll(newMapOfHeaders);
+        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
+                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
+
+        RequestEntity<String> newRequest = new RequestEntity<>(body, headers, httpMethod, URI.create(request.getRequestLine().getUri()));
+        InputStream responseContent = null;
+        try {
+            responseContent = response.getEntity().getContent();
+        } catch (IOException e) {
+            LOGGER.error(e);
+        }
+        String responseBody = inputStreamToString(responseContent);
+
+        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
+        Map<String, List<String>> newResponseMapOfHeaders =
+                Arrays.asList(request.getAllHeaders()).stream().collect(
+                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
+        responseHeaders.putAll(newResponseMapOfHeaders);
+        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
+                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
+
+        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
+                responseHeaders,
+                responseStatusCode);
+
+        return getResultFromStatusCode(newRequest, newResponse);
+    }
+
+    private String inputStreamToString(InputStream content) {
         StringBuilder stringBuilder = new StringBuilder();
+        BufferedReader bufferedReader = null;
         String line;
         try {
             if (content != null) {
@@ -483,65 +518,7 @@ public class GalebV3Driver implements Driver {
                 }
             }
         }
-        String body = stringBuilder.toString();
-
-        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        headers.putAll(newMapOfHeaders);
-        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
-                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
-
-        RequestEntity<String> newRequest = new RequestEntity<>(body,
-                headers,
-                httpMethod,
-                URI.create(request.getRequestLine().getUri()));
-
-
-        InputStream responseContent = null;
-        try {
-            responseContent = response.getEntity().getContent();
-        } catch (IOException e) {
-            LOGGER.error(e);
-        }
-        bufferedReader = null;
-        stringBuilder = new StringBuilder();
-        try {
-            if (responseContent != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(responseContent));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-            } else {
-                LOGGER.warn("ResponseContent is null");
-            }
-        } catch (IOException e) {
-            LOGGER.error(e);
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
-        }
-        String responseBody = stringBuilder.toString();
-
-        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newResponseMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        responseHeaders.putAll(newResponseMapOfHeaders);
-        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
-                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
-
-        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
-                responseHeaders,
-                responseStatusCode);
-
-        return getResultFromStatusCode(newRequest, newResponse);
+        return stringBuilder.toString();
     }
 
     private boolean getResultFromStatusCode(RequestEntity<?> request, ResponseEntity<String> response) {

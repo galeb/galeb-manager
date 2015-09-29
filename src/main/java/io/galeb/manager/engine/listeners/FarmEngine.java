@@ -18,6 +18,8 @@
 
 package io.galeb.manager.engine.listeners;
 
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.BackendPool;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.jms.*;
 import io.galeb.manager.repository.*;
@@ -26,7 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -44,7 +46,9 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -64,8 +68,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private VirtualHostQueue virtualHostQueue;
     @Autowired private TargetQueue targetQueue;
     @Autowired private RuleQueue ruleQueue;
+    @Autowired private PoolQueue poolQueue;
 
-    private Map<String, PagingAndSortingRepository> repositories = new HashMap<>();
+    private Map<String, JpaRepository> repositories = new HashMap<>();
     private Map<String, AbstractJmsEnqueuer> queues = new HashMap<>();
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
@@ -76,10 +81,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
         repositories.put(VirtualHost.class.getSimpleName().toLowerCase(), virtualHostRepository);
         repositories.put(Target.class.getSimpleName().toLowerCase(), targetRepository);
         repositories.put(Rule.class.getSimpleName().toLowerCase(), ruleRepository);
+        repositories.put(Pool.class.getSimpleName().toLowerCase(), poolRepository);
 
         queues.put(VirtualHost.class.getSimpleName().toLowerCase(), virtualHostQueue);
         queues.put(Target.class.getSimpleName().toLowerCase(), targetQueue);
         queues.put(Rule.class.getSimpleName().toLowerCase(), ruleQueue);
+        queues.put(Pool.class.getSimpleName().toLowerCase(), poolQueue);
 
         isRead.set(true);
     }
@@ -147,19 +154,23 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
             final String internalEntityType = getInternalEntityType(entityType);
 
-            PagingAndSortingRepository repository = repositories.get(internalEntityType);
+            JpaRepository repository = repositories.get(internalEntityType);
             AbstractJmsEnqueuer<AbstractEntity<?>> queue = queues.get(internalEntityType);
-            Stream<AbstractEntity> stream = convertToStream(repository);
+            Stream<AbstractEntity<?>> stream = convertToStream(repository);
 
-            Optional<AbstractEntity> entityFromRepositoryOptional = getEntityIfExist(id, parentId, stream);
+            Optional<AbstractEntity<?>> entityFromRepositoryOptional = getEntityIfExist(id, parentId, stream);
             AbstractEntity<?> entityFromRepository = entityFromRepositoryOptional.orElse(null);
 
             switch (action.toUpperCase()) {
                 case "CREATE":
-                    createEntityOnFarm(queue, entityFromRepository);
+                    if (entityFromRepository != null) {
+                        createEntityOnFarm(queue, entityFromRepository);
+                    }
                     break;
                 case "UPDATE":
-                    updateEntityOnFarm(queue, entityFromRepository);
+                    if (entityFromRepository != null) {
+                        updateEntityOnFarm(queue, entityFromRepository);
+                    }
                     break;
                 case "REMOVE":
                     removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
@@ -193,28 +204,33 @@ public class FarmEngine extends AbstractEngine<Farm> {
         queue.sendToQueue(queue.getQueueCreateName(), entity);
     }
 
-    @SuppressWarnings("unchecked")
-    private Optional<AbstractEntity> getEntityIfExist(String id, String parentId, Stream<AbstractEntity> stream) {
-        return stream.filter(entity -> entity.getName().equals(id))
-                        .filter(entity -> !(entity instanceof WithParent) && !(entity instanceof WithParents) ||
-                                entity instanceof WithParent && (
-                                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                                ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
-                                entity instanceof WithParents &&
-                                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
-                                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                                .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
-                        .findAny();
+    private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, Stream<AbstractEntity<?>> stream) {
+        return stream.filter(entityExistPredicate(id, parentId)).findAny();
     }
 
     @SuppressWarnings("unchecked")
-    private Stream<AbstractEntity> convertToStream(PagingAndSortingRepository repository) {
-        return StreamSupport.stream(repository.findAll().spliterator(), false);
+    private Predicate<AbstractEntity<?>> entityExistPredicate(String id, String parentId) {
+        return entity -> (entity.getName().equals(id)) &&
+                ((!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
+                (entity instanceof WithParent && (
+                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                        ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId))) ||
+                (entity instanceof WithParents &&
+                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Stream<AbstractEntity<?>> convertToStream(JpaRepository repository) {
+        return StreamSupport.stream(repository.findAll(new PageRequest(0, 999999)).spliterator(), false);
     }
 
     private String getInternalEntityType(String entityType) {
-        return entityType.toLowerCase().equals("backendpool") ||
-                        entityType.toLowerCase().equals("backend") ? Target.class.getSimpleName().toLowerCase() : entityType;
+        return entityType.toLowerCase().equals(BackendPool.class.getSimpleName().toLowerCase()) ?
+                    Pool.class.getSimpleName().toLowerCase() :
+                entityType.toLowerCase().equals(Backend.class.getSimpleName().toLowerCase()) ?
+                    Target.class.getSimpleName().toLowerCase() : entityType;
     }
 
     @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
