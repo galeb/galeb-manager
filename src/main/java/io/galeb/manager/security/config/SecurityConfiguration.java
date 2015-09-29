@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.security;
+package io.galeb.manager.security.config;
 
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import io.galeb.manager.security.services.*;
+import io.galeb.manager.security.user.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,13 +97,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
-        if (authMethod==null) {
+        if (authMethod == null) {
             try {
                 authMethod = AuthMethod.valueOf(System.getProperty("auth_method"));
+                authMethod = authMethod == null ? AuthMethod.DEFAULT : authMethod;
                 LOGGER.info("Using "+authMethod.toString()+" Authentication Method.......");
             } catch (Exception e) {
                 LOGGER.error(e);
-                e.printStackTrace();
+                throw e;
             }
         }
         String internalPass = System.getProperty(INTERNAL_PASSWORD, System.getenv(INTERNAL_PASSWORD));
@@ -198,17 +201,19 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
                 List<String> localRoles = new ArrayList<>();
                 long id = Long.MAX_VALUE;
+                String email = "";
                 if (account != null) {
                     localRoles = account.getRoles().stream()
                             .map(Enum::toString)
                             .collect(Collectors.toList());
                     id = account.getId();
+                    email = account.getEmail();
                 } else {
                     localRoles.add("ROLE_USER");
                 }
                 final Collection<GrantedAuthority> localAuthorities =
                         AuthorityUtils.createAuthorityList(localRoles.toArray(new String[localRoles.size()-1]));
-                return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id);
+                return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id, email);
             }
         };
     }

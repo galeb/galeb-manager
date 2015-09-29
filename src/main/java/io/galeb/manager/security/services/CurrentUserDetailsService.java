@@ -16,8 +16,9 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.security;
+package io.galeb.manager.security.services;
 
+import io.galeb.manager.security.user.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

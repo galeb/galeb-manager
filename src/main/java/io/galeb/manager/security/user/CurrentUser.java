@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.security;
+package io.galeb.manager.security.user;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -37,6 +37,8 @@ public class CurrentUser implements UserDetails {
 
     private final Long id;
 
+    private final String email;
+
     private final User user;
 
     private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
@@ -53,7 +55,8 @@ public class CurrentUser implements UserDetails {
                        boolean credentialsNonExpired,
                        boolean accountNonLocked,
                        Collection<? extends GrantedAuthority> authorities,
-                       Long id) {
+                       Long id,
+                       String email) {
         user = new User(username,
                         ENCODER.encode(password),
                         enabled,
@@ -62,6 +65,7 @@ public class CurrentUser implements UserDetails {
                         accountNonLocked,
                         authorities);
         this.id = id;
+        this.email = email;
     }
 
     public CurrentUser(Account account) {
@@ -73,10 +77,15 @@ public class CurrentUser implements UserDetails {
                                           .toArray(new String[account.getRoles().size()-1]))
               );
         id = account.getId();
+        email = account.getEmail();
     }
 
     public Long getId() {
         return id;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     @Override

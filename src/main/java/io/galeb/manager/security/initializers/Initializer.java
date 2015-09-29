@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.security;
+package io.galeb.manager.security.initializers;
 
 import org.springframework.session.web.context.AbstractHttpSessionApplicationInitializer;
 

@@ -1,8 +1,10 @@
-package io.galeb.manager.security;
+package io.galeb.manager.security.user;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import io.galeb.manager.security.user.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 
@@ -16,7 +18,7 @@ public class CustomLdapUserDetails extends CurrentUser {
 
     public CustomLdapUserDetails(final LdapUserDetails details,
                                  final Collection<GrantedAuthority> localAuthorities,
-                                 final long id) {
+                                 final long id, final String email) {
         super(details.getUsername(),
               details.getPassword(),
               details.isEnabled(),
@@ -24,7 +26,8 @@ public class CustomLdapUserDetails extends CurrentUser {
               details.isCredentialsNonExpired(),
               details.isAccountNonLocked(),
               details.getAuthorities(),
-              id);
+              id,
+              email);
         this.details = details;
         this.localAuthorities = localAuthorities;
     }

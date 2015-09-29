@@ -1,4 +1,4 @@
-package io.galeb.manager.security;
+package io.galeb.manager.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

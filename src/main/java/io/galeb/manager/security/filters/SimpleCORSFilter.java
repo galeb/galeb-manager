@@ -1,4 +1,4 @@
-package io.galeb.manager.security;
+package io.galeb.manager.security.filters;
 
 import java.io.IOException;
 

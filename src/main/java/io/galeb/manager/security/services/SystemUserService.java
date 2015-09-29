@@ -1,4 +1,4 @@
-package io.galeb.manager.security;
+package io.galeb.manager.security.services;
 
 import java.util.UUID;
 
