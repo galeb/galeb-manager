@@ -105,7 +105,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
     }
 
     private void setGlobalIfNecessary(Pool pool) {
-        pool.setGlobal((pool.getRules().stream().map(Rule::isGlobal).count() > 0));
+        pool.setGlobal(pool.getRules().stream().map(Rule::isGlobal).filter(b -> b).count() > 0);
     }
 
 }
