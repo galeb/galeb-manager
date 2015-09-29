@@ -44,7 +44,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     @JsonIgnore
     private long farmId;
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "parent")
+    @OneToMany(mappedBy = "parent")
     private Set<Target> targets = new HashSet<>();
 
     @JsonIgnore
