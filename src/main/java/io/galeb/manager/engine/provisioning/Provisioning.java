@@ -16,10 +16,19 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.farm;
+package io.galeb.manager.engine.provisioning;
 
-public interface EntityFarm {
+import io.galeb.manager.common.Properties;
 
-    String getStatus();
+public interface Provisioning {
 
+    String DEFAULT_PROVISIONING_NAME = "NULL";
+
+    default boolean create(Properties properties) {
+        return true;
+    }
+
+    default boolean remove(Properties properties) {
+        return true;
+    }
 }

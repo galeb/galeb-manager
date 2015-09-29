@@ -16,20 +16,19 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine;
+package io.galeb.manager.engine.driver;
 
 import java.util.Collections;
 import java.util.Map;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.farm.EntityFarm;
 
 public interface Driver {
 
     String DEFAULT_DRIVER_NAME = "NULL";
 
     default EntityFarm info(Properties properties) {
-        return null;
+        return () -> "";
     }
 
     default boolean exist(Properties properties) {

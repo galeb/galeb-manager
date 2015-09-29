@@ -16,15 +16,15 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.impl;
+package io.galeb.manager.engine.driver.impl;
 
-import io.galeb.manager.engine.Provisioning;
+import io.galeb.manager.engine.driver.*;
 
-public class NullProvisioning implements Provisioning {
+public class NullDriver implements Driver {
 
     @Override
     public String toString() {
-        return DEFAULT_PROVISIONING_NAME;
+        return DEFAULT_DRIVER_NAME;
     }
 
 }

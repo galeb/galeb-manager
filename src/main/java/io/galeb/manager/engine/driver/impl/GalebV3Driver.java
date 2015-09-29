@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.impl;
+package io.galeb.manager.engine.driver.impl;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,6 +36,7 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.LoggerUtils;
+import io.galeb.manager.engine.driver.*;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
@@ -65,7 +66,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
 
 public class GalebV3Driver implements Driver {
 

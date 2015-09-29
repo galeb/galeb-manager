@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.farm;
+package io.galeb.manager.engine.listeners;
 
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.VirtualHostQueue;
@@ -31,15 +31,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
-import io.galeb.manager.service.GenericEntityService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {

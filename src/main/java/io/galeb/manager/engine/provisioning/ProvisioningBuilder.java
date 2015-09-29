@@ -16,19 +16,26 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine;
+package io.galeb.manager.engine.provisioning;
 
-import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.provisioning.impl.*;
 
-public interface Provisioning {
+import java.util.HashMap;
+import java.util.Map;
 
-    String DEFAULT_PROVISIONING_NAME = "NULL";
+public class ProvisioningBuilder {
 
-    default boolean create(Properties properties) {
-        return true;
+    private static Map<String, Provisioning> provisionings = new HashMap<>();
+    static {
+        provisionings.put(Provisioning.DEFAULT_PROVISIONING_NAME, new NullProvisioning());
     }
 
-    default boolean remove(Properties properties) {
-        return true;
+    public static Provisioning build(String provisioningName) {
+        final Provisioning provisioning = provisionings.get(provisioningName);
+        if (provisioning==null) {
+            return provisionings.get(Provisioning.DEFAULT_PROVISIONING_NAME);
+        }
+        return provisioning;
     }
+
 }

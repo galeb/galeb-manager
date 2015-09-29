@@ -16,22 +16,23 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.farm;
+package io.galeb.manager.engine.listeners;
 
 import java.util.Optional;
 
+import io.galeb.manager.engine.provisioning.*;
+import io.galeb.manager.engine.provisioning.impl.*;
 import io.galeb.manager.jms.FarmQueue;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Provisioning;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
 
 public abstract class AbstractEngine<T> {
 
@@ -68,9 +69,7 @@ public abstract class AbstractEngine<T> {
     }
 
     protected Provisioning getProvisioning(AbstractEntity<?> entity) {
-        return new Provisioning() {
-            // NULL
-        };
+        return new NullProvisioning();
     }
 
     private Optional<Farm> findFarmById(long farmId) {

@@ -16,13 +16,12 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine;
+package io.galeb.manager.engine.driver;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import io.galeb.manager.engine.impl.GalebV3Driver;
-import io.galeb.manager.engine.impl.NullDriver;
+import io.galeb.manager.engine.driver.impl.*;
 import io.galeb.manager.entity.Farm;
 
 public class DriverBuilder {
@@ -42,8 +41,7 @@ public class DriverBuilder {
     }
 
     public static Driver getDriver(Farm farm) {
-        String driverName = Driver.DEFAULT_DRIVER_NAME;
-        driverName = farm.getProvider().getDriver();
+        String driverName = farm.getProvider().getDriver();
         return build(driverName);
     }
 

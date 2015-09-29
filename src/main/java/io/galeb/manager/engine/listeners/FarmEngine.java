@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.farm;
+package io.galeb.manager.engine.listeners;
 
 import io.galeb.manager.entity.*;
 import io.galeb.manager.jms.*;
@@ -32,13 +32,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.Driver;
-import io.galeb.manager.engine.DriverBuilder;
-import io.galeb.manager.engine.Provisioning;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
+import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
-import io.galeb.manager.service.GenericEntityService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
