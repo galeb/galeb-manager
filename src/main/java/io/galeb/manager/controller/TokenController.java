@@ -1,10 +1,13 @@
 package io.galeb.manager.controller;
 
+//import static io.galeb.core.util.consistenthash.HashAlgorithm.HashType.MD5;
+
 import javax.servlet.http.HttpSession;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.galeb.manager.security.CurrentUser;
+//import io.galeb.core.util.consistenthash.HashAlgorithm;
+import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.MediaType;
@@ -38,6 +41,7 @@ public class TokenController {
         tokenInfo.put("account", currentUser.getName());
         Set<String> roles = currentUser.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         tokenInfo.put("admin", roles.contains("ROLE_ADMIN"));
+//        tokenInfo.put("gravatar_hash", new HashAlgorithm(MD5).hash(currentUser.getEmail()).asString());
         String json = "{}";
         try {
             json = mapper.writeValueAsString(tokenInfo);

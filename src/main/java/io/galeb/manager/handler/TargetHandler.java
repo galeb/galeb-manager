@@ -25,7 +25,6 @@ import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -38,8 +37,8 @@ import org.springframework.security.core.Authentication;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.security.CurrentUser;
-import io.galeb.manager.security.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
+import io.galeb.manager.security.services.SystemUserService;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {

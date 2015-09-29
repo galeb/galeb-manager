@@ -49,7 +49,7 @@ public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
     }
 
     public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) throws JmsException {
-        if (!disableJms) {
+        if (!isDisableJms()) {
             jms.convertAndSend(queue, entry);
         }
     }

@@ -30,10 +30,9 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
 public abstract class AbstractJmsEnqueuer<T> {
 
-    protected static boolean disableJms;
-
+    private static final boolean DISABLE_JMS;
     static {
-        disableJms = Boolean.getBoolean(System.getProperty(
+        DISABLE_JMS = Boolean.getBoolean(System.getProperty(
                 JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
     }
 
@@ -44,6 +43,10 @@ public abstract class AbstractJmsEnqueuer<T> {
     private String queueRemoveName   = QUEUE_UNDEF;
     private String queueCallBackName = QUEUE_UNDEF;
     private String queueSyncName = QUEUE_UNDEF;
+
+    protected static boolean isDisableJms() {
+        return DISABLE_JMS;
+    }
 
     protected abstract JmsTemplate jms();
 
@@ -107,7 +110,7 @@ public abstract class AbstractJmsEnqueuer<T> {
     }
 
     public void sendToQueue(String queue, T entity) throws JmsException {
-        if (!QUEUE_UNDEF.equals(queue) && !disableJms) {
+        if (!QUEUE_UNDEF.equals(queue) && !isDisableJms()) {
             jms().convertAndSend(queue, entity);
         }
     }

@@ -48,7 +48,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE '%:name%' AND "
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE CONCAT('%',:name,'%') AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
@@ -57,13 +57,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query(QUERY_FINDALL)
     Page<Project> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Project> findAll(Sort sort);
-
     @Query(QUERY_FINDBYNAME)
     Page<Project> findByName(@Param("name") String name, Pageable pageable);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Project> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

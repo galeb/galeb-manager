@@ -54,6 +54,10 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
                             + IS_GLOBAL_FILTER;
 
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "ta.name LIKE CONCAT('%',:name,'%') AND "
+                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                            + IS_GLOBAL_FILTER + ")";
+
     @Query(QUERY_FINDONE)
     Target findOne(@Param("id") Long id);
 
@@ -63,15 +67,12 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
     @Query(QUERY_FINDALL)
     Page<Target> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Target> findAll(Sort sort);
-
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Target> findByFarmId(@Param("id") long id, Pageable pageable);
 
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Target> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

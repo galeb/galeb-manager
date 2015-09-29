@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 PROTOCOL="http"
 SERVER="localhost:8000"
 HEADER="Content-Type: application/json;charset=UTF-8"
@@ -93,10 +92,10 @@ getId() {
   local TYPE=$2
   local NAME=$3
 
-  # TYPE: pool, target, rule, virtualhost, farm, environment, targettype, ruletype,
+  # TYPE: pool, target, rule, virtualhost, farm, environment, ruletype,
   #       project, account, team, etc.
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    ${PROTOCOL}://${SERVER}/${TYPE}/search/findByName?name=${NAME} | \
+    ${PROTOCOL}'://'${SERVER}'/'${TYPE}'/search/findByName?name='${NAME}'&page=0&size=999999' | \
   jq ._embedded.${TYPE}[0].id
 }
 
@@ -353,7 +352,7 @@ getNumBackendsByPool() {
   local POOL_NAME=$2
   local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    ${PROTOCOL}://${SERVER}/pool/${POOL_ID}/targets?size=9999 | \
+    ${PROTOCOL}://${SERVER}/pool/${POOL_ID}'/targets?page=0&size=999999' | \
   jq '._embedded.target | length'
 }
 
@@ -363,7 +362,7 @@ getFirstTargetIdByPool() {
   local POOL_ID="$(getId ${TOKEN} pool ${POOL_NAME})"
 
   curl -k -s -XGET -H"x-auth-token: $TOKEN" \
-    ${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'/targets?size=99999' | \
+    ${PROTOCOL}'://'${SERVER}'/pool/'${POOL_ID}'/targets?page=0&size=999999' | \
   jq ._embedded.target[0].id
 }
 

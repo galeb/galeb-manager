@@ -58,7 +58,7 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
                         + IS_GLOBAL_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE '%:name%' AND "
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE CONCAT('%',:name,'%') AND "
                         + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
                         + IS_GLOBAL_FILTER + ")";
 
@@ -71,16 +71,13 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
     @Query(QUERY_FINDALL)
     Page<Pool> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Pool> findAll(Sort sort);
-
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Pool> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @Modifying
     Pool getNoParent();
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Pool> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

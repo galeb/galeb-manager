@@ -58,6 +58,10 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
                         + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
                         + IS_GLOBAL_FILTER + ")";
 
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "r.name LIKE CONCAT('%',:name,'%') AND "
+                        + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
+                        + IS_GLOBAL_FILTER + ")";
+
     @Query(QUERY_FINDONE)
     Rule findOne(@Param("id") Long id);
 
@@ -67,13 +71,10 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
     @Query(QUERY_FINDALL)
     Page<Rule> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Rule> findAll(Sort sort);
-
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Rule> findByFarmId(@Param("id") long id, Pageable pageable);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Rule> findByNameContaining(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDBYPOOLNAME)

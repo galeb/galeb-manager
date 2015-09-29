@@ -47,7 +47,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.galeb.manager.common.JsonCustomProperties;
-import io.galeb.manager.security.SpringSecurityAuditorAware;
+import io.galeb.manager.security.config.SpringSecurityAuditorAware;
 
 @MappedSuperclass
 @JsonCustomProperties
