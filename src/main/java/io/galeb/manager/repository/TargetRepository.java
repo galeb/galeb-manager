@@ -20,7 +20,6 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,15 +28,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Target;
 
-import java.util.List;
-
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
 public interface TargetRepository extends JpaRepository<Target, Long>,
                                           FarmIDable<Target> {
 
     String QUERY_PREFIX = "SELECT ta FROM Target ta "
-                            + "LEFT JOIN ta.project.teams t "
+                            + "INNER JOIN ta.project.teams t "
                             + "LEFT JOIN t.accounts a "
                             + "WHERE ";
 

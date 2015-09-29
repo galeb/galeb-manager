@@ -20,7 +20,6 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,15 +28,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Project;
 
-import java.util.List;
-
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     String QUERY_PREFIX = "SELECT p FROM Project p "
                         + "INNER JOIN p.teams t "
-                        + "INNER JOIN t.accounts a "
+                        + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
     String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "

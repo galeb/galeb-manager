@@ -20,7 +20,6 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,8 +28,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
 
-import java.util.List;
-
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
 public interface RuleRepository extends JpaRepository<Rule, Long>,
@@ -38,7 +35,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
 
     String QUERY_PREFIX = "SELECT r FROM Rule r "
                         + "INNER JOIN r.pool.project.teams t "
-                        + "INNER JOIN t.accounts a "
+                        + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
     String IS_GLOBAL_FILTER = "r.global = TRUE";

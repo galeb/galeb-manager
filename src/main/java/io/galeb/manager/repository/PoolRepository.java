@@ -24,15 +24,12 @@ import io.galeb.manager.entity.Pool;
 import io.galeb.manager.repository.custom.PoolRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
-
-import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "pool", path = "pool")
@@ -41,7 +38,7 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
                                         PoolRepositoryCustom {
 
     String QUERY_PREFIX = "SELECT p FROM Pool p "
-                        + "LEFT JOIN p.project.teams t "
+                        + "INNER JOIN p.project.teams t "
                         + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
