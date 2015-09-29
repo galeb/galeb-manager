@@ -42,7 +42,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE '%:name%' AND "
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE CONCAT('%',:name,'%') AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
@@ -51,12 +51,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Query(QUERY_FINDALL)
     Page<Account> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Account> findAll(Sort sort);
-
     @Query(QUERY_FINDBYNAME)
     Page<Account> findByName(@Param("name") String name, Pageable pageable);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Account> findByNameContaining(@Param("name") String name, Pageable pageable);
 }

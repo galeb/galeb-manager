@@ -49,6 +49,9 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "v.name LIKE CONCAT('%',:name,'%') AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
     @Query(QUERY_FINDONE)
     VirtualHost findOne(@Param("id") Long id);
 
@@ -58,13 +61,10 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
     @Query(QUERY_FINDALL)
     Page<VirtualHost> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<VirtualHost> findAll(Sort sort);
-
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<VirtualHost> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

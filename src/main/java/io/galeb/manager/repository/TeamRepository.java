@@ -47,6 +47,9 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
+    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "t.name LIKE CONCAT('%',:name,'%') AND "
+                        + CommonJpaFilters.SECURITY_FILTER;
+
     @Query(QUERY_FINDONE)
     Team findOne(@Param("id") Long id);
 
@@ -56,10 +59,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     @Query(QUERY_FINDALL)
     Page<Team> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDALL)
-    List<Team> findAll(Sort sort);
-
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Query(QUERY_FINDBYNAMECONTAINING)
     Page<Team> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }
