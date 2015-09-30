@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.listeners;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.RuleQueue;
@@ -152,10 +153,13 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
-        Integer ruleOrder = virtualhost.getRulesOrdered().get(rule);
+        Integer ruleOrder = virtualhost.getRulesOrdered().get(rule.getId());
         ruleOrder = ruleOrder != null ? ruleOrder : Integer.MAX_VALUE;
         rule.setRuleOrder(ruleOrder);
-        rule.setRuleDefault(virtualhost.getRuleDefault().equals(rule));
+        Rule ruleDefault = virtualhost.getRuleDefault();
+        if (ruleDefault != null) {
+            rule.setRuleDefault(ruleDefault.getId() == rule.getId());
+        }
     }
 
     private Properties makeProperties(Rule rule, VirtualHost virtualHost) {

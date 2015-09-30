@@ -43,6 +43,7 @@ import io.galeb.manager.security.services.SystemUserService;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -102,12 +103,13 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     private void updateRuleOrder(VirtualHost virtualhost) {
         if (!virtualhost.getRules().isEmpty() && !virtualhost.getRulesOrdered().isEmpty()) {
-            if (!virtualhost.getRules().containsAll(virtualhost.getRulesOrdered().keySet())){
+            final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
+            final Set<Long> rulesOrdered = virtualhost.getRulesOrdered().keySet();
+            if (!ruleIds.containsAll(rulesOrdered)){
                 throw new BadRequestException();
             }
-            final Set<Rule> diffSetRule = new HashSet<>(virtualhost.getRules());
-            diffSetRule.removeAll(virtualhost.getRulesOrdered().keySet());
-            diffSetRule.stream().forEach(rule -> virtualhost.getRulesOrdered().put(rule, Integer.MAX_VALUE));
+            ruleIds.removeAll(rulesOrdered);
+            ruleIds.stream().forEach(ruleId -> virtualhost.getRulesOrdered().put(ruleId, Integer.MAX_VALUE));
         }
     }
 }

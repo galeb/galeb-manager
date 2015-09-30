@@ -51,10 +51,10 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @ElementCollection(fetch = FetchType.EAGER)
     @JoinColumn(nullable = false)
-    private final Map<Rule, Integer> rulesOrdered = new HashMap<>();
+    private final Map<Long, Integer> rulesOrdered = new HashMap<>();
 
     @ManyToOne
-    @JoinColumn(name = "rule_default_id", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_rule_default_id"))
+    @JoinColumn(name = "rule_default_id", foreignKey = @ForeignKey(name="FK_virtualhost_rule_default_id"))
     private Rule ruleDefault;
 
     @ManyToMany(mappedBy = "parents")
@@ -114,11 +114,11 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
         return this;
     }
 
-    public Map<Rule, Integer> getRulesOrdered() {
+    public Map<Long, Integer> getRulesOrdered() {
         return rulesOrdered;
     }
 
-    public VirtualHost setRulesOrdered(Map<Rule, Integer> rulesOrdered) {
+    public VirtualHost setRulesOrdered(Map<Long, Integer> rulesOrdered) {
         if (rulesOrdered != null) {
             this.rulesOrdered.clear();
             this.rulesOrdered.putAll(rulesOrdered);

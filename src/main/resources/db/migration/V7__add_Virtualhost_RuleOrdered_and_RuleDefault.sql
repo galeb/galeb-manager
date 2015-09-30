@@ -1,7 +1,7 @@
 ALTER TABLE rule DROP COLUMN `rule_default`;
 ALTER TABLE rule DROP COLUMN `rule_order`;
 
-ALTER TABLE virtualhost ADD COLUMN `rule_default_id` bigint(20) NOT NULL;
+ALTER TABLE virtualhost ADD COLUMN `rule_default_id` bigint(20) DEFAULT NULL;
 ALTER TABLE virtualhost ADD CONSTRAINT `FK_virtualhost_rule_default_id` FOREIGN KEY (`rule_default_id`) REFERENCES `rule` (`id`);
 
 DROP TABLE IF EXISTS `virtual_host_rules_ordered`;
