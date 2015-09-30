@@ -133,16 +133,17 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
         Farm farm = entrySet.getKey();
         Map<String, Object> diff = entrySet.getValue();
-        LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Driver driver = DriverBuilder.getDriver(farm);
         Properties properties = new Properties();
         SystemUserService.runAs();
         properties.put("api", farm.getApi());
 
         if (diff == null) {
-            driver.remove(properties);
+            executeFullReload(farm, driver, properties);
             return;
         }
+
+        LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
         diff.entrySet().stream().forEach(diffEntrySet -> {
             final Map<String, String> attributes = (Map<String, String>) diffEntrySet.getValue();
@@ -180,6 +181,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
             }
 
         });
+    }
+
+    private void executeFullReload(Farm farm, Driver driver, Properties properties) {
+        String farmClassName = farm.getClass().getSimpleName().toLowerCase();
+        LOGGER.warn("Full Reloading " + farmClassName + " " + farm.getName());
+        properties.put("path", farmClassName);
+        driver.remove(properties);
+        return;
     }
 
     private void removeEntityFromFarm(Driver driver, Properties properties) {
@@ -241,10 +250,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        farm.setSaveOnly(true);
-        farmRepository.save(farm);
-        farm.setSaveOnly(false);
-        SystemUserService.runAs(currentUser);
+        try {
+            farmRepository.save(farm);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override
