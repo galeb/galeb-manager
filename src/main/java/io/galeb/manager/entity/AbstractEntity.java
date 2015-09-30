@@ -135,6 +135,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         return id;
     }
 
+    public void setId(long id) {
+        this.id = id;
+    }
+
     public String getCreatedBy() {
         return createdBy;
     }

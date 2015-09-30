@@ -29,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
-public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost> {
+public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarmID<VirtualHost>, WithAliases<VirtualHost> {
 
     private static final long serialVersionUID = 5596582746795373014L;
 
@@ -101,10 +101,12 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
         return this;
     }
 
+    @Override
     public Set<String> getAliases() {
         return aliases;
     }
 
+    @Override
     public VirtualHost setAliases(Set<String> aliases) {
         if (aliases != null) {
             this.aliases.clear();
