@@ -130,11 +130,6 @@ public class TargetEngine extends AbstractEngine<Target> {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         target.setSaveOnly(true);
-        /*
-        TODO: Fix optimistic locking failed; nested exception is org.hibernate.StaleObjectStateException:
-              Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect) :
-              [io.galeb.manager.entity.Target#2]
-         */
         targetRepository.save(target);
         setFarmStatusOnError(target);
         SystemUserService.runAs(currentUser);
