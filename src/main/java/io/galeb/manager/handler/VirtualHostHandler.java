@@ -18,6 +18,8 @@
 
 package io.galeb.manager.handler;
 
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,9 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -70,11 +75,13 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleAfterCreate
     public void afterCreate(VirtualHost virtualhost) throws Exception {
+        updateRuleOrder(virtualhost);
         afterCreate(virtualhost, LOGGER);
     }
 
     @HandleBeforeSave
     public void beforeSave(VirtualHost virtualhost) throws Exception {
+        updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
     }
 
@@ -93,4 +100,14 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
+    private void updateRuleOrder(VirtualHost virtualhost) {
+        if (!virtualhost.getRules().isEmpty() && !virtualhost.getRulesOrdered().isEmpty()) {
+            if (!virtualhost.getRules().containsAll(virtualhost.getRulesOrdered().keySet())){
+                throw new BadRequestException();
+            }
+            final Set<Rule> diffSetRule = new HashSet<>(virtualhost.getRules());
+            diffSetRule.removeAll(virtualhost.getRulesOrdered().keySet());
+            diffSetRule.stream().forEach(rule -> virtualhost.getRulesOrdered().put(rule, Integer.MAX_VALUE));
+        }
+    }
 }

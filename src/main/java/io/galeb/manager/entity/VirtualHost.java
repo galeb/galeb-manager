@@ -18,18 +18,9 @@
 
 package io.galeb.manager.entity;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
 import org.springframework.util.Assert;
 
@@ -57,6 +48,14 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @JsonIgnore
     private long farmId;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false)
+    private final Map<Rule, Integer> rulesOrdered = new HashMap<>();
+
+    @ManyToOne
+    @JoinColumn(name = "rule_default_id", nullable = false, foreignKey = @ForeignKey(name="FK_virtualhost_rule_default_id"))
+    private Rule ruleDefault;
 
     @ManyToMany(mappedBy = "parents")
     private final Set<Rule> rules = new HashSet<>();
@@ -106,12 +105,45 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
         return aliases;
     }
 
-    public void setAliases(Set<String> aliases) {
+    public VirtualHost setAliases(Set<String> aliases) {
         if (aliases != null) {
             this.aliases.clear();
             this.aliases.addAll(aliases);
         }
         this.aliases = aliases;
+        return this;
     }
 
+    public Map<Rule, Integer> getRulesOrdered() {
+        return rulesOrdered;
+    }
+
+    public VirtualHost setRulesOrdered(Map<Rule, Integer> rulesOrdered) {
+        if (rulesOrdered != null) {
+            this.rulesOrdered.clear();
+            this.rulesOrdered.putAll(rulesOrdered);
+        }
+        return this;
+    }
+
+    public Rule getRuleDefault() {
+        return ruleDefault;
+    }
+
+    public VirtualHost setRuleDefault(Rule ruleDefault) {
+        this.ruleDefault = ruleDefault;
+        return this;
+    }
+
+    public Set<Rule> getRules() {
+        return rules;
+    }
+
+    public VirtualHost setRules(Set<Rule> rules) {
+        if (rules != null) {
+            this.rules.clear();
+            this.rules.addAll(rules);
+        }
+        return this;
+    }
 }

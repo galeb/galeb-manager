@@ -68,6 +68,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
+            updateRuleSpecialProperties(rule, virtualhost);
             boolean isOk = false;
             try {
                 isOk = driver.create(makeProperties(rule, virtualhost));
@@ -85,6 +86,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
+            updateRuleSpecialProperties(rule, virtualhost);
             boolean isOk = false;
 
             try {
@@ -147,6 +149,13 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Override
     protected FarmQueue farmQueue() {
         return farmQueue;
+    }
+
+    private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
+        Integer ruleOrder = virtualhost.getRulesOrdered().get(rule);
+        ruleOrder = ruleOrder != null ? ruleOrder : Integer.MAX_VALUE;
+        rule.setRuleOrder(ruleOrder);
+        rule.setRuleDefault(virtualhost.getRuleDefault().equals(rule));
     }
 
     private Properties makeProperties(Rule rule, VirtualHost virtualHost) {
