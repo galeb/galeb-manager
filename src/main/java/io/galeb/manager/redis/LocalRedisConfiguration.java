@@ -68,15 +68,15 @@ public class LocalRedisConfiguration {
             jedisConnectionFactory.setHostName(hostName);
             try {
                 jedisConnectionFactory.setPort(Integer.parseInt(port));
-                if (!"".equals(password)) {
-                    jedisConnectionFactory.setPassword(password);
-                }
             } catch (NumberFormatException e) {
                 LOGGER.error(e);
             }
         }
         try {
             if (jedisConnectionFactory != null) {
+                if (!"".equals(password)) {
+                    jedisConnectionFactory.setPassword(password);
+                }
                 if (!"".equals(database)) {
                     jedisConnectionFactory.setDatabase(Integer.parseInt(database));
                 }
