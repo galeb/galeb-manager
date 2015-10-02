@@ -19,6 +19,7 @@
 package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
+import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.RuleQueue;
 import org.apache.commons.logging.Log;
@@ -48,29 +49,27 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 
-    @Autowired
-    private FarmRepository farmRepository;
-
-    @Autowired
-    private RuleRepository ruleRepository;
-
-    @Autowired
-    private RuleQueue ruleQueue;
-
-    @Autowired
-    private FarmQueue farmQueue;
-
-    @Autowired
-    private GenericEntityService genericEntityService;
+    @Autowired private FarmRepository farmRepository;
+    @Autowired private RuleRepository ruleRepository;
+    @Autowired private RuleQueue ruleQueue;
+    @Autowired private FarmQueue farmQueue;
+    @Autowired private GenericEntityService genericEntityService;
+    @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
+            updateRuleSpecialProperties(rule, virtualhost);
             boolean isOk = false;
             try {
                 isOk = driver.create(makeProperties(rule, virtualhost));
+                virtualhost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias =  virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualhost);
+                    driver.create(makeProperties(rule, virtualHostAlias));
+                });
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
@@ -85,6 +84,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
+            updateRuleSpecialProperties(rule, virtualhost);
             boolean isOk = false;
 
             try {
@@ -93,6 +93,11 @@ public class RuleEngine extends AbstractEngine<Rule> {
                     return;
                 }
                 isOk = driver.update(makeProperties(rule, virtualhost));
+                virtualhost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias =  virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualhost);
+                    driver.update(makeProperties(rule, virtualHostAlias));
+                });
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
@@ -147,6 +152,16 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Override
     protected FarmQueue farmQueue() {
         return farmQueue;
+    }
+
+    private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
+        Integer ruleOrder = virtualhost.getRulesOrdered().get(rule.getId());
+        ruleOrder = ruleOrder != null ? ruleOrder : Integer.MAX_VALUE;
+        rule.setRuleOrder(ruleOrder);
+        Rule ruleDefault = virtualhost.getRuleDefault();
+        if (ruleDefault != null) {
+            rule.setRuleDefault(ruleDefault.getId() == rule.getId());
+        }
     }
 
     private Properties makeProperties(Rule rule, VirtualHost virtualHost) {

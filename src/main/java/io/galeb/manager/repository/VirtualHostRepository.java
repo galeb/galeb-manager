@@ -18,9 +18,12 @@
 
 package io.galeb.manager.repository;
 
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -28,10 +31,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.VirtualHost;
 
+import java.util.List;
+
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
 public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
-                                               FarmIDable<VirtualHost> {
+                                               FarmIDable<VirtualHost>,
+                                               VirtualHostRepositoryCustom {
 
     String QUERY_PREFIX = "SELECT v FROM VirtualHost v "
                         + "INNER JOIN v.project.teams t "
@@ -63,5 +69,9 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
 
     @Query(QUERY_FINDBYNAMECONTAINING)
     Page<VirtualHost> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Modifying
+    @Override
+    List<Rule> getRulesFromVirtualHostName(@Param("name") String name);
 
 }

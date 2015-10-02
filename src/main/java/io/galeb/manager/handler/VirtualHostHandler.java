@@ -18,6 +18,8 @@
 
 package io.galeb.manager.handler;
 
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,10 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -70,11 +76,13 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleAfterCreate
     public void afterCreate(VirtualHost virtualhost) throws Exception {
+        updateRuleOrder(virtualhost);
         afterCreate(virtualhost, LOGGER);
     }
 
     @HandleBeforeSave
     public void beforeSave(VirtualHost virtualhost) throws Exception {
+        updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
     }
 
@@ -93,4 +101,15 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
+    private void updateRuleOrder(VirtualHost virtualhost) {
+        if (!virtualhost.getRules().isEmpty() && !virtualhost.getRulesOrdered().isEmpty()) {
+            final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
+            final Set<Long> rulesOrdered = virtualhost.getRulesOrdered().keySet();
+            if (!ruleIds.containsAll(rulesOrdered)){
+                throw new BadRequestException();
+            }
+            ruleIds.removeAll(rulesOrdered);
+            ruleIds.stream().forEach(ruleId -> virtualhost.getRulesOrdered().put(ruleId, Integer.MAX_VALUE));
+        }
+    }
 }

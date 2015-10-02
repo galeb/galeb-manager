@@ -18,6 +18,8 @@
 
 package io.galeb.manager.engine.listeners;
 
+import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.Rule;
 import io.galeb.manager.jms.FarmQueue;
 import io.galeb.manager.jms.VirtualHostQueue;
 import org.apache.commons.logging.Log;
@@ -41,25 +43,20 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostEngine.class);
 
-    @Autowired
-    private FarmRepository farmRepository;
-
-    @Autowired
-    private VirtualHostRepository virtualHostRepository;
-
-    @Autowired
-    private GenericEntityService genericEntityService;
-
-    @Autowired
-    private VirtualHostQueue virtualHostQueue;
-
-    @Autowired
-    private FarmQueue farmQueue;
+    @Autowired private FarmRepository farmRepository;
+    @Autowired private VirtualHostRepository virtualHostRepository;
+    @Autowired private GenericEntityService genericEntityService;
+    @Autowired private VirtualHostQueue virtualHostQueue;
+    @Autowired private FarmQueue farmQueue;
+    @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
@@ -68,11 +65,20 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         boolean isOk = false;
         try {
             isOk = driver.create(makeProperties(virtualHost));
+            if (isOk) {
+                virtualHost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualHost);
+                    create(virtualHostAlias);
+                });
+            }
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
+                virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+                virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+            }
         }
     }
 
@@ -83,11 +89,20 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         boolean isOk = false;
         try {
             isOk = driver.update(makeProperties(virtualHost));
+            if (isOk) {
+                virtualHost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualHost);
+                    update(virtualHostAlias);
+                });
+            }
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
+                virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+                virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+            }
         }
     }
 
@@ -98,6 +113,13 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         boolean isOk = false;
         try {
             isOk = driver.remove(makeProperties(virtualHost));
+            if (isOk) {
+                virtualHost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualHost);
+                    remove(virtualHostAlias);
+                });
+            }
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -144,4 +166,5 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         properties.put("path", "virtualhost");
         return properties;
     }
+
 }

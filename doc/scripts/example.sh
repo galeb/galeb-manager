@@ -239,7 +239,8 @@ createVirtualHost() {
        -d '{
               "name": "'${VIRTUALHOST_NAME}'",
               "environment": "'${PROTOCOL}'://'${SERVER}'/environment/'${ENV_ID}'",
-              "project": "'${PROTOCOL}'://'${SERVER}'/project/'${PROJECT_ID}'"
+              "project": "'${PROTOCOL}'://'${SERVER}'/project/'${PROJECT_ID}'",
+              "aliases": [ "test1.localhost", "test2.localhost" ]
           }' \
        -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/virtualhost
   echo

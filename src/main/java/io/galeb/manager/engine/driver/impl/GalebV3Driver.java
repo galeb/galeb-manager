@@ -38,6 +38,7 @@ import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.engine.driver.*;
 import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.WithAliases;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
 import org.apache.commons.logging.Log;
@@ -292,12 +293,28 @@ public class GalebV3Driver implements Driver {
                               AtomicBoolean hasId = new AtomicBoolean(false);
 
                               entities.stream().filter(entity -> entity.getName().equals(id))
-                                      .filter(getAbstractEntityPredicate(parentId))
-                                      .forEach(entity ->
-                                      {
-                                          hasId.set(true);
-                                          updateIfNecessary(api, path, id, parentId, entity, entityProperties, diffMap);
-                                      });
+                                  .filter(getAbstractEntityPredicate(parentId))
+                                  .forEach(entity ->
+                              {
+                                      hasId.set(true);
+                                      updateIfNecessary(api, path, id, parentId, entity, entityProperties, diffMap);
+                              });
+                              entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases).forEach(entity ->
+                              {
+                                  WithAliases<?> withAliases = (WithAliases) entity;
+                                  if (withAliases.getAliases().contains(id)) {
+                                      hasId.set(true);
+                                  }
+                              });
+                              entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents).forEach(entity -> {
+                                  WithParents<?> withParents = (WithParents) entity;
+                                  Set<WithAliases> withAliases = new HashSet<>((Collection<? extends WithAliases>) withParents.getParents());
+                                  boolean isAlias = withAliases.stream().map(WithAliases::getAliases)
+                                          .flatMap(Collection::stream).collect(Collectors.toSet()).contains(parentId);
+                                  if (isAlias) {
+                                      hasId.set(true);
+                                  }
+                              });
                               removeEntityIfNecessary(api, path, id, parentId, hasId, diffMap);
                           });
 

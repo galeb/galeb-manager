@@ -23,16 +23,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
 import org.springframework.util.Assert;
 
@@ -62,13 +53,16 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     @JsonProperty(required = true)
     private Pool pool;
 
-    @Column
-    @JsonProperty("order")
-    private int ruleOrder = 0;
+    @JsonIgnore
+    @Transient
+    private int ruleOrder = Integer.MAX_VALUE;
 
-    @Column
-    @JsonProperty("default")
+    @JsonIgnore
+    @Transient
     private boolean ruleDefault = false;
+
+    @OneToMany(mappedBy = "ruleDefault")
+    private final Set<VirtualHost> defaultIn = new HashSet<>();
 
     @Column
     private Boolean global = false;
@@ -135,8 +129,10 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
         return ruleOrder;
     }
 
-    public Rule setRuleOrder(int ruleOrder) {
-        this.ruleOrder = ruleOrder;
+    public Rule setRuleOrder(Integer ruleOrder) {
+        if (ruleOrder != null) {
+            this.ruleOrder = ruleOrder;
+        }
         return this;
     }
 
@@ -146,6 +142,18 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     public Rule setRuleDefault(boolean ruleDefault) {
         this.ruleDefault = ruleDefault;
+        return this;
+    }
+
+    public Set<VirtualHost> getDefaultIn() {
+        return defaultIn;
+    }
+
+    public Rule setDefaultIn(Set<VirtualHost> defaultIn) {
+        if (defaultIn != null) {
+            this.defaultIn.clear();
+            this.defaultIn.addAll(defaultIn);
+        }
         return this;
     }
 
