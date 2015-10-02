@@ -34,3 +34,4 @@ overridedb.*
 .DS_Store
 .factorypath
 .secret.txt
+/site

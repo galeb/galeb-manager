@@ -1,0 +1,8 @@
+site_name: Galeb Manager API
+site_url: http://galeb.io
+repo_url: https://github.com/galeb/galeb-manager
+site_author: Galeb Team
+theme: readthedocs
+docs_dir: doc
+pages:
+- ['index.md', 'Home']
