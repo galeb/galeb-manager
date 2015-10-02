@@ -1,6 +1,5 @@
 Galeb Manager
 ===========================
-[![Build Status](https://travis-ci.org/galeb/galeb-manager.svg)](https://travis-ci.org/galeb/galeb-manager)
 [![Circle CI](https://circleci.com/gh/galeb/galeb-manager.svg?style=svg)](https://circleci.com/gh/galeb/galeb-manager)
 
 Galeb Manager is a Galeb Router manager built on Spring Boot.<br/>
