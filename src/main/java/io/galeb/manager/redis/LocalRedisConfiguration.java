@@ -41,45 +41,48 @@ public class LocalRedisConfiguration {
         JedisConnectionFactory jedisConnectionFactory = null;
 
         String useSentinel = System.getenv("REDIS_USE_SENTINEL");
-        useSentinel = useSentinel == null ? "false" : useSentinel;
+
+        String masterName = System.getenv("REDIS_SENTINEL_MASTER_NAME");
+        masterName = masterName == null ?
+                env.getProperty("spring.redis.sentinel.master", "mymaster") : masterName;
+
+        String redisSentinelNodes = System.getenv("REDIS_SENTINEL_NODES");
+        redisSentinelNodes = redisSentinelNodes == null ?
+                env.getProperty("spring.redis.sentinel.nodes", "127.0.0.1:26379") : redisSentinelNodes;
+        List<String> redisSentinelNodesStringList = Arrays.asList(redisSentinelNodes.split(","));
 
         RedisSentinelConfiguration sentinelConfig = null;
-        if (Boolean.getBoolean(useSentinel)) {
-            String masterName = System.getenv("REDIS_SENTINEL_MASTER_NAME");
-            masterName = masterName == null ?
-                    env.getProperty("spring.redis.sentinel.master", "mymaster") : masterName;
-            String redisSentinelNodes = System.getenv("REDIS_SENTINEL_NODES");
-            redisSentinelNodes = redisSentinelNodes == null ?
-                    env.getProperty("spring.redis.sentinel.nodes", "127.0.0.1:26379") : redisSentinelNodes;
-            List<String> redisSentinelNodesStringList = Arrays.asList(redisSentinelNodes.split(","));
+        if (useSentinel != null && !useSentinel.equals("false")) {
             try {
                 Iterable<RedisNode> redisSentinelNodesList = redisSentinelNodesStringList.stream().map(node ->
                                 new RedisNode(node.split(":")[0], Integer.parseInt(node.split(":")[1]))
                 ).collect(Collectors.toList());
                 sentinelConfig = new RedisSentinelConfiguration();
                 sentinelConfig.master(masterName).setSentinels(redisSentinelNodesList);
+                jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
             } catch (Exception e) {
                 LOGGER.error(e);
             }
-        }
-
-        if (sentinelConfig != null) {
-            jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
         } else {
             jedisConnectionFactory = new JedisConnectionFactory();
+            jedisConnectionFactory.setHostName(hostName);
+            try {
+                jedisConnectionFactory.setPort(Integer.parseInt(port));
+                if (!"".equals(password)) {
+                    jedisConnectionFactory.setPassword(password);
+                }
+            } catch (NumberFormatException e) {
+                LOGGER.error(e);
+            }
         }
-
-        jedisConnectionFactory.setHostName(hostName);
         try {
-            jedisConnectionFactory.setPort(Integer.parseInt(port));
-            if (!"".equals(password)) {
-                jedisConnectionFactory.setPassword(password);
-            }
-            if (!"".equals(database)) {
-                jedisConnectionFactory.setDatabase(Integer.parseInt(database));
-            }
-            if (!"".equals(connectionTimeout)) {
-                jedisConnectionFactory.setTimeout(Integer.parseInt(connectionTimeout));
+            if (jedisConnectionFactory != null) {
+                if (!"".equals(database)) {
+                    jedisConnectionFactory.setDatabase(Integer.parseInt(database));
+                }
+                if (!"".equals(connectionTimeout)) {
+                    jedisConnectionFactory.setTimeout(Integer.parseInt(connectionTimeout));
+                }
             }
         } catch (NumberFormatException e) {
             LOGGER.error(e);
