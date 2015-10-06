@@ -222,7 +222,15 @@
                       -server
                       -Xmx2048m -Xms2048m
                       -Dauth_method=LDAP_TEST
+                      -Dspring.rabbitmq.host=127.0.0.1
+                      -Dspring.rabbitmq.port=5672
                       -DINTERNAL_PASSWORD=password
+                      -Dspring.rabbitmq.username=guest
+                      -Dspring.rabbitmq.password=guest
+                      -Drabbitmq.setMaxConcurrentConsumers=100
+                      -Drabbitmq.setConcurrentConsumers=100
+                      -Drabbitmq.setConsecutiveActiveTrigger=1
+                      -Drabbitmq.setConsecutiveIdleTrigger=20
                     </argLine>
                 </configuration>
             </plugin>
