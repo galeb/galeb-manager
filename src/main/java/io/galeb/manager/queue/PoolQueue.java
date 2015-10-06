@@ -18,15 +18,15 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Pool;
+import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PoolQueue extends AbstractJmsEnqueuer<Pool> {
+public class PoolQueue extends AbstractEnqueuer<Pool> {
 
     public static final String QUEUE_CREATE = "queue-pool-create";
     public static final String QUEUE_UPDATE = "queue-pool-update";
@@ -35,7 +35,7 @@ public class PoolQueue extends AbstractJmsEnqueuer<Pool> {
     public static final String QUEUE_RELOAD = "queue-pool-reload";
 
     @Autowired
-    private JmsTemplate jms;
+    private RabbitTemplate template;
 
     public PoolQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -46,7 +46,7 @@ public class PoolQueue extends AbstractJmsEnqueuer<Pool> {
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected RabbitTemplate template() {
+        return template;
     }
 }

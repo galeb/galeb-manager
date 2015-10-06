@@ -18,15 +18,15 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Rule;
+import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class RuleQueue extends AbstractJmsEnqueuer<Rule> {
+public class RuleQueue extends AbstractEnqueuer<Rule> {
 
     public static final String QUEUE_CREATE = "queue-rule-create";
     public static final String QUEUE_UPDATE = "queue-rule-update";
@@ -35,7 +35,7 @@ public class RuleQueue extends AbstractJmsEnqueuer<Rule> {
     public static final String QUEUE_RELOAD = "queue-rule-reload";
 
     @Autowired
-    private JmsTemplate jms;
+    private RabbitTemplate template;
 
     public RuleQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -46,7 +46,7 @@ public class RuleQueue extends AbstractJmsEnqueuer<Rule> {
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected RabbitTemplate template() {
+        return template;
     }
 }

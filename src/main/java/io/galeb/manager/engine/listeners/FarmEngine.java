@@ -21,15 +21,16 @@ package io.galeb.manager.engine.listeners;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.entity.*;
-import io.galeb.manager.jms.*;
+import io.galeb.manager.queue.*;
+import io.galeb.manager.redis.*;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -43,11 +44,8 @@ import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -69,9 +67,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private TargetQueue targetQueue;
     @Autowired private RuleQueue ruleQueue;
     @Autowired private PoolQueue poolQueue;
+    @Autowired private DistributedLocker distributedLocker;
 
     private Map<String, JpaRepository> repositories = new HashMap<>();
-    private Map<String, AbstractJmsEnqueuer> queues = new HashMap<>();
+    private Map<String, AbstractEnqueuer> queues = new HashMap<>();
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
     private final Pageable pageable = new PageRequest(0, 99999);
@@ -91,7 +90,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         isRead.set(true);
     }
 
-    @JmsListener(destination = FarmQueue.QUEUE_CREATE)
+    @RabbitListener(queues = FarmQueue.QUEUE_CREATE)
     public void create(Farm farm) {
         LOGGER.info("Creating "+farm.getClass().getSimpleName()+" "+farm.getName());
         Provisioning provisioning = getProvisioning(farm);
@@ -106,7 +105,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
     }
 
-    @JmsListener(destination = FarmQueue.QUEUE_REMOVE)
+    @RabbitListener(queues = FarmQueue.QUEUE_REMOVE)
     public void remove(Farm farm) {
         LOGGER.info("Removing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
@@ -126,11 +125,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
-    @JmsListener(destination = FarmQueue.QUEUE_SYNC)
-    public void reload(Map.Entry<Farm, Map<String, Object>> entrySet) {
-        if (!isRead.get()) {
-            return;
-        }
+    @RabbitListener(containerFactory = "simpleListenerContainerFactory", queues = FarmQueue.QUEUE_SYNC)
+    public void sync(Map.Entry<Farm, Map<String, Object>> entrySet) {
         Farm farm = entrySet.getKey();
         Map<String, Object> diff = entrySet.getValue();
         Driver driver = DriverBuilder.getDriver(farm);
@@ -145,7 +141,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
+        AtomicReference<Iterator<AbstractEntity<?>>> iteratorAtomicReference = new AtomicReference<>(null);
+        AtomicReference<String> lastEntityType = new AtomicReference<>("");
+
         diff.entrySet().stream().forEach(diffEntrySet -> {
+
             final Map<String, String> attributes = (Map<String, String>) diffEntrySet.getValue();
 
             final String action = attributes.get("ACTION");
@@ -156,10 +156,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final String internalEntityType = getInternalEntityType(entityType);
 
             JpaRepository repository = repositories.get(internalEntityType);
-            AbstractJmsEnqueuer<AbstractEntity<?>> queue = queues.get(internalEntityType);
-            Stream<AbstractEntity<?>> stream = convertToStream(repository);
+            AbstractEnqueuer<AbstractEntity<?>> queue = queues.get(internalEntityType);
 
-            Optional<AbstractEntity<?>> entityFromRepositoryOptional = getEntityIfExist(id, parentId, stream);
+            if (iteratorAtomicReference.get() == null || !lastEntityType.get().equals(entityType)) {
+                iteratorAtomicReference.set(repository.findAll().iterator());
+                lastEntityType.set(entityType);
+            }
+
+            Optional<AbstractEntity<?>> entityFromRepositoryOptional = getEntityIfExist(id, parentId, iteratorAtomicReference.get());
             AbstractEntity<?> entityFromRepository = entityFromRepositoryOptional.orElse(null);
 
             switch (action.toUpperCase()) {
@@ -179,7 +183,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 default:
                     LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
             }
-
         });
     }
 
@@ -205,16 +208,30 @@ public class FarmEngine extends AbstractEngine<Farm> {
         return properties;
     }
 
-    private void updateEntityOnFarm(AbstractJmsEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entityFromRepository) {
+    private void updateEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entityFromRepository) {
         queue.sendToQueue(queue.getQueueUpdateName(), entityFromRepository);
     }
 
-    private void createEntityOnFarm(AbstractJmsEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entity) {
+    private void createEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entity) {
         queue.sendToQueue(queue.getQueueCreateName(), entity);
     }
 
-    private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, Stream<AbstractEntity<?>> stream) {
-        return stream.filter(entityExistPredicate(id, parentId)).findAny();
+    private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, Iterator<AbstractEntity<?>> iterator) {
+        while (iterator.hasNext()) {
+            AbstractEntity<?> entity = iterator.next();
+            if ((entity.getName().equals(id)) &&
+                    ((!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
+                            (entity instanceof WithParent && (
+                                    ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                            ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId))) ||
+                            (entity instanceof WithParents &&
+                                    !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                                    ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                            .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId)))) {
+                return Optional.of(entity);
+            }
+        }
+        return Optional.empty();
     }
 
     @SuppressWarnings("unchecked")
@@ -242,7 +259,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     Target.class.getSimpleName().toLowerCase() : entityType;
     }
 
-    @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
+    @RabbitListener(queues = FarmQueue.QUEUE_CALLBK)
     public void callBack(Farm farm) {
         if (genericEntityService.isNew(farm)) {
             // farm removed?

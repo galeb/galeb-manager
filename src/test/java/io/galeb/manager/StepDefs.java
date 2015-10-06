@@ -33,6 +33,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import io.galeb.manager.queue.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.flywaydb.core.Flyway;
@@ -61,7 +62,6 @@ import cucumber.api.java.en.When;
 import gherkin.deps.com.google.gson.Gson;
 import gherkin.deps.com.google.gson.GsonBuilder;
 import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.jms.JmsConfiguration;
 import io.galeb.manager.repository.DatabaseConfiguration;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -108,7 +108,7 @@ public class StepDefs {
         request = null;
         token = null;
         FLYWAY.migrate();
-        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(true));
+        System.setProperty(AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(true));
     }
 
     @After
@@ -121,7 +121,7 @@ public class StepDefs {
             LOGGER.warn(e);
         }
         FLYWAY.clean();
-        System.setProperty(JmsConfiguration.DISABLE_JMS, Boolean.toString(false));
+        System.setProperty(AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false));
     }
 
     private String processFullUrl(String data) {

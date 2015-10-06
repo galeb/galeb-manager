@@ -20,12 +20,12 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.RuleQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.RuleQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -56,7 +56,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
-    @JmsListener(destination = RuleQueue.QUEUE_CREATE)
+    @RabbitListener(queues = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
@@ -79,7 +79,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         });
     }
 
-    @JmsListener(destination = RuleQueue.QUEUE_UPDATE)
+    @RabbitListener(queues = RuleQueue.QUEUE_UPDATE)
     public void update(Rule rule) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
@@ -107,7 +107,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         });
     }
 
-    @JmsListener(destination = RuleQueue.QUEUE_REMOVE)
+    @RabbitListener(queues = RuleQueue.QUEUE_REMOVE)
     public void remove(Rule rule) {
         LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
@@ -125,7 +125,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         });
     }
 
-    @JmsListener(destination = RuleQueue.QUEUE_CALLBK)
+    @RabbitListener(queues = RuleQueue.QUEUE_CALLBK)
     public void callBack(Rule rule) {
         if (genericEntityService.isNew(rule)) {
             // rule removed?

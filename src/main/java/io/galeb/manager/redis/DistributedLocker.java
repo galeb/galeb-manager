@@ -50,7 +50,7 @@ public class DistributedLocker {
         this.jedisConnectionFactory = jedisConnectionFactory;
     }
 
-    public synchronized boolean getLock(String key, long ttl) {
+    private synchronized boolean getLock(String key, long ttl) {
         try {
             if (redisSetNxPx(key, ttl)) {
                 redis.setEx(key.getBytes(), ttl, "lock".getBytes());
@@ -91,6 +91,16 @@ public class DistributedLocker {
             LOGGER.error(e);
         }
         return out != null && out.size() > 5;
+    }
+
+    public synchronized boolean lock(String key, long ttl) {
+        if (!getLock(key, ttl)) {
+            LOGGER.warn(key + " is locked by other process. Aborting task");
+            return false;
+        }
+
+        LOGGER.debug(key + " locked by me (" + this + ")");
+        return true;
     }
 
 }

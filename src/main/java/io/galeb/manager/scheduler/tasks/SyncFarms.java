@@ -32,7 +32,7 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.*;
-import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.queue.*;
 import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
@@ -49,7 +49,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.jms.JmsConfiguration;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
@@ -73,22 +72,8 @@ public class SyncFarms {
     private final ObjectMapper mapper   = new ObjectMapper();
     private final Pageable     pageable = new PageRequest(0, 99999);
 
-    private boolean disableJms = Boolean.getBoolean(System.getProperty(
-                                    JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
-
-    public boolean registerLock(String key, long ttl) {
-        if (distributedLocker == null) {
-            LOGGER.warn(DistributedLocker.class.getSimpleName() + " is NULL");
-            return false;
-        }
-        if (!distributedLocker.getLock(key, ttl)) {
-            LOGGER.warn(key + " is locked by other process. Aborting task");
-            return false;
-        }
-
-        LOGGER.debug(key + " locked by me (" + this + ")");
-        return true;
-    }
+    private boolean disableQueue = Boolean.getBoolean(System.getProperty(
+                                    AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false)));
 
     private Stream<Target> getTargets(Farm farm) {
         return StreamSupport.stream(
@@ -114,7 +99,7 @@ public class SyncFarms {
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
 
-        if (!registerLock(TASK_LOCKNAME, INTERVAL / 1000)) {
+        if (!distributedLocker.lock(TASK_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
 
@@ -158,7 +143,7 @@ public class SyncFarms {
             farm.setStatus(EntityStatus.ERROR);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
-            if (farm.isAutoReload() && !disableJms) {
+            if (farm.isAutoReload() && !disableQueue) {
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
             } else {

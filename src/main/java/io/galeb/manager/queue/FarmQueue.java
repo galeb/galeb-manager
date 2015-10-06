@@ -18,35 +18,43 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
-import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.entity.Farm;
+import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
-@Service
-public class VirtualHostQueue extends AbstractJmsEnqueuer<VirtualHost> {
+import java.util.Map;
 
-    public static final String QUEUE_CREATE = "queue-virtualhost-create";
-    public static final String QUEUE_REMOVE = "queue-virtualhost-remove";
-    public static final String QUEUE_UPDATE = "queue-virtualhost-update";
-    public static final String QUEUE_CALLBK = "queue-virtualhost-callback";
-    public static final String QUEUE_RELOAD = "queue-virtualhost-reload";
+@Service
+public class FarmQueue extends AbstractEnqueuer<Farm> {
+
+    public static final String QUEUE_CREATE = "queue-farm-create";
+    public static final String QUEUE_UPDATE = "queue-farm-update";
+    public static final String QUEUE_REMOVE = "queue-farm-remove";
+    public static final String QUEUE_SYNC   = "queue-farm-sync";
+    public static final String QUEUE_CALLBK = "queue-farm-callback";
 
     @Autowired
-    private JmsTemplate jms;
+    private RabbitTemplate template;
 
-    public VirtualHostQueue() {
+    public FarmQueue() {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
-        setQueueSyncName(QUEUE_RELOAD);
+        setQueueSyncName(QUEUE_SYNC);
+    }
+
+    public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) {
+        if (!isDisableQueue()) {
+            template.convertAndSend(queue, entry);
+        }
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected RabbitTemplate template() {
+        return template;
     }
 }

@@ -22,7 +22,7 @@ import java.util.Optional;
 
 import io.galeb.manager.engine.provisioning.*;
 import io.galeb.manager.engine.provisioning.impl.*;
-import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.queue.FarmQueue;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;

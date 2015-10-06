@@ -20,12 +20,12 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.Backend;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.TargetQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.TargetQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +63,7 @@ public class TargetEngine extends AbstractEngine<Target> {
     @Autowired
     private FarmQueue farmQueue;
 
-    @JmsListener(destination = TargetQueue.QUEUE_CREATE)
+    @RabbitListener(queues = TargetQueue.QUEUE_CREATE)
     public void create(Target target) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -82,7 +82,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
     }
 
-    @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
+    @RabbitListener(queues = TargetQueue.QUEUE_UPDATE)
     public void update(Target target) {
         LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -101,7 +101,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
     }
 
-    @JmsListener(destination = TargetQueue.QUEUE_REMOVE)
+    @RabbitListener(queues = TargetQueue.QUEUE_REMOVE)
     public void remove(Target target) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
@@ -121,7 +121,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
     }
 
-    @JmsListener(destination = TargetQueue.QUEUE_CALLBK)
+    @RabbitListener(queues = TargetQueue.QUEUE_CALLBK)
     public void callBack(Target target) {
         if (genericEntityService.isNew(target)) {
             // target removed?
