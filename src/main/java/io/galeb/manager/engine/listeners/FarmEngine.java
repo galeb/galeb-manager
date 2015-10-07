@@ -73,7 +73,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private Map<String, AbstractEnqueuer> queues = new HashMap<>();
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
-    private final Pageable pageable = new PageRequest(0, 99999);
+    private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
 
     @PostConstruct
     public void init() {
@@ -159,7 +159,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             AbstractEnqueuer<AbstractEntity<?>> queue = queues.get(internalEntityType);
 
             if (iteratorAtomicReference.get() == null || !lastEntityType.get().equals(entityType)) {
-                iteratorAtomicReference.set(repository.findAll().iterator());
+                iteratorAtomicReference.set(repository.findAll(pageable).iterator());
                 lastEntityType.set(entityType);
             }
 
@@ -259,7 +259,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     Target.class.getSimpleName().toLowerCase() : entityType;
     }
 
-    @RabbitListener(queues = FarmQueue.QUEUE_CALLBK)
+    @RabbitListener(containerFactory = "simpleListenerContainerFactory", queues = FarmQueue.QUEUE_CALLBK)
     public void callBack(Farm farm) {
         if (genericEntityService.isNew(farm)) {
             // farm removed?
