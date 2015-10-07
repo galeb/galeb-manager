@@ -22,7 +22,6 @@ package io.galeb.manager.repository;
 
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.repository.custom.PoolRepositoryCustom;
-import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -66,11 +65,9 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
     @Query(QUERY_FINDBYNAME)
     Page<Pool> findByName(@Param("name") String name, Pageable pageable);
 
-    @Cacheable("pools")
     @Query(QUERY_FINDALL)
     Page<Pool> findAll(Pageable pageable);
 
-    @Cacheable("poolsAtFarm")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Pool> findByFarmId(@Param("id") long id, Pageable pageable);
 

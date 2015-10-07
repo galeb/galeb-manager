@@ -18,7 +18,6 @@
 
 package io.galeb.manager.repository;
 
-import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -62,11 +61,9 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
     @Query(QUERY_FINDBYNAME)
     Page<Target> findByName(@Param("name") String name, Pageable pageable);
 
-    @Cacheable("targets")
     @Query(QUERY_FINDALL)
     Page<Target> findAll(Pageable pageable);
 
-    @Cacheable("targetsAtFarm")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<Target> findByFarmId(@Param("id") long id, Pageable pageable);
 
