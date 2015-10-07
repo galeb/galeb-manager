@@ -125,6 +125,14 @@
             <artifactId>mysql-connector-java</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jms</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-broker</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             </dependency>
@@ -159,10 +167,6 @@
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-jsonSchema</artifactId>
             <version>${jackson-module-jsonSchema.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
         <!--  tests -->
@@ -222,15 +226,7 @@
                       -server
                       -Xmx2048m -Xms2048m
                       -Dauth_method=LDAP_TEST
-                      -Dspring.rabbitmq.host=127.0.0.1
-                      -Dspring.rabbitmq.port=5672
                       -DINTERNAL_PASSWORD=password
-                      -Dspring.rabbitmq.username=guest
-                      -Dspring.rabbitmq.password=guest
-                      -Drabbitmq.setMaxConcurrentConsumers=100
-                      -Drabbitmq.setConcurrentConsumers=100
-                      -Drabbitmq.setConsecutiveActiveTrigger=1
-                      -Drabbitmq.setConsecutiveIdleTrigger=20
                     </argLine>
                 </configuration>
             </plugin>
@@ -244,15 +240,7 @@
                       -Dlog4j.configurationFile=log4j.xml
                       -Dauth_method=DEFAULT
                       -Dserver.port=8000
-                      -Dspring.rabbitmq.host=127.0.0.1
-                      -Dspring.rabbitmq.port=5672
                       -DINTERNAL_PASSWORD=password
-                      -Dspring.rabbitmq.username=guest
-                      -Dspring.rabbitmq.password=guest
-                      -Drabbitmq.setMaxConcurrentConsumers=100
-                      -Drabbitmq.setConcurrentConsumers=100
-                      -Drabbitmq.setConsecutiveActiveTrigger=1
-                      -Drabbitmq.setConsecutiveIdleTrigger=20
                   </jvmArguments>
                 </configuration>
             </plugin>

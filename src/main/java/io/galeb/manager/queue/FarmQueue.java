@@ -21,8 +21,8 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Farm;
-import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -37,7 +37,7 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
     public static final String QUEUE_CALLBK = "queue-farm-callback";
 
     @Autowired
-    private RabbitTemplate template;
+    private JmsTemplate template;
 
     public FarmQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -54,7 +54,7 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
     }
 
     @Override
-    protected RabbitTemplate template() {
+    protected JmsTemplate template() {
         return template;
     }
 }

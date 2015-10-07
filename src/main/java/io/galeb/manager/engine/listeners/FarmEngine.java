@@ -26,11 +26,11 @@ import io.galeb.manager.redis.*;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -90,7 +90,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         isRead.set(true);
     }
 
-    @RabbitListener(queues = FarmQueue.QUEUE_CREATE)
+    @JmsListener(destination = FarmQueue.QUEUE_CREATE)
     public void create(Farm farm) {
         LOGGER.info("Creating "+farm.getClass().getSimpleName()+" "+farm.getName());
         Provisioning provisioning = getProvisioning(farm);
@@ -105,7 +105,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
     }
 
-    @RabbitListener(queues = FarmQueue.QUEUE_REMOVE)
+    @JmsListener(destination = FarmQueue.QUEUE_REMOVE)
     public void remove(Farm farm) {
         LOGGER.info("Removing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
@@ -125,7 +125,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
-    @RabbitListener(containerFactory = "simpleListenerContainerFactory", queues = FarmQueue.QUEUE_SYNC)
+    @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Map.Entry<Farm, Map<String, Object>> entrySet) {
         Farm farm = entrySet.getKey();
         Map<String, Object> diff = entrySet.getValue();
@@ -259,7 +259,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     Target.class.getSimpleName().toLowerCase() : entityType;
     }
 
-    @RabbitListener(containerFactory = "simpleListenerContainerFactory", queues = FarmQueue.QUEUE_CALLBK)
+    @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
     public void callBack(Farm farm) {
         if (genericEntityService.isNew(farm)) {
             // farm removed?

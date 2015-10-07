@@ -21,7 +21,7 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.AbstractEntity;
-import org.springframework.amqp.rabbit.core.*;
+import org.springframework.jms.core.*;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
@@ -32,7 +32,7 @@ public abstract class AbstractEnqueuer<T> {
     private static final boolean DISABLE_QUEUE;
     static {
         DISABLE_QUEUE = Boolean.getBoolean(System.getProperty(
-                AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false)));
+                JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false)));
     }
 
     private static final String QUEUE_UNDEF = "UNDEF";
@@ -47,7 +47,7 @@ public abstract class AbstractEnqueuer<T> {
         return DISABLE_QUEUE;
     }
 
-    protected abstract RabbitTemplate template();
+    protected abstract JmsTemplate template();
 
     public String getQueueCreateName() {
         return queueCreateName;

@@ -37,8 +37,8 @@ import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.amqp.rabbit.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -62,7 +62,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @Autowired
     private FarmQueue farmQueue;
 
-    @RabbitListener(queues = PoolQueue.QUEUE_CREATE)
+    @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
@@ -81,7 +81,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
     }
 
-    @RabbitListener(queues = PoolQueue.QUEUE_UPDATE)
+    @JmsListener(destination = PoolQueue.QUEUE_UPDATE)
     public void update(Pool pool) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
@@ -100,7 +100,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
     }
 
-    @RabbitListener(queues = PoolQueue.QUEUE_REMOVE)
+    @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
     public void remove(Pool pool) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
@@ -120,7 +120,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
     }
 
-    @RabbitListener(queues = PoolQueue.QUEUE_CALLBK)
+    @JmsListener(destination = PoolQueue.QUEUE_CALLBK)
     public void callBack(Pool pool) {
         if (genericEntityService.isNew(pool)) {
             // pool removed?

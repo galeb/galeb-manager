@@ -71,7 +71,7 @@ public class SyncFarms {
     private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
 
     private boolean disableQueue = Boolean.getBoolean(System.getProperty(
-                                    AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false)));
+                                    JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false)));
 
 
     @Scheduled(fixedRate = INTERVAL)

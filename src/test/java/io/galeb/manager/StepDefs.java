@@ -108,7 +108,7 @@ public class StepDefs {
         request = null;
         token = null;
         FLYWAY.migrate();
-        System.setProperty(AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(true));
+        System.setProperty(JmsConfiguration.DISABLE_QUEUE, Boolean.toString(true));
     }
 
     @After
@@ -121,7 +121,7 @@ public class StepDefs {
             LOGGER.warn(e);
         }
         FLYWAY.clean();
-        System.setProperty(AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false));
+        System.setProperty(JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false));
     }
 
     private String processFullUrl(String data) {

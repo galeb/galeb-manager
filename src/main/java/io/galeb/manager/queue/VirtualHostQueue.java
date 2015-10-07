@@ -21,8 +21,8 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.VirtualHost;
-import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,7 +35,7 @@ public class VirtualHostQueue extends AbstractEnqueuer<VirtualHost> {
     public static final String QUEUE_RELOAD = "queue-virtualhost-reload";
 
     @Autowired
-    private RabbitTemplate template;
+    private JmsTemplate template;
 
     public VirtualHostQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -46,7 +46,7 @@ public class VirtualHostQueue extends AbstractEnqueuer<VirtualHost> {
     }
 
     @Override
-    protected RabbitTemplate template() {
+    protected JmsTemplate template() {
         return template;
     }
 }

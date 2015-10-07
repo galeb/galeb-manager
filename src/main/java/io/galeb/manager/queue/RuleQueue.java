@@ -21,8 +21,8 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Rule;
-import org.springframework.amqp.rabbit.core.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -35,7 +35,7 @@ public class RuleQueue extends AbstractEnqueuer<Rule> {
     public static final String QUEUE_RELOAD = "queue-rule-reload";
 
     @Autowired
-    private RabbitTemplate template;
+    private JmsTemplate template;
 
     public RuleQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -46,7 +46,7 @@ public class RuleQueue extends AbstractEnqueuer<Rule> {
     }
 
     @Override
-    protected RabbitTemplate template() {
+    protected JmsTemplate template() {
         return template;
     }
 }
