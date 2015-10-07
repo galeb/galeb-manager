@@ -20,6 +20,7 @@ package io.galeb.manager.repository;
 
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
+import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -61,9 +62,11 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
     @Query(QUERY_FINDBYNAME)
     Page<VirtualHost> findByName(@Param("name") String name, Pageable pageable);
 
+    @Cacheable("virtualhosts")
     @Query(QUERY_FINDALL)
     Page<VirtualHost> findAll(Pageable pageable);
 
+    @Cacheable("virtualhostsAtFarm")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 
