@@ -264,8 +264,8 @@ public class GalebV3Driver implements Driver {
 
         final String apiFromProperties = properties.getOrDefault("api", "localhost:9090").toString();
         final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
-        final Map <String, Set<AbstractEntity<?>>> entitiesMap =
-                (Map <String, Set<AbstractEntity<?>>>)properties.getOrDefault("entitiesMap", Collections.emptyMap());
+        final Map <String, List<?>> entitiesMap =
+                (Map <String, List<?>>)properties.getOrDefault("entitiesMap", Collections.emptyMap());
 
         final Map<String, Map<String, String>> fullMap = extractRemoteMap(api);
         final Map<String, Map<String, String>> diffMap = new HashMap<>();
@@ -276,11 +276,11 @@ public class GalebV3Driver implements Driver {
 
     private void makeDiffMap(String api,
                              String path,
-                             final Map<String, Set<AbstractEntity<?>>> entitiesMap,
+                             final Map<String, List<?>> entitiesMap,
                              final Map<String, Map<String, String>> fullMap,
                              final Map<String, Map<String, String>> diffMap) {
 
-        Set<AbstractEntity<?>> entities = entitiesMap.get(path);
+        List<?> entities = entitiesMap.get(path);
 
         fullMap.entrySet().stream()
                           .filter(entry ->
@@ -292,13 +292,15 @@ public class GalebV3Driver implements Driver {
                               final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
                               AtomicBoolean hasId = new AtomicBoolean(false);
 
-                              entities.stream().filter(entity -> entity.getName().equals(id))
+                              entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
+                                  .map(entity -> ((AbstractEntity<?>) entity))
+                                  .filter(entity -> entity.getName().equals(id))
                                   .filter(getAbstractEntityPredicate(parentId))
                                   .forEach(entity ->
-                              {
+                                  {
                                       hasId.set(true);
                                       updateIfNecessary(api, path, id, parentId, entity, entityProperties, diffMap);
-                              });
+                                  });
                               entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases).forEach(entity ->
                               {
                                   WithAliases<?> withAliases = (WithAliases) entity;
@@ -318,7 +320,9 @@ public class GalebV3Driver implements Driver {
                               removeEntityIfNecessary(api, path, id, parentId, hasId, diffMap);
                           });
 
-        entities.stream().forEach(entity -> createEntityIfNecessary(api, path, entity, fullMap, diffMap));
+        entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
+                .map(entity -> ((AbstractEntity<?>) entity))
+                .forEach(entity -> createEntityIfNecessary(api, path, entity, fullMap, diffMap));
     }
 
     private void updateIfNecessary(String api,

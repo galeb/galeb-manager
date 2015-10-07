@@ -21,10 +21,8 @@
 package io.galeb.manager.scheduler.tasks;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -70,31 +68,11 @@ public class SyncFarms {
     @Autowired private DistributedLocker     distributedLocker;
 
     private final ObjectMapper mapper   = new ObjectMapper();
-    private final Pageable     pageable = new PageRequest(0, 99999);
+    private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
 
     private boolean disableQueue = Boolean.getBoolean(System.getProperty(
                                     AmqpConfigurator.DISABLE_QUEUE, Boolean.toString(false)));
 
-    private Stream<Target> getTargets(Farm farm) {
-        return StreamSupport.stream(
-                targetRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
-
-    private Stream<Rule> getRules(Farm farm) {
-        return StreamSupport.stream(
-                ruleRepository.findByFarmId(farm.getId(), pageable).spliterator(), false)
-                .filter(rule -> !rule.getParents().isEmpty());
-    }
-
-    private Stream<VirtualHost> getVirtualhosts(Farm farm) {
-        return StreamSupport.stream(
-                virtualHostRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
-
-    private Stream<Pool> getPools(Farm farm) {
-        return StreamSupport.stream(
-                poolRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
 
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
@@ -153,23 +131,23 @@ public class SyncFarms {
     }
 
     private Properties getPropertiesWithEntities(Farm farm) {
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = getEntitiesMap(farm);
+        final Map<String, List<?>> entitiesMap = getEntitiesMap(farm);
         final Properties properties = new Properties();
         properties.put("api", farm.getApi());
         properties.put("entitiesMap", entitiesMap);
         return properties;
     }
 
-    private Map<String, Set<AbstractEntity<?>>> getEntitiesMap(Farm farm) {
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
-        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(), getVirtualhosts(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(), getPools(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(Backend.class.getSimpleName().toLowerCase(), getTargets(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(), getRules(farm)
-                .collect(Collectors.toSet()));
+    private Map<String, List<?>> getEntitiesMap(Farm farm) {
+        final Map<String, List<?>> entitiesMap = new HashMap<>();
+        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(),
+                virtualHostRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(),
+                poolRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(Backend.class.getSimpleName().toLowerCase(),
+                targetRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(),
+                ruleRepository.findByFarmId(farm.getId(), pageable).getContent());
         return entitiesMap;
     }
 
