@@ -20,7 +20,6 @@
 
 package io.galeb.manager.queue;
 
-import io.galeb.manager.queue.*;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.*;
@@ -50,13 +49,13 @@ public class AmqpConfigurator {
     @Value("${rabbitmq.setConsecutiveIdleTrigger}")
     private Integer setConsecutiveIdleTrigger;
 
-    List<Queue> queues() {
+    private List<Queue> queues() {
         return Arrays.asList(
 
             new Queue(FarmQueue.QUEUE_CREATE, false, false, true),
             new Queue(FarmQueue.QUEUE_REMOVE, false, false, true),
             new Queue(FarmQueue.QUEUE_UPDATE, false, false, true),
-            new Queue(FarmQueue.QUEUE_SYNC,   false, false,  true),
+            new Queue(FarmQueue.QUEUE_SYNC,   false, false, true),
             new Queue(FarmQueue.QUEUE_CALLBK, false, false, true),
 
             new Queue(PoolQueue.QUEUE_CREATE, false, false, true),
@@ -81,6 +80,7 @@ public class AmqpConfigurator {
 
         );
     }
+
     @Bean
     public RabbitTemplate rabbitTemplate() {
         return new RabbitTemplate(connectionFactory());
@@ -118,7 +118,5 @@ public class AmqpConfigurator {
     private ConnectionFactory connectionFactory() {
         return new CachingConnectionFactory();
     }
-
-
 
 }
