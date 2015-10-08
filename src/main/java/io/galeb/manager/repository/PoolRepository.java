@@ -33,7 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "pool", path = "pool")
-public interface PoolRepository extends JpaRepository<Pool, Long>,
+public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
                                         FarmIDable<Pool>,
                                         PoolRepositoryCustom {
 
@@ -62,6 +62,7 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
     @Query(QUERY_FINDONE)
     Pool findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
     Page<Pool> findByName(@Param("name") String name, Pageable pageable);
 

@@ -30,7 +30,7 @@ import io.galeb.manager.entity.Target;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
-public interface TargetRepository extends JpaRepository<Target, Long>,
+public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Long>,
                                           FarmIDable<Target> {
 
     String QUERY_PREFIX = "SELECT ta FROM Target ta "
@@ -58,6 +58,7 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
     @Query(QUERY_FINDONE)
     Target findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
     Page<Target> findByName(@Param("name") String name, Pageable pageable);
 

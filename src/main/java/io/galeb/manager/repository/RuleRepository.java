@@ -30,7 +30,7 @@ import io.galeb.manager.entity.Rule;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
-public interface RuleRepository extends JpaRepository<Rule, Long>,
+public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
                                         FarmIDable<Rule> {
 
     String QUERY_PREFIX = "SELECT r FROM Rule r "
@@ -62,6 +62,7 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
     @Query(QUERY_FINDONE)
     Rule findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
     Page<Rule> findByName(@Param("name") String name, Pageable pageable);
 

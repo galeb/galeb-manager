@@ -116,8 +116,8 @@ public class SyncFarms {
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
         } else {
-            String json = mapper.writeValueAsString(diff);
-            LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: \n" + json);
+            //String json = mapper.writeValueAsString(diff);
+            LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: " + diff.size() + " fix(es)");
             farm.setStatus(EntityStatus.ERROR);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 

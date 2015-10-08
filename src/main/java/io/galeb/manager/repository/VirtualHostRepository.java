@@ -22,7 +22,6 @@ import io.galeb.manager.entity.Rule;
 import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,7 +34,7 @@ import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
-public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
+public interface VirtualHostRepository extends JpaRepositoryWithFindByName<VirtualHost, Long>,
                                                FarmIDable<VirtualHost>,
                                                VirtualHostRepositoryCustom {
 
@@ -58,6 +57,7 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
     @Query(QUERY_FINDONE)
     VirtualHost findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
     Page<VirtualHost> findByName(@Param("name") String name, Pageable pageable);
 
