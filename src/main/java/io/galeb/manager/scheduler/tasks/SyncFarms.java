@@ -56,7 +56,7 @@ public class SyncFarms {
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final String TASK_LOCKNAME = "SyncFarms.task";
     private static final long   INTERVAL      = 10000; // msec
-    private static final int    LOCK_TTL      = 180; // seconds
+    private static final int    LOCK_TTL      = 120; // seconds
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
@@ -116,7 +116,7 @@ public class SyncFarms {
 
         long diffStart = System.currentTimeMillis();
         LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
-        Map<String, Map<String, String>> diff = extractDiffFromFarm(driver, properties);
+        Map<String, Map<String, String>> diff = driver.diff(properties);
         LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
                 + (System.currentTimeMillis() - diffStart) + " ms)");
 
@@ -140,12 +140,6 @@ public class SyncFarms {
                 LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
             }
         }
-    }
-
-    private Map<String, Map<String, String>> extractDiffFromFarm(final Driver driver, final Properties properties) {
-        return driver.diff(properties).entrySet().stream()
-                .sorted(Comparator.comparingInt(entry -> new Random().nextInt(Integer.MAX_VALUE)))
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     private Properties getPropertiesWithEntities(Farm farm) {
