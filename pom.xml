@@ -5,7 +5,7 @@
 
     <groupId>io.galeb</groupId>
     <artifactId>galeb-manager</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.4-SNAPSHOT</version>
 
     <organization>
         <name>globo.com</name>
