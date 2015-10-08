@@ -18,44 +18,35 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
-import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Target;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.JmsException;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
-public class FarmQueue extends AbstractJmsEnqueuer<Farm> {
+public class TargetQueue extends AbstractEnqueuer<Target> {
 
-    public static final String QUEUE_CREATE = "queue-farm-create";
-    public static final String QUEUE_UPDATE = "queue-farm-update";
-    public static final String QUEUE_REMOVE = "queue-farm-remove";
-    public static final String QUEUE_SYNC   = "queue-farm-sync";
-    public static final String QUEUE_CALLBK = "queue-farm-callback";
+    public static final String QUEUE_CREATE = "queue-target-create";
+    public static final String QUEUE_UPDATE = "queue-target-update";
+    public static final String QUEUE_REMOVE = "queue-target-remove";
+    public static final String QUEUE_CALLBK = "queue-target-callback";
+    public static final String QUEUE_RELOAD = "queue-target-reload";
 
     @Autowired
-    private JmsTemplate jms;
+    private JmsTemplate template;
 
-    public FarmQueue() {
+    public TargetQueue() {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
-        setQueueSyncName(QUEUE_SYNC);
-    }
-
-    public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) throws JmsException {
-        if (!isDisableJms()) {
-            jms.convertAndSend(queue, entry);
-        }
+        setQueueSyncName(QUEUE_RELOAD);
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected JmsTemplate template() {
+        return template;
     }
 }

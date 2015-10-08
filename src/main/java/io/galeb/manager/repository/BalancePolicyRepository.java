@@ -26,13 +26,16 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.BalancePolicy;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "balancepolicy", path = "balancepolicy")
 public interface BalancePolicyRepository extends JpaRepository<BalancePolicy, Long> {
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<BalancePolicy> findByName(@Param("name") String name, Pageable pageable);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<BalancePolicy> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

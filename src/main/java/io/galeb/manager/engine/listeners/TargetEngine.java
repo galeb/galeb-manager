@@ -20,12 +20,12 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.Backend;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.TargetQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.TargetQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -129,11 +129,14 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        target.setSaveOnly(true);
-        targetRepository.save(target);
-        setFarmStatusOnError(target);
-        SystemUserService.runAs(currentUser);
-        target.setSaveOnly(false);
+        try {
+            targetRepository.save(target);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(target);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

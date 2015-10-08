@@ -20,24 +20,20 @@
 
 package io.galeb.manager.scheduler.tasks;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.*;
+import java.util.stream.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.*;
-import io.galeb.manager.jms.FarmQueue;
+import io.galeb.manager.queue.*;
 import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -49,7 +45,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.jms.JmsConfiguration;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
@@ -60,7 +55,8 @@ public class SyncFarms {
 
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final String TASK_LOCKNAME = "SyncFarms.task";
-    private static final long   INTERVAL      = 10000;
+    private static final long   INTERVAL      = 10000; // msec
+    private static final int    LOCK_TTL      = 180; // seconds
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
@@ -71,50 +67,16 @@ public class SyncFarms {
     @Autowired private DistributedLocker     distributedLocker;
 
     private final ObjectMapper mapper   = new ObjectMapper();
-    private final Pageable     pageable = new PageRequest(0, 99999);
+    private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
 
-    private boolean disableJms = Boolean.getBoolean(System.getProperty(
-                                    JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
+    private boolean disableQueue = Boolean.getBoolean(System.getProperty(
+                                    JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false)));
 
-    public boolean registerLock(String key, long ttl) {
-        if (distributedLocker == null) {
-            LOGGER.warn(DistributedLocker.class.getSimpleName() + " is NULL");
-            return false;
-        }
-        if (!distributedLocker.getLock(key, ttl)) {
-            LOGGER.warn(key + " is locked by other process. Aborting task");
-            return false;
-        }
-
-        LOGGER.debug(key + " locked by me (" + this + ")");
-        return true;
-    }
-
-    private Stream<Target> getTargets(Farm farm) {
-        return StreamSupport.stream(
-                targetRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
-
-    private Stream<Rule> getRules(Farm farm) {
-        return StreamSupport.stream(
-                ruleRepository.findByFarmId(farm.getId(), pageable).spliterator(), false)
-                .filter(rule -> !rule.getParents().isEmpty());
-    }
-
-    private Stream<VirtualHost> getVirtualhosts(Farm farm) {
-        return StreamSupport.stream(
-                virtualHostRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
-
-    private Stream<Pool> getPools(Farm farm) {
-        return StreamSupport.stream(
-                poolRepository.findByFarmId(farm.getId(), pageable).spliterator(), false);
-    }
 
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
 
-        if (!registerLock(TASK_LOCKNAME, INTERVAL / 1000)) {
+        if (!distributedLocker.lock(TASK_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
 
@@ -143,48 +105,67 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
+        String farmLock = farm.getName() + ".lock";
+        if (!distributedLocker.lock(farmLock, LOCK_TTL)) {
+            LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting to release lock");
+            return;
+        }
+
         final Driver driver = DriverBuilder.getDriver(farm);
         final Properties properties = getPropertiesWithEntities(farm);
 
-        Map<String, Map<String, String>> diff = driver.diff(properties);
+        long diffStart = System.currentTimeMillis();
+        LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
+        Map<String, Map<String, String>> diff = extractDiffFromFarm(driver, properties);
+        LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
+                + (System.currentTimeMillis() - diffStart) + " ms)");
+
         if (diff.isEmpty()) {
+            distributedLocker.release(farmLock);
             LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
             farm.setStatus(EntityStatus.OK);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
         } else {
-            String json = mapper.writeValueAsString(diff);
-            LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: \n" + json);
+            //String json = mapper.writeValueAsString(diff);
+            LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: " + diff.size() + " fix(es)");
             farm.setStatus(EntityStatus.ERROR);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
-            if (farm.isAutoReload() && !disableJms) {
+            if (farm.isAutoReload() && !disableQueue) {
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
             } else {
+                distributedLocker.release(farmLock);
                 LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
             }
         }
     }
 
+    private Map<String, Map<String, String>> extractDiffFromFarm(final Driver driver, final Properties properties) {
+        return driver.diff(properties).entrySet().stream()
+                .sorted(Comparator.comparingInt(entry -> new Random().nextInt(Integer.MAX_VALUE)))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    }
+
     private Properties getPropertiesWithEntities(Farm farm) {
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = getEntitiesMap(farm);
+        final Map<String, List<?>> entitiesMap = getEntitiesMap(farm);
         final Properties properties = new Properties();
         properties.put("api", farm.getApi());
         properties.put("entitiesMap", entitiesMap);
         return properties;
     }
 
-    private Map<String, Set<AbstractEntity<?>>> getEntitiesMap(Farm farm) {
-        final Map<String, Set<AbstractEntity<?>>> entitiesMap = new HashMap<>();
-        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(), getVirtualhosts(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(), getPools(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(Backend.class.getSimpleName().toLowerCase(), getTargets(farm)
-                .collect(Collectors.toSet()));
-        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(), getRules(farm)
-                .collect(Collectors.toSet()));
+    private Map<String, List<?>> getEntitiesMap(Farm farm) {
+        final Map<String, List<?>> entitiesMap = new HashMap<>();
+        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(),
+                virtualHostRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(),
+                poolRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(Backend.class.getSimpleName().toLowerCase(),
+                targetRepository.findByFarmId(farm.getId(), pageable).getContent());
+        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(),
+                ruleRepository.findByFarmId(farm.getId(), pageable).getContent());
         return entitiesMap;
     }
 

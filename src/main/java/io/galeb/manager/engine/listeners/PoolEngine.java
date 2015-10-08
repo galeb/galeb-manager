@@ -28,8 +28,8 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.PoolQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.PoolQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.user.CurrentUser;
@@ -38,7 +38,7 @@ import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -128,11 +128,14 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        pool.setSaveOnly(true);
-        poolRepository.save(pool);
-        setFarmStatusOnError(pool);
-        SystemUserService.runAs(currentUser);
-        pool.setSaveOnly(false);
+        try {
+            poolRepository.save(pool);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(pool);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

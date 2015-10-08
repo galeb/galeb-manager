@@ -18,26 +18,26 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
-import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.Rule;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TargetQueue extends AbstractJmsEnqueuer<Target> {
+public class RuleQueue extends AbstractEnqueuer<Rule> {
 
-    public static final String QUEUE_CREATE = "queue-target-create";
-    public static final String QUEUE_UPDATE = "queue-target-update";
-    public static final String QUEUE_REMOVE = "queue-target-remove";
-    public static final String QUEUE_CALLBK = "queue-target-callback";
-    public static final String QUEUE_RELOAD = "queue-target-reload";
+    public static final String QUEUE_CREATE = "queue-rule-create";
+    public static final String QUEUE_UPDATE = "queue-rule-update";
+    public static final String QUEUE_REMOVE = "queue-rule-remove";
+    public static final String QUEUE_CALLBK = "queue-rule-callback";
+    public static final String QUEUE_RELOAD = "queue-rule-reload";
 
     @Autowired
-    private JmsTemplate jms;
+    private JmsTemplate template;
 
-    public TargetQueue() {
+    public RuleQueue() {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
@@ -46,7 +46,7 @@ public class TargetQueue extends AbstractJmsEnqueuer<Target> {
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected JmsTemplate template() {
+        return template;
     }
 }

@@ -28,13 +28,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("hasRole('ROLE_ADMIN')")
 @RepositoryRestResource(collectionResourceRel = "farm", path = "farm")
 public interface FarmRepository extends JpaRepository<Farm, Long> {
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Farm> findByEnvironmentAndStatus(Environment environment, EntityStatus status);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Farm> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

@@ -22,7 +22,6 @@ import io.galeb.manager.entity.Rule;
 import io.galeb.manager.repository.custom.VirtualHostRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,12 +29,13 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.VirtualHost;
+import org.springframework.transaction.annotation.*;
 
 import java.util.List;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
-public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
+public interface VirtualHostRepository extends JpaRepositoryWithFindByName<VirtualHost, Long>,
                                                FarmIDable<VirtualHost>,
                                                VirtualHostRepositoryCustom {
 
@@ -56,22 +56,29 @@ public interface VirtualHostRepository extends JpaRepository<VirtualHost, Long>,
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     VirtualHost findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<VirtualHost> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<VirtualHost> findAll(Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<VirtualHost> findByNameContaining(@Param("name") String name, Pageable pageable);
 
     @Modifying
     @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     List<Rule> getRulesFromVirtualHostName(@Param("name") String name);
 
 }

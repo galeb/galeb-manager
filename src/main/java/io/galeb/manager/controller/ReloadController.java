@@ -3,8 +3,7 @@ package io.galeb.manager.controller;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static java.util.AbstractMap.*;
 
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.security.services.*;
+import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -20,12 +20,12 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.RuleQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.RuleQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -133,15 +133,14 @@ public class RuleEngine extends AbstractEngine<Rule> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        rule.setSaveOnly(true);
         try {
             ruleRepository.save(rule);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(rule);
+        } finally {
+            SystemUserService.runAs(currentUser);
         }
-        setFarmStatusOnError(rule);
-        SystemUserService.runAs(currentUser);
-        rule.setSaveOnly(false);
     }
 
     @Override

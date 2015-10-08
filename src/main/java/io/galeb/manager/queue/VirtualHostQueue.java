@@ -18,15 +18,15 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.VirtualHost;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.*;
 import org.springframework.stereotype.Service;
 
 @Service
-public class VirtualHostQueue extends AbstractJmsEnqueuer<VirtualHost> {
+public class VirtualHostQueue extends AbstractEnqueuer<VirtualHost> {
 
     public static final String QUEUE_CREATE = "queue-virtualhost-create";
     public static final String QUEUE_REMOVE = "queue-virtualhost-remove";
@@ -35,7 +35,7 @@ public class VirtualHostQueue extends AbstractJmsEnqueuer<VirtualHost> {
     public static final String QUEUE_RELOAD = "queue-virtualhost-reload";
 
     @Autowired
-    private JmsTemplate jms;
+    private JmsTemplate template;
 
     public VirtualHostQueue() {
         setQueueCreateName(QUEUE_CREATE);
@@ -46,7 +46,7 @@ public class VirtualHostQueue extends AbstractJmsEnqueuer<VirtualHost> {
     }
 
     @Override
-    protected JmsTemplate jms() {
-        return jms;
+    protected JmsTemplate template() {
+        return template;
     }
 }

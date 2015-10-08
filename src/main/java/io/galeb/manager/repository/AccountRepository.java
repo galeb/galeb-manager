@@ -27,6 +27,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Account;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
@@ -43,14 +44,18 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Account findOne(@Param("id") Long id);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Account> findAll(Pageable pageable);
 
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Account> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Account> findByNameContaining(@Param("name") String name, Pageable pageable);
 }

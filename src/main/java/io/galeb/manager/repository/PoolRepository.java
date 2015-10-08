@@ -30,10 +30,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "pool", path = "pool")
-public interface PoolRepository extends JpaRepository<Pool, Long>,
+public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
                                         FarmIDable<Pool>,
                                         PoolRepositoryCustom {
 
@@ -60,21 +61,28 @@ public interface PoolRepository extends JpaRepository<Pool, Long>,
                         + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Pool findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Pool> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Pool> findAll(Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Pool> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @Modifying
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Pool getNoParent();
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Pool> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

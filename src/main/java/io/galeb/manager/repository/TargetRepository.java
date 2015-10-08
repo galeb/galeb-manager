@@ -27,10 +27,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Target;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
-public interface TargetRepository extends JpaRepository<Target, Long>,
+public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Long>,
                                           FarmIDable<Target> {
 
     String QUERY_PREFIX = "SELECT ta FROM Target ta "
@@ -56,20 +57,27 @@ public interface TargetRepository extends JpaRepository<Target, Long>,
                             + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Target findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findAll(Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findByFarmId(@Param("id") long id, Pageable pageable);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

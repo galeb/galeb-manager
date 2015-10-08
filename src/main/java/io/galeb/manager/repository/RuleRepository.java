@@ -27,10 +27,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "rule", path = "rule")
-public interface RuleRepository extends JpaRepository<Rule, Long>,
+public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
                                         FarmIDable<Rule> {
 
     String QUERY_PREFIX = "SELECT r FROM Rule r "
@@ -60,21 +61,28 @@ public interface RuleRepository extends JpaRepository<Rule, Long>,
                         + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Rule findOne(@Param("id") Long id);
 
+    @Override
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Rule> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Rule> findAll(Pageable pageable);
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Rule> findByFarmId(@Param("id") long id, Pageable pageable);
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Rule> findByNameContaining(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDBYPOOLNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Rule> findByPoolName(@Param("name") String name, Pageable pageable);
 
 }

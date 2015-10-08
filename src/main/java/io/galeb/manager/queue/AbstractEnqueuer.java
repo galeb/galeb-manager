@@ -18,22 +18,21 @@
  *
  */
 
-package io.galeb.manager.jms;
+package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.AbstractEntity;
-import org.springframework.jms.JmsException;
-import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.*;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
-public abstract class AbstractJmsEnqueuer<T> {
+public abstract class AbstractEnqueuer<T> {
 
-    private static final boolean DISABLE_JMS;
+    private static final boolean DISABLE_QUEUE;
     static {
-        DISABLE_JMS = Boolean.getBoolean(System.getProperty(
-                JmsConfiguration.DISABLE_JMS, Boolean.toString(false)));
+        DISABLE_QUEUE = Boolean.getBoolean(System.getProperty(
+                JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false)));
     }
 
     private static final String QUEUE_UNDEF = "UNDEF";
@@ -44,17 +43,17 @@ public abstract class AbstractJmsEnqueuer<T> {
     private String queueCallBackName = QUEUE_UNDEF;
     private String queueSyncName = QUEUE_UNDEF;
 
-    protected static boolean isDisableJms() {
-        return DISABLE_JMS;
+    protected static boolean isDisableQueue() {
+        return DISABLE_QUEUE;
     }
 
-    protected abstract JmsTemplate jms();
+    protected abstract JmsTemplate template();
 
     public String getQueueCreateName() {
         return queueCreateName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueCreateName(String queueCreateName) {
+    protected AbstractEnqueuer<T> setQueueCreateName(String queueCreateName) {
         this.queueCreateName = queueCreateName;
         return this;
     }
@@ -63,7 +62,7 @@ public abstract class AbstractJmsEnqueuer<T> {
         return queueUpdateName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueUpdateName(String queueUpdateName) {
+    protected AbstractEnqueuer<T> setQueueUpdateName(String queueUpdateName) {
         this.queueUpdateName = queueUpdateName;
         return this;
     }
@@ -72,7 +71,7 @@ public abstract class AbstractJmsEnqueuer<T> {
         return queueRemoveName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueRemoveName(String queueRemoveName) {
+    protected AbstractEnqueuer<T> setQueueRemoveName(String queueRemoveName) {
         this.queueRemoveName = queueRemoveName;
         return this;
     }
@@ -81,7 +80,7 @@ public abstract class AbstractJmsEnqueuer<T> {
         return queueCallBackName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueCallBackName(String queueCallBackName) {
+    protected AbstractEnqueuer<T> setQueueCallBackName(String queueCallBackName) {
         this.queueCallBackName = queueCallBackName;
         return this;
     }
@@ -90,12 +89,12 @@ public abstract class AbstractJmsEnqueuer<T> {
         return queueSyncName;
     }
 
-    protected AbstractJmsEnqueuer<T> setQueueSyncName(String queueSyncName) {
+    protected AbstractEnqueuer<T> setQueueSyncName(String queueSyncName) {
         this.queueSyncName = queueSyncName;
         return this;
     }
 
-    public void jmsSendByStatus(AbstractEntity<?> entity) throws JmsException {
+    public void sendByStatus(AbstractEntity<?> entity) {
         final AbstractEntity.EntityStatus status = entity.getStatus();
         if (DISABLED.equals(status)) {
             sendToQueue(getQueueRemoveName(), (T) entity);
@@ -109,9 +108,9 @@ public abstract class AbstractJmsEnqueuer<T> {
         }
     }
 
-    public void sendToQueue(String queue, T entity) throws JmsException {
-        if (!QUEUE_UNDEF.equals(queue) && !isDisableJms()) {
-            jms().convertAndSend(queue, entity);
+    public void sendToQueue(String queue, T entity) {
+        if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
+            template().convertAndSend(queue, entity);
         }
     }
 }

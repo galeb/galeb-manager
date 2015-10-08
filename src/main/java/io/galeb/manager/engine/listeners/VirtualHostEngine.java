@@ -19,13 +19,12 @@
 package io.galeb.manager.engine.listeners;
 
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.jms.FarmQueue;
-import io.galeb.manager.jms.VirtualHostQueue;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.VirtualHostQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -42,9 +41,6 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
@@ -136,11 +132,14 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        virtualHost.setSaveOnly(true);
-        virtualHostRepository.save(virtualHost);
-        setFarmStatusOnError(virtualHost);
-        SystemUserService.runAs(currentUser);
-        virtualHost.setSaveOnly(false);
+        try {
+            virtualHostRepository.save(virtualHost);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(virtualHost);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

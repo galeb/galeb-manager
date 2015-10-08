@@ -26,13 +26,16 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Environment;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "environment", path = "environment")
 public interface EnvironmentRepository extends JpaRepository<Environment, Long> {
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Environment> findByName(@Param("name") String name, Pageable pageable);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Environment> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

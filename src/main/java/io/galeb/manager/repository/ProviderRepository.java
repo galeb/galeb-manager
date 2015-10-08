@@ -26,13 +26,16 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Provider;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("hasRole('ROLE_ADMIN')")
 @RepositoryRestResource(collectionResourceRel = "provider", path = "provider")
 public interface ProviderRepository extends JpaRepository<Provider, Long> {
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Provider> findByName(@Param("name") String name, Pageable pageable);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Provider> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }
