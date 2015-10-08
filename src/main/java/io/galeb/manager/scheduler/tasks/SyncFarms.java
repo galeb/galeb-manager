@@ -20,10 +20,8 @@
 
 package io.galeb.manager.scheduler.tasks;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.StreamSupport;
+import java.util.*;
+import java.util.stream.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
@@ -35,7 +33,7 @@ import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -57,7 +55,8 @@ public class SyncFarms {
 
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final String TASK_LOCKNAME = "SyncFarms.task";
-    private static final long   INTERVAL      = 10000;
+    private static final long   INTERVAL      = 10000; // msec
+    private static final int    LOCK_TTL      = 180; // seconds
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
@@ -106,11 +105,23 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
+        String farmLock = farm.getName() + ".lock";
+        if (!distributedLocker.lock(farmLock, LOCK_TTL)) {
+            LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting to release lock");
+            return;
+        }
+
         final Driver driver = DriverBuilder.getDriver(farm);
         final Properties properties = getPropertiesWithEntities(farm);
 
-        Map<String, Map<String, String>> diff = driver.diff(properties);
+        long diffStart = System.currentTimeMillis();
+        LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
+        Map<String, Map<String, String>> diff = extractDiffFromFarm(driver, properties);
+        LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
+                + (System.currentTimeMillis() - diffStart) + " ms)");
+
         if (diff.isEmpty()) {
+            distributedLocker.release(farmLock);
             LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
             farm.setStatus(EntityStatus.OK);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
@@ -125,9 +136,16 @@ public class SyncFarms {
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
             } else {
+                distributedLocker.release(farmLock);
                 LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
             }
         }
+    }
+
+    private Map<String, Map<String, String>> extractDiffFromFarm(final Driver driver, final Properties properties) {
+        return driver.diff(properties).entrySet().stream()
+                .sorted(Comparator.comparingInt(entry -> new Random().nextInt(Integer.MAX_VALUE)))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     private Properties getPropertiesWithEntities(Farm farm) {

@@ -129,11 +129,14 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        target.setSaveOnly(true);
-        targetRepository.save(target);
-        setFarmStatusOnError(target);
-        SystemUserService.runAs(currentUser);
-        target.setSaveOnly(false);
+        try {
+            targetRepository.save(target);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(target);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

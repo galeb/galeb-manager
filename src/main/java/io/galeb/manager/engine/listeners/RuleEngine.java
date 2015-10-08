@@ -133,15 +133,14 @@ public class RuleEngine extends AbstractEngine<Rule> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        rule.setSaveOnly(true);
         try {
             ruleRepository.save(rule);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(rule);
+        } finally {
+            SystemUserService.runAs(currentUser);
         }
-        setFarmStatusOnError(rule);
-        SystemUserService.runAs(currentUser);
-        rule.setSaveOnly(false);
     }
 
     @Override

@@ -27,6 +27,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Project;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
@@ -49,15 +50,19 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Project findOne(@Param("id") Long id);
 
     @Query(QUERY_FINDALL)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Project> findAll(Pageable pageable);
 
     @Query(QUERY_FINDBYNAME)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Project> findByName(@Param("name") String name, Pageable pageable);
 
     @Query(QUERY_FINDBYNAMECONTAINING)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Project> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

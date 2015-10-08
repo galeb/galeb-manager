@@ -26,13 +26,16 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.RuleType;
+import org.springframework.transaction.annotation.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "ruletype", path = "ruletype")
 public interface RuleTypeRepository extends JpaRepository<RuleType, Long> {
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<RuleType> findByName(@Param("name") String name, Pageable pageable);
 
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<RuleType> findByNameContaining(@Param("name") String name, Pageable pageable);
 
 }

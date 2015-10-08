@@ -132,11 +132,14 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        virtualHost.setSaveOnly(true);
-        virtualHostRepository.save(virtualHost);
-        setFarmStatusOnError(virtualHost);
-        SystemUserService.runAs(currentUser);
-        virtualHost.setSaveOnly(false);
+        try {
+            virtualHostRepository.save(virtualHost);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(virtualHost);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

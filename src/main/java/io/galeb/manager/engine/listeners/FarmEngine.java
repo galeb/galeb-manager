@@ -29,7 +29,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -54,7 +53,6 @@ import java.util.stream.Collectors;
 public class FarmEngine extends AbstractEngine<Farm> {
 
     private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
-    private static final int LOCK_TTL = 120; // seconds
 
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private FarmRepository farmRepository;
@@ -148,10 +146,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public void sync(Map.Entry<Farm, Map<String, Object>> entrySet) {
         Farm farm = entrySet.getKey();
         String farmLock = farm.getName() + ".lock";
-        if (!distributedLocker.lock(farmLock, LOCK_TTL)) {
-            LOGGER.warn("FARM " + farm.getName() + " has autoReload disabled");
-            return;
-        }
 
         Map<String, Object> diff = entrySet.getValue();
         Driver driver = DriverBuilder.getDriver(farm);
@@ -182,10 +176,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 long totalElements = repository.findByName(id, pageable).getTotalElements();
                 long pageSize = totalElements > 100 ? 100 : totalElements;
                 int page = 0;
-                long numPages = totalElements/pageSize;
+                long numPages = totalElements / pageSize;
                 AbstractEntity<?> entityFromRepository = null;
 
-                while (entityFromRepository == null && page < numPages+1) {
+                while (entityFromRepository == null && page < numPages + 1) {
                     Iterator<AbstractEntity<?>> iter = repository.findByName(id, new PageRequest(page, (int) pageSize)).iterator();
                     entityFromRepository = getEntityIfExist(id, parentId, iter).orElse(null);
                     page++;

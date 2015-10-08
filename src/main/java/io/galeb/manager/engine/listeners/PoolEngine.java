@@ -128,11 +128,14 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        pool.setSaveOnly(true);
-        poolRepository.save(pool);
-        setFarmStatusOnError(pool);
-        SystemUserService.runAs(currentUser);
-        pool.setSaveOnly(false);
+        try {
+            poolRepository.save(pool);
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+            setFarmStatusOnError(pool);
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
     }
 
     @Override

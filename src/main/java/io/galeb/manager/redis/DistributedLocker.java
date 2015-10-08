@@ -95,7 +95,7 @@ public class DistributedLocker {
 
     public synchronized boolean lock(String key, long ttl) {
         if (!getLock(key, ttl)) {
-            LOGGER.warn(key + " is locked by other process. Aborting task");
+            LOGGER.warn("Locked by other process (" + key + ". Aborting task");
             return false;
         }
 
