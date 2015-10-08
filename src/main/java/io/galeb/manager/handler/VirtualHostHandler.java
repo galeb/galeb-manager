@@ -33,7 +33,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.core.Authentication;
 
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.FarmRepository;
@@ -59,8 +58,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     protected void setBestFarm(final VirtualHost virtualhost) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        final Iterable<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(
-                virtualhost.getEnvironment(), EntityStatus.OK);
+        final Iterable<Farm> farmIterable = farmRepository.findByEnvironment(
+                virtualhost.getEnvironment());
         final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
         SystemUserService.runAs(currentUser);
         if (farm!=null) {

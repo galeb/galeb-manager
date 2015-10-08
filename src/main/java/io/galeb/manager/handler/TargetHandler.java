@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import io.galeb.manager.entity.*;
 import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
@@ -59,7 +57,7 @@ public class TargetHandler extends AbstractHandler<Target> {
             if (environment != null) {
                 Authentication currentUser = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Iterable<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(environment, OK);
+                final Iterable<Farm> farmIterable = farmRepository.findByEnvironment(environment);
                 final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
                 SystemUserService.runAs(currentUser);
                 if (farm != null) {

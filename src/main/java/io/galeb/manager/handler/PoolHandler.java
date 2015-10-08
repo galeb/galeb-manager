@@ -54,7 +54,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
         final Environment environment = pool.getEnvironment();
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        final Iterable<Farm> farmIterable = farmRepository.findByEnvironmentAndStatus(environment, OK);
+        final Iterable<Farm> farmIterable = farmRepository.findByEnvironment(environment);
         final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
         SystemUserService.runAs(currentUser);
         if (farm != null) {

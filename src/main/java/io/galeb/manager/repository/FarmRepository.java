@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.*;
 public interface FarmRepository extends JpaRepository<Farm, Long> {
 
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Iterable<Farm> findByEnvironmentAndStatus(Environment environment, EntityStatus status);
+    Iterable<Farm> findByEnvironment(Environment environment);
 
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Farm> findByNameContaining(@Param("name") String name, Pageable pageable);
