@@ -27,8 +27,7 @@ import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.jms.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -109,7 +108,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @JmsListener(destination = FarmQueue.QUEUE_CREATE)
     public void create(Farm farm) {
-        LOGGER.info("Creating "+farm.getClass().getSimpleName()+" "+farm.getName());
+        LOGGER.info("Creating " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
         boolean isOk = false;
         try {
@@ -152,6 +151,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         Properties properties = new Properties();
         SystemUserService.runAs();
         properties.put("api", farm.getApi());
+        SystemUserService.clearContext();
 
         if (diff == null) {
             executeFullReload(farm, driver, properties);
@@ -160,7 +160,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
-        diff.entrySet().stream().forEach(diffEntrySet -> {
+        diff.entrySet().parallelStream().forEach(diffEntrySet -> {
 
             final Map<String, String> attributes = (Map<String, String>) diffEntrySet.getValue();
 
@@ -173,17 +173,21 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
             JpaRepositoryWithFindByName repository = getRepository(internalEntityType);
             if (repository != null) {
-                long totalElements = repository.findByName(id, pageable).getTotalElements();
-                long pageSize = totalElements > 100 ? 100 : totalElements;
-                int page = 0;
-                long numPages = totalElements / pageSize;
                 AbstractEntity<?> entityFromRepository = null;
+                int pageSize = 100;
+                int page = 0;
+                SystemUserService.runAs();
+                Page<?> elements = repository.findByName(id, new PageRequest(page, pageSize));
 
-                while (entityFromRepository == null && page < numPages + 1) {
-                    Iterator<AbstractEntity<?>> iter = repository.findByName(id, new PageRequest(page, (int) pageSize)).iterator();
-                    entityFromRepository = getEntityIfExist(id, parentId, iter).orElse(null);
-                    page++;
+                while (elements.hasContent() && entityFromRepository == null) {
+                    entityFromRepository = getEntityIfExist(id, parentId, (Iterator<AbstractEntity<?>>) elements.iterator()).orElse(null);
+                    if (!elements.isLast()) {
+                        elements = repository.findByName(id, new PageRequest(++page, pageSize));
+                    } else {
+                        break;
+                    }
                 }
+                SystemUserService.clearContext();
 
                 if (entityFromRepository == null) {
                     LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [repository: " + repository + "]");
