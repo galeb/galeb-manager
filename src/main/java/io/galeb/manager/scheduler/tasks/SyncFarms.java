@@ -116,7 +116,7 @@ public class SyncFarms {
 
         long diffStart = System.currentTimeMillis();
         LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
-        Map<String, Map<String, String>> diff = driver.diff(properties);
+        Map<String, Map<String, Object>> diff = driver.diff(properties);
         LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
                 + (System.currentTimeMillis() - diffStart) + " ms)");
 

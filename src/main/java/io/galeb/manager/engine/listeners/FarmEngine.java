@@ -18,8 +18,11 @@
 
 package io.galeb.manager.engine.listeners;
 
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
+
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
+import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.queue.*;
 import io.galeb.manager.redis.*;
@@ -36,7 +39,6 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.provisioning.Provisioning;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
@@ -116,7 +118,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+            farm.setStatus(isOk ? OK : ERROR);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
@@ -131,7 +133,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            farm.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
+            farm.setStatus(isOk ? OK : ERROR);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
@@ -141,6 +143,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
+    @SuppressWarnings("unchecked")
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Map.Entry<Farm, Map<String, Object>> entrySet) {
         Farm farm = entrySet.getKey();
@@ -162,12 +165,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         diff.entrySet().parallelStream().forEach(diffEntrySet -> {
 
-            final Map<String, String> attributes = (Map<String, String>) diffEntrySet.getValue();
+            final Map<String, Object> attributes = (Map<String, Object>) diffEntrySet.getValue();
 
-            final String action = attributes.get("ACTION");
-            final String id = attributes.get("ID");
-            final String parentId = attributes.get("PARENT_ID");
-            final String entityType = attributes.get("ENTITY_TYPE");
+            final ActionOnDiff action = (ActionOnDiff) attributes.get("ACTION");
+            final String id = String.valueOf(attributes.get("ID"));
+            final String parentId = String.valueOf(attributes.get("PARENT_ID"));
+            final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
 
             final String internalEntityType = getInternalEntityType(entityType);
 
@@ -194,15 +197,18 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 } else {
                     AbstractEnqueuer queue = getQueue(internalEntityType);
                     LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
-                    switch (action.toUpperCase()) {
-                        case "CREATE":
+                    switch (action) {
+                        case CREATE:
                             createEntityOnFarm(queue, entityFromRepository);
                             break;
-                        case "UPDATE":
+                        case UPDATE:
                             updateEntityOnFarm(queue, entityFromRepository);
                             break;
-                        case "REMOVE":
+                        case REMOVE:
                             removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                            break;
+                        case CALLBACK:
+                            resendCallBackWithOK(queue, entityFromRepository);
                             break;
                         default:
                             LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
@@ -212,6 +218,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
             }
         });
         distributedLocker.release(farmLock);
+    }
+
+    private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {
+        if (entityFromRepository.getStatus() == PENDING || entityFromRepository.getStatus() == ERROR ) {
+            entityFromRepository.setStatus(OK);
+            queue.sendToQueue(queue.getQueueCallBackName(), entityFromRepository);
+        }
     }
 
     private void executeFullReload(Farm farm, Driver driver, Properties properties) {
@@ -243,6 +256,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         queue.sendToQueue(queue.getQueueCreateName(), entity);
     }
 
+    @SuppressWarnings("unchecked")
     private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, final Iterator<AbstractEntity<?>> iterator) {
         while (iterator.hasNext()) {
             AbstractEntity<?> entity = iterator.next();

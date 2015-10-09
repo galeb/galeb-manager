@@ -27,6 +27,13 @@ public interface Driver {
 
     String DEFAULT_DRIVER_NAME = "NULL";
 
+    enum ActionOnDiff {
+        CREATE,
+        REMOVE,
+        UPDATE,
+        CALLBACK
+    }
+
     default EntityFarm info(Properties properties) {
         return () -> "";
     }
@@ -47,7 +54,7 @@ public interface Driver {
         return true;
     }
 
-    default Map<String, Map<String, String>> diff(Properties properties) {
+    default Map<String, Map<String, Object>> diff(Properties properties) {
         return Collections.emptyMap();
     }
 
