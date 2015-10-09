@@ -23,7 +23,7 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
 import io.galeb.manager.entity.WithFarmID;
-import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.exceptions.*;
 import org.apache.commons.logging.Log;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -49,7 +49,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
         if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
-            throw new BadRequestException();
+            throw new ServiceUnavailableException();
         }
         entity.setStatus(PENDING);
     }
