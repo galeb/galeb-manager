@@ -107,7 +107,7 @@ public class SyncFarms {
     private void syncFarm(Farm farm) throws JsonProcessingException {
         String farmLock = farm.getName() + ".lock";
         if (!distributedLocker.lock(farmLock, LOCK_TTL)) {
-            LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting to release lock");
+            LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting for release lock");
             return;
         }
 

@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.listeners;
 
+import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.*;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 
 import io.galeb.core.model.Backend;
@@ -192,28 +193,30 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
                 SystemUserService.clearContext();
 
-                if (entityFromRepository == null) {
-                    LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [repository: " + repository + "]");
+                if (entityFromRepository == null && action != REMOVE) {
+                    LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + internalEntityType + "]");
                 } else {
                     AbstractEnqueuer queue = getQueue(internalEntityType);
-                    LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
-                    switch (action) {
-                        case CREATE:
-                            createEntityOnFarm(queue, entityFromRepository);
-                            break;
-                        case UPDATE:
-                            updateEntityOnFarm(queue, entityFromRepository);
-                            break;
-                        case REMOVE:
-                            removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
-                            break;
-                        case CALLBACK:
-                            resendCallBackWithOK(queue, entityFromRepository);
-                            break;
-                        default:
-                            LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                    if (action == REMOVE) {
+                        LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
+                        removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                    } else {
+                        LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
+                        switch (action) {
+                            case CREATE:
+                                createEntityOnFarm(queue, entityFromRepository);
+                                break;
+                            case UPDATE:
+                                updateEntityOnFarm(queue, entityFromRepository);
+                                break;
+                            case CALLBACK:
+                                resendCallBackWithOK(queue, entityFromRepository);
+                                break;
+                            default:
+                                LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                        }
+                        LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
                     }
-                    LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
                 }
             }
         });
