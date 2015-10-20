@@ -33,27 +33,26 @@ import org.springframework.transaction.annotation.*;
 
 import java.util.List;
 
+import static io.galeb.manager.repository.CommonJpaFilters.*;
+
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "virtualhost", path = "virtualhost")
 public interface VirtualHostRepository extends JpaRepositoryWithFindByName<VirtualHost, Long>,
                                                FarmIDable<VirtualHost>,
                                                VirtualHostRepositoryCustom {
 
-    String QUERY_PREFIX = "SELECT v FROM VirtualHost v "
-                        + "INNER JOIN v.project.teams t "
-                        + "LEFT JOIN t.accounts a "
-                        + "WHERE ";
+    String QUERY_PREFIX = "SELECT e FROM VirtualHost e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String QUERY_FINDONE = QUERY_PREFIX + "v.id = :id AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+    String NATIVE_QUERY_PREFIX = "select * from virtual_host e ";
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "v.name = :name AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " + SECURITY_FILTER;
 
-    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND " + SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "v.name LIKE CONCAT('%',:name,'%') AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+    String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER;
+
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_PROJECT_TO_ACCOUNT
+            + "where (e.name like concat('%', :name, '%')) and " + SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -72,9 +71,9 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<VirtualHost> findByFarmId(@Param("id") long id, Pageable pageable);
 
-    @Query(QUERY_FINDBYNAMECONTAINING)
+    @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Page<VirtualHost> findByNameContaining(@Param("name") String name, Pageable pageable);
+    Iterable<VirtualHost> findByNameContaining(@Param("name") String name);
 
     @Modifying
     @Override
