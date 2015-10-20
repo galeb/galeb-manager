@@ -20,17 +20,27 @@
 
 package io.galeb.manager.scheduler.tasks;
 
-import java.util.*;
-import java.util.stream.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.entity.*;
-import io.galeb.manager.queue.*;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.redis.DistributedLocker;
-import io.galeb.manager.repository.*;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.PoolRepository;
+import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.repository.TargetRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
+import io.galeb.manager.scheduler.SchedulerConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.*;
@@ -48,6 +58,9 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import static java.lang.System.getenv;
+import static java.lang.System.getProperty;
+import static java.lang.System.currentTimeMillis;
 import static java.util.AbstractMap.*;
 
 @Component
@@ -69,13 +82,20 @@ public class SyncFarms {
     private final ObjectMapper mapper   = new ObjectMapper();
     private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
 
-    private boolean disableQueue = Boolean.getBoolean(System.getProperty(
-                                    JmsConfiguration.DISABLE_QUEUE, Boolean.toString(false)));
+    private boolean disableQueue = Boolean.getBoolean(
+            getProperty(JmsConfiguration.DISABLE_QUEUE,
+                    Boolean.toString(false)));
 
+    private boolean disableSched = Boolean.getBoolean(
+            getProperty(SchedulerConfiguration.GALEB_DISABLE_SCHED,
+                    getenv(SchedulerConfiguration.GALEB_DISABLE_SCHED)));
 
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
-
+        if (disableSched) {
+            LOGGER.debug(SyncFarms.class.getSimpleName() + " aborted (GALEB_DISABLE_SCHED is TRUE)");
+            return;
+        }
         if (!distributedLocker.lock(TASK_LOCKNAME, INTERVAL / 1000)) {
             return;
         }
@@ -114,11 +134,11 @@ public class SyncFarms {
         final Driver driver = DriverBuilder.getDriver(farm);
         final Properties properties = getPropertiesWithEntities(farm);
 
-        long diffStart = System.currentTimeMillis();
+        long diffStart = currentTimeMillis();
         LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
         Map<String, Map<String, Object>> diff = driver.diff(properties);
         LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
-                + (System.currentTimeMillis() - diffStart) + " ms)");
+                + (currentTimeMillis() - diffStart) + " ms)");
 
         if (diff.isEmpty()) {
             distributedLocker.release(farmLock);
