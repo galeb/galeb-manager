@@ -48,20 +48,11 @@ public class TargetEngine extends AbstractEngine<Target> {
 
     private static final Log LOGGER = LogFactory.getLog(TargetEngine.class);
 
-    @Autowired
-    private FarmRepository farmRepository;
-
-    @Autowired
-    private TargetRepository targetRepository;
-
-    @Autowired
-    private GenericEntityService genericEntityService;
-
-    @Autowired
-    private TargetQueue targetQueue;
-
-    @Autowired
-    private FarmQueue farmQueue;
+    @Autowired private FarmRepository farmRepository;
+    @Autowired private TargetRepository targetRepository;
+    @Autowired private GenericEntityService genericEntityService;
+    @Autowired private TargetQueue targetQueue;
+    @Autowired private FarmQueue farmQueue;
 
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target) {
@@ -84,9 +75,13 @@ public class TargetEngine extends AbstractEngine<Target> {
 
     @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
     public void update(Target target) {
-        LOGGER.info("Updating "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        updateTarget(target, target.getParent(), driver);
+        if (target.getStatus() == EntityStatus.DISABLED) {
+            targetQueue.sendToQueue(TargetQueue.QUEUE_REMOVE, target);
+        } else {
+            LOGGER.info("Updating " + target.getClass().getSimpleName() + " " + target.getName());
+            final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
+            updateTarget(target, target.getParent(), driver);
+        }
     }
 
     private void updateTarget(final Target target, final Pool pool, final Driver driver) {

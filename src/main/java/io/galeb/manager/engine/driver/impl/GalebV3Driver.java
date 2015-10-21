@@ -19,6 +19,7 @@
 package io.galeb.manager.engine.driver.impl;
 
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.*;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
@@ -325,7 +326,8 @@ public class GalebV3Driver implements Driver {
                               removeEntityIfNecessary(api, path, id, parentId, hasId, diffMap);
                           });
 
-        entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
+        entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
+                                           ((AbstractEntity<?>)entity).getStatus() != DISABLED)
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(api, path, entity, fullMap, diffMap));
     }
