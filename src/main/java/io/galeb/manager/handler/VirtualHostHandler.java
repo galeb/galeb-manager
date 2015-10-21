@@ -70,12 +70,12 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @HandleBeforeCreate
     public void beforeCreate(VirtualHost virtualhost) throws Exception {
         virtualhost.setFarmId(-1L);
+        updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
     }
 
     @HandleAfterCreate
     public void afterCreate(VirtualHost virtualhost) throws Exception {
-        updateRuleOrder(virtualhost);
         afterCreate(virtualhost, LOGGER);
     }
 
@@ -101,13 +101,15 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     }
 
     private void updateRuleOrder(VirtualHost virtualhost) {
-        if (!virtualhost.getRules().isEmpty() && !virtualhost.getRulesOrdered().isEmpty()) {
+        if (!virtualhost.getRules().isEmpty()) {
             final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
             final Set<Long> rulesOrdered = virtualhost.getRulesOrdered().keySet();
             if (!ruleIds.containsAll(rulesOrdered)){
                 throw new BadRequestException();
             }
-            ruleIds.removeAll(rulesOrdered);
+            if (!rulesOrdered.isEmpty()) {
+                ruleIds.removeAll(rulesOrdered);
+            }
             ruleIds.stream().forEach(ruleId -> virtualhost.getRulesOrdered().put(ruleId, Integer.MAX_VALUE));
         }
     }
