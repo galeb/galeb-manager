@@ -29,6 +29,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.galeb.manager.entity.Team;
 import org.springframework.transaction.annotation.*;
 
+import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
+
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "team", path = "team")
 public interface TeamRepository extends JpaRepository<Team, Long> {
@@ -36,6 +38,12 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     String QUERY_PREFIX = "SELECT t FROM Team t "
                         + "LEFT JOIN t.accounts a "
                         + "WHERE ";
+
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM team e ";
+
+    String NATIVE_QUERY_TEAM_TO_ACCOUNT =
+                        "left outer join account_teams accounts on e.id=accounts.team_id " +
+                        "left outer join account a on accounts.account_id=a.id ";
 
     String QUERY_FINDONE = QUERY_PREFIX + "t.id = :id AND "
                         + CommonJpaFilters.SECURITY_FILTER;
@@ -45,8 +53,9 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "t.name LIKE CONCAT('%',:name,'%') AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_TEAM_TO_ACCOUNT +
+                        "where (e.name like concat('%', :name, '%')) and " +
+                        SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -60,8 +69,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Team> findAll(Pageable pageable);
 
-    @Query(QUERY_FINDBYNAMECONTAINING)
+    @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Page<Team> findByNameContaining(@Param("name") String name, Pageable pageable);
+    Iterable<Team> findByNameContaining(@Param("name") String name);
 
 }
