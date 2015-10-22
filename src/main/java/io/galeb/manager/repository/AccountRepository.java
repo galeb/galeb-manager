@@ -29,18 +29,22 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.galeb.manager.entity.Account;
 import org.springframework.transaction.annotation.*;
 
+import java.util.List;
+
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
+    String QUERY_PREFIX = "SELECT a FROM Account e WHERE ";
+
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM account e WHERE ";
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "a.name LIKE CONCAT('%',:name,'%') AND "
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + "e.name LIKE CONCAT('%',:name,'%') AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
@@ -55,7 +59,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Account> findByName(@Param("name") String name, Pageable pageable);
 
-    @Query(QUERY_FINDBYNAMECONTAINING)
+    @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Page<Account> findByNameContaining(@Param("name") String name, Pageable pageable);
+    List<Account> findByNameContaining(@Param("name") String name);
 }
