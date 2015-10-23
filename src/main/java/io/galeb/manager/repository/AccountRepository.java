@@ -35,16 +35,16 @@ import java.util.List;
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    String QUERY_PREFIX = "SELECT e FROM Account e WHERE ";
+    String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM account e WHERE ";
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM account a WHERE ";
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND "
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "a.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + "e.name LIKE CONCAT('%',:name,'%') AND "
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + "a.name LIKE CONCAT('%',:name,'%') AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
