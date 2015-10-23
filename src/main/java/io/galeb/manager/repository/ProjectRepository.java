@@ -50,12 +50,12 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "left outer join account_teams accounts on t.id=accounts.team_id " +
             "left outer join account a on accounts.account_id=a.id ";
 
-    String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_TEAM_TO_ACCOUNT +
