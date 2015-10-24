@@ -23,7 +23,6 @@ package io.galeb.manager.scheduler.tasks;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
@@ -61,7 +60,8 @@ import io.galeb.manager.security.services.SystemUserService;
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
-import static java.util.AbstractMap.*;
+import static java.util.AbstractMap.Entry;
+import static java.util.AbstractMap.SimpleImmutableEntry;
 
 @Component
 public class SyncFarms {
@@ -104,7 +104,7 @@ public class SyncFarms {
             Authentication currentUser = CurrentUser.getCurrentAuth();
             SystemUserService.runAs();
 
-            StreamSupport.stream(farmRepository.findAll().spliterator(), false)
+            farmRepository.findAll().stream()
                     .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
                     .forEach(farm ->
                     {
@@ -153,6 +153,7 @@ public class SyncFarms {
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
             if (farm.isAutoReload() && !disableQueue) {
+                @SuppressWarnings("unchecked")
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
             } else {

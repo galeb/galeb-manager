@@ -219,7 +219,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         if (getClass() != obj.getClass())
             return false;
         T other = (T) obj;
-        return other.getName().equals(getName());
+        return other.getName() != null && other.getName().equals(getName());
     }
 
     public String getDescription() {

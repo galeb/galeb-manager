@@ -29,25 +29,38 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import io.galeb.manager.entity.Project;
 import org.springframework.transaction.annotation.*;
 
+import java.util.List;
+
+import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
+
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    String QUERY_PREFIX = "SELECT p FROM Project p "
-                        + "INNER JOIN p.teams t "
+    String QUERY_PREFIX = "SELECT e FROM Project e "
+                        + "INNER JOIN e.teams t "
                         + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
-    String QUERY_FINDONE = QUERY_PREFIX + "p.id = :id AND "
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM project e ";
+
+    String NATIVE_QUERY_TEAM_TO_ACCOUNT =
+            "inner join project_teams teams on e.id=teams.project_id " +
+            "inner join team t on teams.team_id=t.id " +
+            "left outer join account_teams accounts on t.id=accounts.team_id " +
+            "left outer join account a on accounts.account_id=a.id ";
+
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "p.name = :name AND "
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND "
                         + CommonJpaFilters.SECURITY_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "p.name LIKE CONCAT('%',:name,'%') AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_TEAM_TO_ACCOUNT +
+            "where (e.name like concat('%', :name, '%')) and " +
+            SECURITY_FILTER;
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -61,8 +74,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Project> findByName(@Param("name") String name, Pageable pageable);
 
-    @Query(QUERY_FINDBYNAMECONTAINING)
+    @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Page<Project> findByNameContaining(@Param("name") String name, Pageable pageable);
+    List<Project> findByNameContaining(@Param("name") String name);
 
 }

@@ -23,7 +23,18 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.ForeignKey;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
 
 import org.springframework.util.Assert;
 
@@ -46,7 +57,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(joinColumns=@JoinColumn(name = "rule_id", nullable = true, foreignKey = @ForeignKey(name="FK_rule_parent")),
     inverseJoinColumns=@JoinColumn(name = "parent_id", nullable = true, foreignKey = @ForeignKey(name="FK_parent_rule")))
-    private Set<VirtualHost> parents = new HashSet<>();
+    private final Set<VirtualHost> parents = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "pool_id", nullable = false, foreignKey = @ForeignKey(name="FK_rule_pool"))

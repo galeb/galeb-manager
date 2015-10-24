@@ -45,6 +45,10 @@ public class Project extends AbstractEntity<Project> {
     @OneToMany(mappedBy = "project")
     private final Set<Target> targets = new HashSet<>();
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "project")
+    private final Set<Pool> pools = new HashSet<>();
+
     @ManyToMany
     @JoinTable(joinColumns=@JoinColumn(name="project_id"),
                inverseJoinColumns=@JoinColumn(name="team_id"))

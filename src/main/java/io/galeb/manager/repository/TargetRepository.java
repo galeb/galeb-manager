@@ -20,41 +20,37 @@ package io.galeb.manager.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Target;
-import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import static io.galeb.manager.repository.CommonJpaFilters.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
 public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Long>,
                                           FarmIDable<Target> {
 
-    String QUERY_PREFIX = "SELECT ta FROM Target ta "
-                            + "INNER JOIN ta.project.teams t "
-                            + "LEFT JOIN t.accounts a "
-                            + "WHERE ";
+    String QUERY_PREFIX = "SELECT e FROM Target e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String IS_GLOBAL_FILTER = "ta.global = TRUE";
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM target e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
 
-    String QUERY_FINDONE = QUERY_PREFIX + "ta.id = :id AND "
-                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
-                            + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "ta.name = :name AND "
-                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
-                            + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER + " OR "
-                            + IS_GLOBAL_FILTER;
+    String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = QUERY_PREFIX + "ta.name LIKE CONCAT('%',:name,'%') AND "
-                            + "(" + CommonJpaFilters.SECURITY_FILTER + " OR "
-                            + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
+                        "WHERE (e.name LIKE concat('%', :name, '%')) AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -76,8 +72,8 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Target> findByParentName(@Param("name") String name, Pageable pageable);
 
-    @Query(QUERY_FINDBYNAMECONTAINING)
+    @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Page<Target> findByNameContaining(@Param("name") String name, Pageable pageable);
+    Iterable<Target> findByNameContaining(@Param("name") String name);
 
 }
