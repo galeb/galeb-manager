@@ -25,7 +25,7 @@ import io.galeb.manager.queue.TargetQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.*;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -75,13 +75,9 @@ public class TargetEngine extends AbstractEngine<Target> {
 
     @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
     public void update(Target target) {
-        if (target.getStatus() == EntityStatus.DISABLED) {
-            targetQueue.sendToQueue(TargetQueue.QUEUE_REMOVE, target);
-        } else {
-            LOGGER.info("Updating " + target.getClass().getSimpleName() + " " + target.getName());
-            final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-            updateTarget(target, target.getParent(), driver);
-        }
+        LOGGER.info("Updating " + target.getClass().getSimpleName() + " " + target.getName());
+        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
+        updateTarget(target, target.getParent(), driver);
     }
 
     private void updateTarget(final Target target, final Pool pool, final Driver driver) {
