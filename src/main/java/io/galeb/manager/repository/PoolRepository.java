@@ -29,7 +29,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import static io.galeb.manager.repository.CommonJpaFilters.*;
 
@@ -41,19 +42,19 @@ public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
 
     String QUERY_PREFIX = "SELECT e FROM Pool e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "select * from pool e ";
+    String NATIVE_QUERY_PREFIX = "SELECT * FROM pool e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
 
-    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND (" + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND (" + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
     String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER;
 
-    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_PROJECT_TO_ACCOUNT +
-                        "where (e.name like concat('%', :name, '%')) and " +
-                        SECURITY_FILTER + IS_GLOBAL_FILTER;
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
+                        "WHERE (e.name LIKE concat('%', :name, '%')) AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)

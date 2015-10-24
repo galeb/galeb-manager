@@ -26,7 +26,8 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Rule;
-import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import static io.galeb.manager.repository.CommonJpaFilters.IS_GLOBAL_FILTER;
 import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
@@ -36,34 +37,33 @@ import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
 public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
                                         FarmIDable<Rule> {
 
-    String QUERY_PROJECT_TO_ACCOUNT = "INNER JOIN e.pool.project.teams t "
-                        + "LEFT JOIN t.accounts a ";
+    String QUERY_PREFIX = "SELECT e FROM Rule e " +
+                        "INNER JOIN e.pool.project.teams t " +
+                        "LEFT JOIN t.accounts a WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "select * from rule e ";
+    String NATIVE_QUERY_PREFIX =
+                        "SELECT * FROM rule e " +
+                        "INNER JOIN pool pool_ ON e.pool_id = pool_.id " +
+                        "INNER JOIN project p on pool_.project_id=p.id " +
+                        "INNER JOIN project_teams teams on p.id=teams.project_id " +
+                        "INNER JOIN team t on teams.team_id=t.id " +
+                        "LEFT OUTER JOIN account_teams accounts on t.id=accounts.team_id " +
+                        "LEFT OUTER JOIN account a on accounts.account_id=a.id ";
 
-    // TODO: Define Native SQL
-    String NATIVE_QUERY_PROJECT_TO_ACCOUNT = "";
+    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_PREFIX = "SELECT e FROM Rule e " + QUERY_PROJECT_TO_ACCOUNT + "WHERE ";
+    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND "
-                        + "(" + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER;
 
-    String QUERY_FINDBYNAME = QUERY_PREFIX + "e.name = :name AND "
-                        + "(" + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER + ")";
+    String QUERY_FINDBYPOOLNAME = QUERY_PREFIX + "e.pool.name = :name AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
-    String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER;
-
-    String QUERY_FINDBYPOOLNAME = QUERY_PREFIX + "e.pool.name = :name AND "
-                        + "(" + SECURITY_FILTER + " OR "
-                        + IS_GLOBAL_FILTER + ")";
-
-    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_PROJECT_TO_ACCOUNT +
-            "where (e.name like concat('%', :name, '%')) and " +
-            SECURITY_FILTER + IS_GLOBAL_FILTER;
+    String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
+                        "WHERE (e.name LIKE CONCAT('%', :name, '%')) AND " +
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
