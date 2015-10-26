@@ -400,6 +400,20 @@ removeProject() {
   echo
 }
 
+updateVirtualHost() {
+  local TOKEN=$1
+  local NAME=$2
+  local RULE_ID="$(getId ${TOKEN} rule ${RULE_NAME})"
+  local VIRTUALHOST_ID="$(getId ${TOKEN} virtualhost ${NAME})"
+
+  curl -k -v -XPATCH -H ${HEADER} \
+        -d '{
+             "ruleDefault": "'${PROTOCOL}'://'${SERVER}'/rule/'${RULE_ID}'"
+         }' \
+        -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/virtualhost/${VIRTUALHOST_ID}
+  echo
+}
+
 ###
 if [ "x$1" == "xadmin" ] ; then
 
@@ -498,6 +512,8 @@ done
 
 # CREATE A RULE (Virtualhost and Pool is required)
 createRule ${TOKEN} ${RULE_NAME}
+
+updateVirtualHost ${TOKEN} ${VIRTUALHOST_NAME}
 
 ####
 
