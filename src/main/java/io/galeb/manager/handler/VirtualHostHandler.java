@@ -18,7 +18,9 @@
 
 package io.galeb.manager.handler;
 
+import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,8 +35,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.core.Authentication;
 
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
