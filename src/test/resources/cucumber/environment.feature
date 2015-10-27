@@ -73,3 +73,13 @@ Feature: Environment Support
         And a REST client authenticated as admin
         When send GET Environment=envOne
         Then the response status is 404
+
+    Scenario: Search Environment by Name
+        Given a REST client authenticated as admin
+        When send GET /environment/search/findByName?name=envOne
+        Then the response search at '_embedded.environment[0].name' equal to envOne
+
+    Scenario: Search Environment by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /environment/search/findByNameContaining?name=One
+        Then the response search at '_embedded.environment[0].name' equal to envOne

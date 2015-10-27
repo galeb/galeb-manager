@@ -19,7 +19,7 @@
 package io.galeb.manager;
 
 import static com.jayway.restassured.RestAssured.with;
-import static org.hamcrest.Matchers.hasToString;
+import static org.hamcrest.Matchers.*;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -126,7 +126,8 @@ public class StepDefs {
 
     private String processFullUrl(String data) {
         String key = "=";
-        if (data.contains(key)) {
+        String exclude = "?";
+        if (data.contains(key) && !data.contains(exclude)) {
             int indexOf = data.indexOf(key);
             String entityClass = data.substring(0, indexOf);
             return "http://localhost/" + entityClass.toLowerCase() + "/" + getIdFromData(data, indexOf);
@@ -260,6 +261,16 @@ public class StepDefs {
         if (property!=null && !"".equals(property)) {
             response.body(property, hasToString(value));
         }
+    }
+
+    @Then("^the response search at '(.+)' has items:$")
+    public void theResponseSearchAtHasItems(String expression, List<String> items) {
+        response.body(expression, hasItem(items));
+    }
+
+    @Then("^the response search at '(.+)' equal to (.+)$")
+    public void theResponseSearchAtEqualTo(String expression, String match) {
+        response.body(expression, equalTo(match));
     }
 
 }

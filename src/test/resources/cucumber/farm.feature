@@ -82,3 +82,13 @@ Feature: Farm Support
         And a REST client authenticated as admin
         When send GET /farm/1
         Then the response status is 404
+
+    Scenario: Search Farm by Name
+        Given a REST client authenticated as admin
+        When send GET /farm/search/findByName?name=farmOne
+        Then the response search at '_embedded.farm[0].name' equal to farmOne
+
+    Scenario: Search Farm by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /farm/search/findByNameContaining?name=One
+        Then the response search at '_embedded.farm[0].name' equal to farmOne

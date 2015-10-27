@@ -73,3 +73,13 @@ Feature: RuleType Support
         And a REST client authenticated as admin
         When send GET /ruletype/1
         Then the response status is 404
+
+    Scenario: Search RuleType by Name
+        Given a REST client authenticated as admin
+        When send GET /ruletype/search/findByName?name=rTypeOne
+        Then the response search at '_embedded.ruletype[0].name' equal to rTypeOne
+
+    Scenario: Search RuleType by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /ruletype/search/findByNameContaining?name=One
+        Then the response search at '_embedded.ruletype[0].name' equal to rTypeOne

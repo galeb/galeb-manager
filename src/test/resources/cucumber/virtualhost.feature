@@ -144,3 +144,13 @@ Feature: VirtualHost Support
         And send POST /virtualhost
         Then the response status is 503
 
+    Scenario: Search VirtualHost by Name
+        Given a REST client authenticated as admin
+        When send GET /virtualhost/search/findByName?name=one
+        Then the response search at '_embedded.virtualhost[0].name' equal to one
+
+    Scenario: Search VirtualHost by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /virtualhost/search/findByNameContaining?name=n
+        Then the response search at '_embedded.virtualhost[0].name' equal to one
+

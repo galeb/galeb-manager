@@ -59,3 +59,13 @@ Feature: Provider Support
         And a REST client authenticated as admin
         When send GET /provider/1
         Then the response status is 404
+
+    Scenario: Search Provider by Name
+        Given a REST client authenticated as admin
+        When send GET /provider/search/findByName?name=provOne
+        Then the response search at '_embedded.provider[0].name' equal to provOne
+
+    Scenario: Search Provider by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /provider/search/findByNameContaining?name=One
+        Then the response search at '_embedded.provider[0].name' equal to provOne

@@ -81,3 +81,13 @@ Feature: BalancePolicy Support
         And a REST client authenticated as admin
         When send GET BalancePolicy=tBalancePolicyOne
         Then the response status is 404
+
+    Scenario: Search BalancePolicy by Name
+        Given a REST client authenticated as admin
+        When send GET /balancepolicy/search/findByName?name=tBalancePolicyOne
+        Then the response search at '_embedded.balancepolicy[0].name' equal to tBalancePolicyOne
+
+    Scenario: Search BalancePolicy by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /balancepolicy/search/findByNameContaining?name=lancePolicyOn
+        Then the response search at '_embedded.balancepolicy[0].name' equal to tBalancePolicyOne

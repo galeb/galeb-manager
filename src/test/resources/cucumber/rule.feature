@@ -184,3 +184,12 @@ Feature: Rule Support
         When send GET Pool=poolOne
         Then the response status is 200
 
+    Scenario: Search Rule by Name
+        Given a REST client authenticated as admin
+        When send GET /rule/search/findByName?name=ruleOne
+        Then the response search at '_embedded.rule[0].name' equal to ruleOne
+
+    Scenario: Search Rule by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /rule/search/findByNameContaining?name=One
+        Then the response search at '_embedded.rule[0].name' equal to ruleOne

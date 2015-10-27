@@ -265,3 +265,12 @@ Feature: Account Support
         When send DELETE /account/2
         Then the response status is 403
 
+    Scenario: Search Account by Name
+        Given a REST client authenticated as admin
+        When send GET /account/search/findByName?name=accountOne
+        Then the response search at '_embedded.account[0].name' equal to accountOne
+
+    Scenario: Search Account by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /account/search/findByNameContaining?name=untO
+        Then the response search at '_embedded.account[0].name' equal to accountOne

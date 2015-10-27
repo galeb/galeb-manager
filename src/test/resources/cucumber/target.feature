@@ -210,3 +210,13 @@ Feature: Target Support
           | project     | Project=projOne    |
         And send POST /target
         Then the response status is 400
+
+    Scenario: Search Target by Name
+        Given a REST client authenticated as admin
+        When send GET /target/search/findByName?name=targetOne
+        Then the response search at '_embedded.target[0].name' equal to targetOne
+
+    Scenario: Search Target by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /target/search/findByNameContaining?name=One
+        Then the response search at '_embedded.target[0].name' equal to targetOne

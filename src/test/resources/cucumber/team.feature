@@ -67,3 +67,13 @@ Feature: Team Support
         When send GET /account/1
         Then the response status is 200
         And property name contains accountOne
+
+    Scenario: Search Team by Name
+        Given a REST client authenticated as admin
+        When send GET /team/search/findByName?name=one
+        Then the response search at '_embedded.team[0].name' equal to one
+
+    Scenario: Search Team by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /team/search/findByNameContaining?name=n
+        Then the response search at '_embedded.team[0].name' equal to one

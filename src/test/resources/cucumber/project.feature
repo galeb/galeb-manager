@@ -81,3 +81,13 @@ Feature: Project Support
         And a REST client authenticated as accountOne
         When send GET Project=projOne
         Then the response status is 404
+
+    Scenario: Search Project by Name
+        Given a REST client authenticated as admin
+        When send GET /project/search/findByName?name=projOne
+        Then the response search at '_embedded.project[0].name' equal to projOne
+
+    Scenario: Search Project by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /project/search/findByNameContaining?name=One
+        Then the response search at '_embedded.project[0].name' equal to projOne

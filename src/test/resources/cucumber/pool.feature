@@ -124,3 +124,23 @@ Feature: Pool Support
           | project     | Project=projOne    |
         And send POST /pool
         Then the response status is 503
+
+    Scenario: Search Pool by Name
+        Given a REST client authenticated as admin
+        When send GET /pool/search/findByName?name=poolOne
+        Then the response search at '_embedded.pool[0].name' equal to poolOne
+
+    Scenario: Search Pool by NameContaining
+        Given a REST client authenticated as admin
+        When send GET /pool/search/findByNameContaining?name=One
+        Then the response search at '_embedded.pool[0].name' equal to poolOne
+
+    Scenario: Search Pool by findByFarmId
+        Given a REST client authenticated as admin
+        When send GET /pool/search/findByName?name=poolOne
+        Then the response search at '_embedded.pool[0].name' equal to poolOne
+
+    Scenario: find Especial Pool NoParent
+        Given a REST client authenticated as admin
+        When send GET /pool/search/findByNameContaining?name=One
+        Then the response search at '_embedded.pool[0].name' equal to poolOne
