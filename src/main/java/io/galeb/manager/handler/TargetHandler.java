@@ -18,7 +18,10 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.entity.*;
+import io.galeb.manager.entity.Environment;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Project;
+import io.galeb.manager.entity.Target;
 import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
