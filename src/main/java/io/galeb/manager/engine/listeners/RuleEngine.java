@@ -20,6 +20,7 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.*;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
 import org.apache.commons.logging.Log;
@@ -36,13 +37,13 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
+
+import java.util.*;
 
 @Component
 public class RuleEngine extends AbstractEngine<Rule> {
@@ -154,9 +155,9 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
-        Integer ruleOrder = virtualhost.getRulesOrdered().get(rule.getId());
-        ruleOrder = ruleOrder != null ? ruleOrder : Integer.MAX_VALUE;
-        rule.setRuleOrder(ruleOrder);
+        Optional<Integer> ruleOrder = virtualhost.getRulesOrdered().stream()
+                .filter(r -> r.getRuleId() == rule.getId()).map(RuleOrder::getRuleOrder).findAny();
+        rule.setRuleOrder(ruleOrder.orElse(Integer.MAX_VALUE));
         Rule ruleDefault = virtualhost.getRuleDefault();
         if (ruleDefault != null) {
             rule.setRuleDefault(ruleDefault.getId() == rule.getId());

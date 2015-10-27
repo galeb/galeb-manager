@@ -18,9 +18,7 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.entity.*;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -103,14 +101,17 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     private void updateRuleOrder(VirtualHost virtualhost) {
         if (!virtualhost.getRules().isEmpty()) {
             final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
-            final Set<Long> rulesOrdered = virtualhost.getRulesOrdered().keySet();
-            if (!ruleIds.containsAll(rulesOrdered)){
+            final Set<Long> rulesIdsOrdered = virtualhost.getRulesOrdered().stream()
+                                                .map(RuleOrder::getRuleId).collect(Collectors.toSet());
+            if (!ruleIds.containsAll(rulesIdsOrdered)){
                 throw new BadRequestException();
             }
-            if (!rulesOrdered.isEmpty()) {
-                ruleIds.removeAll(rulesOrdered);
+            if (!rulesIdsOrdered.isEmpty()) {
+                ruleIds.removeAll(rulesIdsOrdered);
             }
-            ruleIds.stream().forEach(ruleId -> virtualhost.getRulesOrdered().put(ruleId, Integer.MAX_VALUE));
+            ruleIds.stream().forEach(ruleId -> {
+                virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
+            });
         }
     }
 }
