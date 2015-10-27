@@ -25,19 +25,22 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
-import org.springframework.transaction.annotation.*;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @PreAuthorize("hasRole('ROLE_ADMIN')")
 @RepositoryRestResource(collectionResourceRel = "farm", path = "farm")
 public interface FarmRepository extends JpaRepository<Farm, Long> {
 
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    Iterable<Farm> findByEnvironment(Environment environment);
+    Iterable<Farm> findByEnvironment(@Param("environment") Environment environment);
 
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Page<Farm> findByNameContaining(@Param("name") String name, Pageable pageable);
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Page<Farm> findByName(@Param("name") String name, Pageable pageable);
 
 }
