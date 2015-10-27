@@ -43,7 +43,7 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
 
     String QUERY_PREFIX = "SELECT e FROM VirtualHost e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "select * from virtual_host e ";
+    String NATIVE_QUERY_PREFIX = "select * from virtualhost e ";
 
     String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " + SECURITY_FILTER;
 
