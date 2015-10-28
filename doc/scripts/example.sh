@@ -400,10 +400,11 @@ removeProject() {
   echo
 }
 
-updateVirtualHost() {
+defineRuleDefaultToVirtualHost() {
   local TOKEN=$1
   local NAME=$2
-  local RULE_ID="$(getId ${TOKEN} rule ${RULE_NAME})"
+  local RULE_DEFAULT_NAME=$3
+  local RULE_ID="$(getId ${TOKEN} rule ${RULE_DEFAULT_NAME})"
   local VIRTUALHOST_ID="$(getId ${TOKEN} virtualhost ${NAME})"
 
   curl -k -v -XPATCH -H ${HEADER} \
@@ -413,6 +414,23 @@ updateVirtualHost() {
         -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/virtualhost/${VIRTUALHOST_ID}
   echo
 }
+
+defineRuleOrderToVirtualHost() {
+  local TOKEN=$1
+  local NAME=$2
+  local RULE_NAME_ORDERED=$3
+  local RULE_ORDER=$4
+  local RULE_ID="$(getId ${TOKEN} rule ${RULE_NAME_ORDERED})"
+  local VIRTUALHOST_ID="$(getId ${TOKEN} virtualhost ${NAME})"
+
+  curl -k -v -XPATCH -H ${HEADER} \
+        -d '{
+             "rulesOrder": [ { "ruleId": '${RULE_ID}', "ruleOrder": '${RULE_ORDER}' } ]
+         }' \
+        -H"x-auth-token: $TOKEN" ${PROTOCOL}://${SERVER}/virtualhost/${VIRTUALHOST_ID}
+  echo
+}
+
 
 ###
 if [ "x$1" == "xadmin" ] ; then
@@ -511,9 +529,12 @@ for PORT in $(seq ${BACKEND_STARTPORT} ${BACKEND_ENDPORT}); do
 done
 
 # CREATE A RULE (Virtualhost and Pool is required)
-createRule ${TOKEN} ${RULE_NAME}
+createRule ${TOKEN} ${RULE_NAME}_1
+createRule ${TOKEN} ${RULE_NAME}_2
+createRule ${TOKEN} ${RULE_NAME}_3
+createRule ${TOKEN} ${RULE_NAME}_4
 
-updateVirtualHost ${TOKEN} ${VIRTUALHOST_NAME}
+defineRuleDefaultToVirtualHost ${TOKEN} ${VIRTUALHOST_NAME} ${RULE_NAME}_3
 
 ####
 
