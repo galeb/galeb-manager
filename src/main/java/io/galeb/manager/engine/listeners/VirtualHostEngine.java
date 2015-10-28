@@ -20,11 +20,15 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.*;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -36,8 +40,6 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
@@ -49,8 +51,10 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
+    @Autowired private RuleRepository ruleRepository;
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private VirtualHostQueue virtualHostQueue;
+    @Autowired private RuleQueue ruleQueue;
     @Autowired private FarmQueue farmQueue;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
@@ -91,6 +95,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
                     update(virtualHostAlias);
                 });
+                updateRules(virtualHost);
             }
         } catch (Exception e) {
             LOGGER.error(e);
@@ -164,6 +169,16 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         properties.put("json", json);
         properties.put("path", "virtualhost");
         return properties;
+    }
+
+    private void updateRules(VirtualHost virtualHost) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        virtualHost.getRulesOrdered().stream()
+                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
+                .filter(rule -> rule != null)
+                .forEach(rule -> ruleQueue.sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
+        SystemUserService.runAs(currentUser);
     }
 
 }
