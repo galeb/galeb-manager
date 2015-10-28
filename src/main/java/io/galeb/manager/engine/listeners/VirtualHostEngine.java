@@ -95,6 +95,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
                     if (!driver.exist(makeProperties(virtualHostAlias))) {
                         create(virtualHostAlias);
+                        createRules(virtualHostAlias);
                     } else {
                         update(virtualHostAlias);
                     }
@@ -182,6 +183,16 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
                 .filter(rule -> rule != null)
                 .forEach(rule -> ruleQueue.sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
+        SystemUserService.runAs(currentUser);
+    }
+
+    private void createRules(VirtualHost virtualHost) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        virtualHost.getRulesOrdered().stream()
+                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
+                .filter(rule -> rule != null)
+                .forEach(rule -> ruleQueue.sendToQueue(RuleQueue.QUEUE_CREATE, rule));
         SystemUserService.runAs(currentUser);
     }
 
