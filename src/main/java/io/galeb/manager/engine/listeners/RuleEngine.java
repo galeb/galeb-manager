@@ -66,11 +66,13 @@ public class RuleEngine extends AbstractEngine<Rule> {
             boolean isOk = false;
             try {
                 isOk = driver.create(makeProperties(rule, virtualhost));
-                virtualhost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias =  virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualhost);
-                    driver.create(makeProperties(rule, virtualHostAlias));
-                });
+                if (isOk) {
+                    virtualhost.getAliases().forEach(virtualHostName -> {
+                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                                .buildVirtualHostAlias(virtualHostName, virtualhost);
+                        driver.create(makeProperties(rule, virtualHostAlias));
+                    });
+                }
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
@@ -94,11 +96,13 @@ public class RuleEngine extends AbstractEngine<Rule> {
                     return;
                 }
                 isOk = driver.update(makeProperties(rule, virtualhost));
-                virtualhost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias =  virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualhost);
-                    driver.update(makeProperties(rule, virtualHostAlias));
-                });
+                if (isOk) {
+                    virtualhost.getAliases().forEach(virtualHostName -> {
+                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                                .buildVirtualHostAlias(virtualHostName, virtualhost);
+                        driver.update(makeProperties(rule, virtualHostAlias));
+                    });
+                }
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
@@ -117,6 +121,13 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
             try {
                 isOk = driver.remove(makeProperties(rule, virtualhost));
+                if (isOk) {
+                    virtualhost.getAliases().forEach(virtualHostName -> {
+                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                                .buildVirtualHostAlias(virtualHostName, virtualhost);
+                        driver.remove(makeProperties(rule, virtualHostAlias));
+                    });
+                }
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {

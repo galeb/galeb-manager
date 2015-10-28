@@ -93,7 +93,11 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 virtualHost.getAliases().forEach(virtualHostName -> {
                     VirtualHost virtualHostAlias = virtualHostAliasBuilder
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    update(virtualHostAlias);
+                    if (!driver.exist(makeProperties(virtualHostAlias))) {
+                        create(virtualHostAlias);
+                    } else {
+                        update(virtualHostAlias);
+                    }
                 });
                 updateRules(virtualHost);
             }
