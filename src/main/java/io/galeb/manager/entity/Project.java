@@ -68,6 +68,7 @@ public class Project extends AbstractEntity<Project> {
 
     public Project setTeams(Set<Team> teams) {
         if (teams != null) {
+            updateHash();
             this.teams.clear();
             this.teams.addAll(teams);
         }

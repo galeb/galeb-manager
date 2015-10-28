@@ -19,10 +19,8 @@
 package io.galeb.manager.entity;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.*;
 
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -37,6 +35,7 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
+import io.galeb.manager.common.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -46,7 +45,6 @@ import org.springframework.util.Assert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.galeb.manager.common.JsonCustomProperties;
 import io.galeb.manager.security.config.SpringSecurityAuditorAware;
 
 @MappedSuperclass
@@ -111,6 +109,8 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private String description;
 
+    private Integer hash = 0;
+
     @PrePersist
     private void onCreate() {
         createdAt = new Date();
@@ -136,6 +136,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     public void setId(long id) {
+        updateHash();
         this.id = id;
     }
 
@@ -166,6 +167,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setName(String name) {
         Assert.hasText(name);
+        updateHash();
         this.name = name;
         return (T) this;
     }
@@ -177,6 +179,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @SuppressWarnings("unchecked")
     public T setProperties(Map<String, String> properties) {
         if (properties != null) {
+            updateHash();
             this.properties.clear();
             this.properties.putAll(properties);
         }
@@ -230,6 +233,31 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     public T setDescription(String description) {
         this.description = description;
         return (T) this;
+    }
+
+    public int getHash() {
+        return hash;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T setHash(Integer hash) {
+        if (hash != null) {
+            this.hash = hash;
+        } else {
+            if (this.hash == null) {
+                this.hash = 0;
+            }
+        }
+        return (T) this;
+    }
+
+    @JsonIgnore
+    public void updateHash() {
+        if (hash != null && hash < Integer.MAX_VALUE) {
+            hash++;
+        } else {
+            hash = 0;
+        }
     }
 
 }

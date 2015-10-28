@@ -44,6 +44,7 @@ public class Team extends AbstractEntity<Team> {
 
     public Team setAccounts(Set<Account> accounts) {
         if (accounts != null) {
+            updateHash();
             this.accounts.clear();
             this.accounts.addAll(accounts);
         }
@@ -56,6 +57,7 @@ public class Team extends AbstractEntity<Team> {
 
     public Team setProjects(Set<Project> projects) {
         if (projects != null) {
+            updateHash();
             this.projects.clear();
             this.projects.addAll(projects);
         }

@@ -98,6 +98,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     }
 
     public Rule setRuleType(RuleType ruleType) {
+        updateHash();
         this.ruleType = ruleType;
         return this;
     }
@@ -109,6 +110,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     public Rule setParents(Set<VirtualHost> parents) {
         if (parents != null) {
+            updateHash();
             this.parents.clear();
             this.parents.addAll(parents);
         }
@@ -121,6 +123,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     public Rule setPool(Pool pool) {
         Assert.notNull(pool);
+        updateHash();
         this.pool = pool;
         return this;
     }
@@ -132,6 +135,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     @Override
     public Rule setFarmId(long farmId) {
+        updateHash();
         this.farmId = farmId;
         return this;
     }
@@ -162,6 +166,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     public Rule setDefaultIn(Set<VirtualHost> defaultIn) {
         if (defaultIn != null) {
+            updateHash();
             this.defaultIn.clear();
             this.defaultIn.addAll(defaultIn);
         }
@@ -174,6 +179,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     public Rule setGlobal(Boolean global) {
         if (global != null) {
+            updateHash();
             this.global = global;
         }
         return this;

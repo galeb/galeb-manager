@@ -23,9 +23,10 @@ package io.galeb.manager.entity;
 import org.springframework.util.*;
 
 import javax.persistence.*;
+import java.io.*;
 
 @Embeddable
-public class RuleOrder {
+public class RuleOrder implements Serializable {
 
     @Column(nullable = false)
     private Long ruleId;

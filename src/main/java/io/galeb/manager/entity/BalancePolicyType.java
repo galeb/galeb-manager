@@ -18,7 +18,7 @@
 
 package io.galeb.manager.entity;
 
-import java.util.Set;
+import java.util.*;
 
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
@@ -32,7 +32,7 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
     private static final long serialVersionUID = 5596582746795373010L;
 
     @OneToMany(mappedBy = "balancePolicyType")
-    private Set<BalancePolicy> balancePolicies;
+    private final Set<BalancePolicy> balancePolicies = new HashSet<>();
 
     public BalancePolicyType(String name) {
         setName(name);
@@ -48,6 +48,7 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
 
     public BalancePolicyType setBalancePolicies(Set<BalancePolicy> balancePolicies) {
         if (balancePolicies != null) {
+            updateHash();
             this.balancePolicies.clear();
             this.balancePolicies.addAll(balancePolicies);
         }

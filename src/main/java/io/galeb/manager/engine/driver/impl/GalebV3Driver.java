@@ -342,7 +342,7 @@ public class GalebV3Driver implements Driver {
         final String version = entityProperties.getOrDefault("version", "UNDEF");
         final String pk = entityProperties.getOrDefault("pk", "UNDEF");
         LOGGER.debug("Check if is necessary UPDATE");
-        if (!version.equals(String.valueOf(entity.getId())) || !pk.equals(String.valueOf(entity.getId()))) {
+        if (!version.equals(String.valueOf(entity.getHash())) || !pk.equals(String.valueOf(entity.getId()))) {
             changeAction(api, path, id, parentId, diffMap);
         } else {
             if (entity.getStatus() == PENDING || entity.getStatus() == ERROR ) {

@@ -85,6 +85,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     public VirtualHost setEnvironment(Environment environment) {
+        updateHash();
         this.environment = environment;
         return this;
     }
@@ -94,6 +95,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     public VirtualHost setProject(Project project) {
+        updateHash();
         this.project = project;
         return this;
     }
@@ -105,6 +107,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @Override
     public VirtualHost setFarmId(long farmId) {
+        updateHash();
         this.farmId = farmId;
         return this;
     }
@@ -117,6 +120,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     @Override
     public VirtualHost setAliases(Set<String> aliases) {
         if (aliases != null) {
+            updateHash();
             this.aliases.clear();
             this.aliases.addAll(aliases);
         }
@@ -130,6 +134,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     public VirtualHost setRulesOrdered(Set<RuleOrder> rulesOrdered) {
         if (rulesOrdered != null) {
+            updateHash();
             this.rulesOrdered.clear();
             this.rulesOrdered.addAll(rulesOrdered);
         }
@@ -141,6 +146,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     public VirtualHost setRuleDefault(Rule ruleDefault) {
+        updateHash();
         this.ruleDefault = ruleDefault;
         return this;
     }
@@ -151,6 +157,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     public VirtualHost setRules(Set<Rule> rules) {
         if (rules != null) {
+            updateHash();
             this.rules.clear();
             this.rules.addAll(rules);
         }

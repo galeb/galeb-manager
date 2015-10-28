@@ -78,6 +78,8 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public Farm setDomain(String domain) {
+        Assert.hasText(domain);
+        updateHash();
         this.domain = domain;
         return this;
     }
@@ -87,6 +89,8 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public Farm setApi(String api) {
+        Assert.hasText(api);
+        updateHash();
         this.api = api;
         return this;
     }
@@ -96,6 +100,8 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public Farm setEnvironment(Environment environment) {
+        Assert.notNull(environment);
+        updateHash();
         this.environment = environment;
         return this;
     }
@@ -105,6 +111,8 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public Farm setProvider(Provider provider) {
+        Assert.notNull(provider);
+        updateHash();
         this.provider = provider;
         return this;
     }
@@ -114,6 +122,7 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public Farm setAutoReload(boolean autoReload) {
+        updateHash();
         this.autoReload = autoReload;
         return this;
     }

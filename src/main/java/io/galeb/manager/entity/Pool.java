@@ -23,6 +23,7 @@ package io.galeb.manager.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.util.*;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -45,7 +46,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     private long farmId;
 
     @OneToMany(mappedBy = "parent")
-    private Set<Target> targets = new HashSet<>();
+    private final Set<Target> targets = new HashSet<>();
 
     @JsonIgnore
     @OneToMany(mappedBy = "pool", fetch = FetchType.EAGER)
@@ -75,6 +76,8 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     }
 
     public Pool setEnvironment(Environment environment) {
+        Assert.notNull(environment);
+        updateHash();
         this.environment = environment;
         return this;
     }
@@ -86,6 +89,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
 
     @Override
     public Pool setFarmId(long farmId) {
+        updateHash();
         this.farmId = farmId;
         return this;
     }
@@ -96,6 +100,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
 
     public Pool setTargets(Set<Target> targets) {
         if (targets != null) {
+            updateHash();
             this.targets.clear();
             this.targets.addAll(targets);
         }
@@ -108,6 +113,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
 
     public Pool setRules(Set<Rule> rules) {
         if (rules != null) {
+            updateHash();
             this.rules.clear();
             this.rules.addAll(rules);
         }
@@ -119,6 +125,8 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     }
 
     public Pool setProject(Project project) {
+        Assert.notNull(project);
+        updateHash();
         this.project = project;
         return this;
     }
@@ -128,6 +136,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     }
 
     public Pool setBalancePolicy(BalancePolicy balancePolicy) {
+        updateHash();
         this.balancePolicy = balancePolicy;
         return this;
     }
@@ -140,6 +149,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     @JsonIgnore
     public Pool setGlobal(Boolean global) {
         if (global != null) {
+            updateHash();
             this.global = global;
         }
         return this;

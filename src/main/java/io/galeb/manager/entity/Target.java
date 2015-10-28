@@ -64,6 +64,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     public Target setEnvironment(Environment environment) {
+        updateHash();
         this.environment = environment;
         return this;
     }
@@ -75,6 +76,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @Override
     public Target setFarmId(long farmId) {
+        updateHash();
         this.farmId = farmId;
         return this;
     }
@@ -85,6 +87,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     public Target setParent(Pool parent) {
         if (parent != null) {
+            updateHash();
             this.parent = parent;
         }
         return this;
@@ -95,6 +98,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     public Target setProject(Project project) {
+        updateHash();
         this.project = project;
         return this;
     }
@@ -107,6 +111,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @JsonIgnore
     public Target setGlobal(Boolean global) {
         if (global != null) {
+            updateHash();
             this.global = global;
         }
         return this;

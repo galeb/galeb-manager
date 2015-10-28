@@ -59,6 +59,7 @@ public class Provider extends AbstractEntity<Provider> {
     }
 
     public Provider setDriver(String driver) {
+        updateHash();
         this.driver = driver;
         return this;
     }
@@ -68,6 +69,7 @@ public class Provider extends AbstractEntity<Provider> {
     }
 
     public Provider setProvisioning(String provisioning) {
+        updateHash();
         this.provisioning = provisioning;
         return this;
     }

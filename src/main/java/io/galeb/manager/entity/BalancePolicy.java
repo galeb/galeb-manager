@@ -18,7 +18,7 @@
 
 package io.galeb.manager.entity;
 
-import java.util.Set;
+import java.util.*;
 
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -43,7 +43,7 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
     private BalancePolicyType balancePolicyType;
 
     @OneToMany(mappedBy = "balancePolicy")
-    private Set<Pool> pools;
+    private final Set<Pool> pools = new HashSet<>();
 
     public BalancePolicy(String name, BalancePolicyType balancePolicyType) {
         Assert.hasText(name);
@@ -61,6 +61,8 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
     }
 
     public BalancePolicy setBalancePolicyType(BalancePolicyType balancePolicyType) {
+        Assert.notNull(balancePolicyType);
+        updateHash();
         this.balancePolicyType = balancePolicyType;
         return this;
     }
@@ -70,7 +72,11 @@ public class BalancePolicy extends AbstractEntity<BalancePolicy> {
     }
 
     public BalancePolicy setPools(Set<Pool> pools) {
-        this.pools = pools;
+        if (pools != null) {
+            updateHash();
+            this.pools.clear();
+            this.pools.addAll(pools);
+        }
         return this;
     }
 }

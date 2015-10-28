@@ -48,6 +48,7 @@ public class RuleType extends AbstractEntity<RuleType> {
 
     public RuleType setRules(Set<Rule> rules) {
         if (rules != null) {
+            updateHash();
             this.rules.clear();
             this.rules.addAll(rules);
         }

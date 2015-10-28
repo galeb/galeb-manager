@@ -78,6 +78,7 @@ public class Account extends AbstractEntity<Account> {
 
     public Account setEmail(String email) {
         Assert.hasText(email);
+        updateHash();
         this.email = email;
         return this;
     }
@@ -88,6 +89,7 @@ public class Account extends AbstractEntity<Account> {
 
     public Account setTeams(Set<Team> teams) {
         if (teams != null) {
+            updateHash();
             this.teams.clear();
             this.teams.addAll(teams);
         }
@@ -100,6 +102,7 @@ public class Account extends AbstractEntity<Account> {
 
     public Account setRoles(Set<Role> roles) {
         if (roles != null) {
+            updateHash();
             this.roles.clear();
             this.roles.addAll(roles);
         }
@@ -114,6 +117,7 @@ public class Account extends AbstractEntity<Account> {
     @JsonProperty(value = "password", required = true)
     public Account setPassword(String password) {
         Assert.hasText(password);
+        updateHash();
         this.password = ENCODER.encode(password);
         return this;
     }
