@@ -20,15 +20,26 @@
 
 package io.galeb.manager.entity;
 
+import org.springframework.util.*;
+
 import javax.persistence.*;
 
 @Embeddable
 public class RuleOrder {
 
-    private long ruleId;
-    private int ruleOrder;
+    @Column(nullable = false)
+    private Long ruleId;
 
-    public RuleOrder(long ruleId, int ruleOrder) {
+    @Column(nullable = false)
+    private Integer ruleOrder;
+
+    public RuleOrder() {
+        this(Long.MIN_VALUE, Integer.MIN_VALUE);
+    }
+
+    public RuleOrder(Long ruleId, Integer ruleOrder) {
+        Assert.notNull(ruleId);
+        Assert.notNull(ruleOrder);
         this.ruleId = ruleId;
         this.ruleOrder = ruleOrder;
     }
@@ -37,16 +48,8 @@ public class RuleOrder {
         return ruleId;
     }
 
-    public void setRuleId(long ruleId) {
-        this.ruleId = ruleId;
-    }
-
     public int getRuleOrder() {
         return ruleOrder;
-    }
-
-    public void setRuleOrder(int ruleOrder) {
-        this.ruleOrder = ruleOrder;
     }
 
     @Override
@@ -54,7 +57,7 @@ public class RuleOrder {
         if (o == null || getClass() != o.getClass()) return false;
 
         RuleOrder ruleOrder = (RuleOrder) o;
-        return ruleId == ruleOrder.ruleId;
+        return this.getRuleId() == ruleOrder.getRuleId();
     }
 
     @Override

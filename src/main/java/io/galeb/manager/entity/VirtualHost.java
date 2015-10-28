@@ -18,9 +18,7 @@
 
 package io.galeb.manager.entity;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.ElementCollection;
@@ -61,7 +59,6 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     private long farmId;
 
     @ElementCollection(fetch = FetchType.EAGER, targetClass = RuleOrder.class)
-    @JoinColumn(nullable = false)
     private final Set<RuleOrder> rulesOrdered = new HashSet<>();
 
     @ManyToOne
