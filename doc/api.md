@@ -1,3 +1,31 @@
+# Authentication
+
+Galeb Manager API authentication schema support:
+
+* Basic Auth
+* Token Auth
+
+#### Basic Auth example
+
+```
+$ curl https://admin:password@localhost/virtualhost
+```
+
+#### Token Auth example
+
+```
+$ curl -v https://admin:password@localhost/token
+....
+{
+    admin: true,
+    account: "admin",
+    token: "e1a6eb71-2cda-41a3-96e0-5167ccc4a145"
+}
+....
+
+$ curl -H'x-auth-token: e1a6eb71-2cda-41a3-96e0-5167ccc4a145' http://localhost/virtualhost
+```
+
 # URI Path & Interdependencies
 
 ## URI paths
@@ -261,6 +289,64 @@ curl http://localhost/virtualhost/search/findByName?name=test.localdomain&page=0
 | Provider            | findByName, findByNameContaining                                              |
 | Environment         | findByName, findByNameContaining                                              |
 
+# Entity Schemas
+
+Galeb Manager API implements HATEOAS principal.
+
+A core principle of HATEOAS is that resources should be discoverable through the publication of links that point to the available resources. There are a few competing de-facto standards of how to represent links in JSON. By default, Galeb Manager API uses HAL to render responses. HAL defines links to be contained in a property of the returned document.
+
+## Project
+
+    TODO
+                
+## Target             
+        
+    TODO
+        
+## Pool               
+        
+    TODO
+        
+## VirtualHost        
+        
+    TODO
+        
+## Rule               
+        
+    TODO
+        
+## Rule Type          
+        
+    TODO
+        
+## Balance Policy Type
+        
+    TODO
+        
+## Balance Policy     
+        
+    TODO
+        
+## Team               
+        
+    TODO
+        
+## Account            
+        
+    TODO
+        
+## Farm               
+        
+    TODO
+        
+## Provider           
+        
+    TODO
+        
+## Environment        
+        
+    TODO
+        
 
 
 
