@@ -18,7 +18,7 @@ usage() {
     echo "Usages:"
     echo "checkFams.sh <galebManager_baseUrl> showEnv"
     echo "checkFams.sh <galebManager_baseUrl> checkAll"
-    echo "checkFams.sh <galebManager_baseUrl> <environmentName> [<UniversalHealthCheckPath>]"
+    echo "checkFams.sh <galebManager_baseUrl> <environmentName> [UniversalHealthCheckPath] [customFarmEntry]"
     echo
     echo "Example: ./checkFarms.sh http://localhost checkAll"
     exit 0
@@ -29,13 +29,21 @@ if [ $# -lt 2 ]; then
     usage
 fi
 
+if [ -n $4 ];then
+    export FARM_ENTRY=$4
+fi
+
 export PROTOCOL="$(echo $1 | cut -d':' -f1)"
 export SERVER="$(echo $1 | cut -d'/' -f3)"
 
 
 loginAccount() {
-    echo -n "login: "; read LOGIN
-    echo -n "password: "; read -s PASSWORD
+    if [ -z $LOGIN ]; then
+        echo -n "login: "; read LOGIN
+    fi
+    if [ -z $PASSWORD ]; then
+        echo -n "password: "; read -s PASSWORD
+    fi
     export TOKEN="$(curl -k -v ${PROTOCOL}://${LOGIN}:${PASSWORD}@${SERVER}/token 2> /dev/null | jq -r .token)"
     export IS_ADMIN="$(curl -k -v ${PROTOCOL}://${LOGIN}:${PASSWORD}@${SERVER}/token 2> /dev/null | jq -r .admin)"
     echo
@@ -75,10 +83,14 @@ getHosts() {
 }
 
 getRouterDomainEntry() {
-    local FARM_ID=$1
-     curl -k -s -H"x-auth-token: $TOKEN" \
-            ${PROTOCOL}'://'${SERVER}'/farm/'${FARM_ID}'?page=0&size=999999' | \
-            jq -r .domain
+    if [ -n ${FARM_ENTRY} ] && [ "x$FARM_ENTRY" != "x" ] ; then
+        echo ${FARM_ENTRY}
+    else
+        local FARM_ID=$1
+         curl -k -s -H"x-auth-token: $TOKEN" \
+                ${PROTOCOL}'://'${SERVER}'/farm/'${FARM_ID}'?page=0&size=999999' | \
+                jq -r .domain
+    fi
 }
 
 showEnv() {
@@ -99,7 +111,7 @@ showStatus() {
     echo
 
     for host in $(getHosts ${FARM_ID});do
-        ACTION="curl --max-time ${TIMEOUT} -k -s -I -H\"Host: ${host}\" http://${FARM_ENTRY}${HC_PATH} 2>&1 | head -1 | cut -d' ' -f2-"
+        ACTION="curl --max-time ${TIMEOUT} -k -s -XGET -I -H\"Host: ${host}\" http://${FARM_ENTRY}${HC_PATH} 2>&1 | head -1 | cut -d' ' -f2-"
         ACTION_RUN="$(eval ${ACTION})"
         RESULT="${ACTION_RUN}"
         NO_COLOUR="\033[0m"
@@ -108,7 +120,7 @@ showStatus() {
         if echo ${RESULT} | grep '20\|30' > /dev/null 2>&1; then
             COR="\033[0;32m"
         fi
-        if [ -z ${RESULT} ]; then
+        if [ "x${RESULT}" == "x" ]; then
             COR="\033[0;31m"
             RESULT="-- Timeout --"
         fi
