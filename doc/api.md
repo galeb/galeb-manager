@@ -291,59 +291,484 @@ curl http://localhost/virtualhost/search/findByName?name=test.localdomain&page=0
 
 # Entity Schemas
 
-Galeb Manager API implements HATEOAS principal.
+Galeb Manager API is Spring HATEAOS based, so it's a Hypermedia-Driven RESTful Web Service.
 
 A core principle of HATEOAS is that resources should be discoverable through the publication of links that point to the available resources. There are a few competing de-facto standards of how to represent links in JSON. By default, Galeb Manager API uses HAL to render responses. HAL defines links to be contained in a property of the returned document.
 
-## Project
+Example:
+```
+{
+    id: 1,
+    name: "Null Environment",
+    _created_by: "admin",
+    _lastmodified_by: "admin",
+    properties: { },
+    hash: 0,
+    _version: 0,
+    _created_at: "2015-10-30T17:03:11.000+0000",
+    _lastmodified_at: "2015-10-30T17:03:11.000+0000",
+    _status: "OK",
+    _links: {
+        self: {
+            href: "https://api.galeb.globoi.com/environment/1"
+        },
+        targets: {
+            href: "https://api.galeb.globoi.com/environment/1/targets"
+        },
+        farms: {
+            href: "https://api.galeb.globoi.com/environment/1/farms"
+        },
+        virtualhosts: {
+            href: "https://api.galeb.globoi.com/environment/1/virtualhosts"
+        }
+    }
+}
+```
 
-    TODO
+IMPORTANT: Attributes started with '_' and the attribute 'id' are read-only and internally defined.
+
+## Common attributes
+
+| attribute   | required | description        | 
+| ------------|----------|--------------------|
+| name        | true     | entity name        |
+| properties  | false    | properties map     |
+| description | false    | entity description |
+
+## Project - json-schema
+
+```
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:galeb:manager:entity:Project",
+  "properties" : {
+    "id" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "_created_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    },
+    "_created_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_lastmodified_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    }
+    "_lastmodified_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_status" : {
+      "type" : "string",
+      "enum" : [ "PENDING", "OK", "ERROR", "UNKNOWN", "DISABLED", "ENABLE" ],
+      "read-only": true
+    },
+    "_version" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "name" : {
+      "type" : "string",
+      "required" : true
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "hash" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "properties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "string"
+      }
+    },
+    "teams" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "id" : "urn:jsonschema:io:galeb:manager:entity:Team",
+      }
+    },
+  }
+}
+```
                 
-## Target             
+## Target - json-schema
+        
+```
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:galeb:manager:entity:Target",
+  "properties" : {
+    "id" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "_created_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    },
+    "_created_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_lastmodified_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    }
+    "_lastmodified_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_status" : {
+      "type" : "string",
+      "enum" : [ "PENDING", "OK", "ERROR", "UNKNOWN", "DISABLED", "ENABLE" ],
+      "read-only": true
+    },
+    "_version" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "name" : {
+      "type" : "string",
+      "required" : true
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "hash" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "properties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "string"
+      }
+    },
+    "parent" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Pool",
+      "required" : true
+    },
+    "project" : {
+      "type" : "object",
+      "$ref" : "urn:jsonschema:io:galeb:manager:entity:Project",
+      "required" : true
+    },
+    "environment" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Environment",
+      "required" : true
+    }
+  }
+} 
+```
+
+## Pool - json-schema          
+        
+```
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:galeb:manager:entity:Pool",
+  "properties" : {
+    "id" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "_created_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    },
+    "_created_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_lastmodified_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    }
+    "_lastmodified_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_status" : {
+      "type" : "string",
+      "enum" : [ "PENDING", "OK", "ERROR", "UNKNOWN", "DISABLED", "ENABLE" ],
+      "read-only": true
+    },
+    "_version" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "name" : {
+      "type" : "string",
+      "required" : true
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "hash" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "properties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "string"
+      }
+    },
+    "project" : {
+      "type" : "object",
+      "$ref" : "urn:jsonschema:io:galeb:manager:entity:Project",
+      "required" : true
+    },
+    "environment" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Environment",
+      "required" : true
+    },
+    "balancePolicy" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:BalancePolicy",
+      "required" : true
+    },
+    "targets" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "id" : "urn:jsonschema:io:galeb:manager:entity:Target"
+      }
+    }
+  }
+} 
+```
+
+## VirtualHost - json-schema    
+        
+```
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:galeb:manager:entity:VirtualHost",
+  "properties" : {
+    "id" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "_created_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    },
+    "_created_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_lastmodified_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    }
+    "_lastmodified_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_status" : {
+      "type" : "string",
+      "enum" : [ "PENDING", "OK", "ERROR", "UNKNOWN", "DISABLED", "ENABLE" ],
+      "read-only": true
+    },
+    "_version" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "name" : {
+      "type" : "string",
+      "required" : true
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "hash" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "properties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "string"
+      }
+    },
+    "aliases" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      }
+    },
+    "project" : {
+      "type" : "object",
+      "$ref" : "urn:jsonschema:io:galeb:manager:entity:Project",
+      "required" : true
+    },
+    "environment" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Environment",
+      "required" : true
+    },
+    "rules" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "urn:jsonschema:io:galeb:manager:entity:Rule"
+      }
+    },
+    "ruleDefault" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Rule"
+    },
+    "rulesOrdered" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "id" : "urn:jsonschema:io:galeb:manager:entity:RuleOrder",
+        "properties" : {
+          "ruleOrder" : {
+            "type" : "integer"
+          },
+          "ruleId" : {
+            "type" : "integer"
+          }
+        }
+      }
+    }
+  }
+} 
+```
+## Rule - json-schema    
+        
+ ```
+{
+  "type" : "object",
+  "id" : "urn:jsonschema:io:galeb:manager:entity:Rule",
+  "properties" : {
+    "id" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "_created_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    },
+    "_created_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_lastmodified_at" : {
+      "type" : "integer",
+      "format" : "UTC_MILLISEC",
+      "read-only": true
+    }
+    "_lastmodified_by" : {
+      "type" : "string",
+      "read-only": true
+    },
+    "_status" : {
+      "type" : "string",
+      "enum" : [ "PENDING", "OK", "ERROR", "UNKNOWN", "DISABLED", "ENABLE" ],
+      "read-only": true
+    },
+    "_version" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "name" : {
+      "type" : "string",
+      "required" : true
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "hash" : {
+      "type" : "integer",
+      "read-only": true
+    },
+    "properties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "string"
+      }
+    },
+    "ruleType" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:RuleType",
+      "required" : true
+    },
+    "pool" : {
+      "type" : "object",
+      "id" : "urn:jsonschema:io:galeb:manager:entity:Pool",
+      "required" : true
+    },
+    "global" : {
+      "type" : "boolean"
+    },
+    "defaultIn" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "urn:jsonschema:io:galeb:manager:entity:VirtualHost"
+      }
+    },
+    "parents" : {
+      "type" : "array",
+      "items" : {
+        "type" : "object",
+        "id" : "urn:jsonschema:io:galeb:manager:entity:VirtualHost"
+      }
+    }
+  }
+}
+```
+ 
+## Rule Type - json-schema
         
     TODO
         
-## Pool               
+## Balance Policy Type - json-schema
         
     TODO
         
-## VirtualHost        
+## Balance Policy - json-schema
         
     TODO
         
-## Rule               
+## Team - json-schema    
         
     TODO
         
-## Rule Type          
+## Account - json-schema
         
     TODO
         
-## Balance Policy Type
+## Farm - json-schema
         
     TODO
         
-## Balance Policy     
+## Provider - json-schema
         
     TODO
         
-## Team               
-        
-    TODO
-        
-## Account            
-        
-    TODO
-        
-## Farm               
-        
-    TODO
-        
-## Provider           
-        
-    TODO
-        
-## Environment        
+## Environment - json-schema
         
     TODO
         
