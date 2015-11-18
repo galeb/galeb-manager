@@ -21,13 +21,15 @@ package io.galeb.manager.handler;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 import static io.galeb.manager.entity.Account.Role.ROLE_ADMIN;
 
-import io.galeb.manager.exceptions.*;
-import io.galeb.manager.repository.*;
-import io.galeb.manager.security.services.*;
-import io.galeb.manager.security.user.*;
+import io.galeb.manager.entity.Account;
+import io.galeb.manager.entity.Team;
+import io.galeb.manager.exceptions.ForbiddenException;
+import io.galeb.manager.repository.AccountRepository;
+import io.galeb.manager.security.services.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -37,8 +39,8 @@ import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import io.galeb.manager.entity.Account;
-import org.springframework.security.core.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.util.*;
 import java.util.stream.*;
@@ -74,18 +76,24 @@ public class AccountHandler {
             SystemUserService.runAs();
             final Account accountPersisted = accountRepository.findOne(account.getId());
             SystemUserService.runAs(currentUser);
-            if (hasMoreRoles(accountPersisted, account) || hasMoreTeams(accountPersisted, account)) {
+            if (accountPersisted == null || rolesChanged(accountPersisted, account) || teamsChanged(accountPersisted, account)) {
                 throw new ForbiddenException();
             }
         }
     }
 
-    private boolean hasMoreRoles(final Account accountPersisted, final Account accountChanged) {
-        return accountPersisted.getRoles().containsAll(accountChanged.getRoles());
+    private boolean rolesChanged(final Account accountPersisted, final Account accountChanged) {
+        Set<Account.Role> rolesPersistedCopied = new HashSet<>(accountPersisted.getRoles());
+        Set<Account.Role> rolesChangedCopied = new HashSet<>(accountChanged.getRoles());
+        rolesPersistedCopied.removeAll(rolesChangedCopied);
+        return !rolesPersistedCopied.isEmpty();
     }
 
-    private boolean hasMoreTeams(final Account accountPersisted, final Account accountChanged) {
-        return accountPersisted.getTeams().containsAll(accountChanged.getTeams());
+    private boolean teamsChanged(final Account accountPersisted, final Account accountChanged) {
+        Set<Team> teamsPersistedCopied = new HashSet<>(accountPersisted.getTeams());
+        Set<Team> teamsChangedCopied = new HashSet<>(accountChanged.getTeams());
+        teamsPersistedCopied.removeAll(teamsChangedCopied);
+        return !teamsPersistedCopied.isEmpty();
     }
 
     @HandleAfterSave
