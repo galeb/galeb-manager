@@ -1,7 +1,7 @@
 # Introduction
 
-Galeb Manager is a Galeb Router manager built on Spring Boot.<br/>
-Galeb Router is a massively parallel routing system running a shared-nothing architecture.
+**Galeb Manager** is a **Galeb Router** manager built on *Spring Boot*.<br/>
+**Galeb Router** is a massively parallel routing system running a shared-nothing architecture.
 
 Its main features are:
 

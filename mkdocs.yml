@@ -4,8 +4,17 @@ repo_url: https://github.com/galeb/galeb-manager
 site_author: Galeb Team
 theme: readthedocs
 docs_dir: doc
+use_directory_urls: false
 pages:
 - index.md
 - building.md
 - running.md
-- api.md
+- 'Api':
+  - 'Authentication': api/authentication.md
+  - 'URI Path & Interdependencies': api/uripath_interdependencies.md
+  - 'Status Code': api/status_code.md
+  - 'HTTP Method': api/http_method.md
+  - 'Schemas':
+    - 'Introduction': api/entity_schemas.md
+    - 'Json Schemas': api/json/schemas.md
+
