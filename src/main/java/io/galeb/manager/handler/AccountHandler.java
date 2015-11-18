@@ -19,9 +19,15 @@
 package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.manager.entity.Account.Role.ROLE_ADMIN;
 
+import io.galeb.manager.exceptions.*;
+import io.galeb.manager.repository.*;
+import io.galeb.manager.security.services.*;
+import io.galeb.manager.security.user.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.*;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -32,11 +38,18 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Account;
+import org.springframework.security.core.*;
+
+import java.util.*;
+import java.util.stream.*;
 
 @RepositoryEventHandler(Account.class)
 public class AccountHandler {
 
     private static Log LOGGER = LogFactory.getLog(AccountHandler.class);
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeCreate
@@ -54,6 +67,25 @@ public class AccountHandler {
     @HandleBeforeSave
     public void beforeSave(Account account) {
         LOGGER.info("Account: HandleBeforeSave");
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        Set<String> roles = currentUser.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+        if (!roles.contains(ROLE_ADMIN.toString())) {
+            SystemUserService.runAs();
+            final Account accountPersisted = accountRepository.findOne(account.getId());
+            SystemUserService.runAs(currentUser);
+            if (hasMoreRoles(accountPersisted, account) || hasMoreTeams(accountPersisted, account)) {
+                throw new ForbiddenException();
+            }
+        }
+    }
+
+    private boolean hasMoreRoles(final Account accountPersisted, final Account accountChanged) {
+        return accountPersisted.getRoles().containsAll(accountChanged.getRoles());
+    }
+
+    private boolean hasMoreTeams(final Account accountPersisted, final Account accountChanged) {
+        return accountPersisted.getTeams().containsAll(accountChanged.getTeams());
     }
 
     @HandleAfterSave
