@@ -142,21 +142,6 @@ Feature: Account Support
         Then the response status is 200
         And property name contains accountOne
 
-    Scenario: Update Account email as its owner
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name     | accountOne                  |
-            | password | password                    |
-            | email    | accountTwo@test.com         |
-            | roles    | [ ROLE_USER ]               |
-            | teams    | [ http://localhost/team/1 ] |
-        And send PUT /account/2
-        Then the response status is 204
-        And a REST client authenticated as adminOne
-        When send GET /account/2
-        Then the response status is 200
-        And property email contains accountTwo@test.com
-
     Scenario: Update field name of Account as its owner is not permitted
         Given a REST client authenticated as accountOne
         When request json body has:
@@ -168,13 +153,13 @@ Feature: Account Support
         Then the response status is 200
         And property name contains accountOne
 
-    Scenario: Delete Account as its owner
+    Scenario: Delete Account as its owner is not permitted
         Given a REST client authenticated as accountOne
         When send DELETE /account/2
-        Then the response status is 204
+        Then the response status is 403
         And  a REST client authenticated as adminOne
         When send GET /account/2
-        Then the response status is 404
+        Then the response status is 200
 
     Scenario: Create Account as anonymous is not permitted
         Given a REST client unauthenticated

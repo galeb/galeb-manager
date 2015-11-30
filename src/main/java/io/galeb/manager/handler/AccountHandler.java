@@ -65,35 +65,10 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterCreate");
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeSave
     public void beforeSave(Account account) {
         LOGGER.info("Account: HandleBeforeSave");
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        Set<String> roles = currentUser.getAuthorities().stream()
-                                .map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
-        if (!roles.contains(ROLE_ADMIN.toString())) {
-            SystemUserService.runAs();
-            final Account accountPersisted = accountRepository.findOne(account.getId());
-            SystemUserService.runAs(currentUser);
-            if (accountPersisted == null || rolesChanged(accountPersisted, account) || teamsChanged(accountPersisted, account)) {
-                throw new ForbiddenException();
-            }
-        }
-    }
-
-    private boolean rolesChanged(final Account accountPersisted, final Account accountChanged) {
-        Set<Account.Role> rolesPersistedCopied = new HashSet<>(accountPersisted.getRoles());
-        Set<Account.Role> rolesChangedCopied = new HashSet<>(accountChanged.getRoles());
-        rolesPersistedCopied.removeAll(rolesChangedCopied);
-        return !rolesPersistedCopied.isEmpty();
-    }
-
-    private boolean teamsChanged(final Account accountPersisted, final Account accountChanged) {
-        Set<Team> teamsPersistedCopied = new HashSet<>(accountPersisted.getTeams());
-        Set<Team> teamsChangedCopied = new HashSet<>(accountChanged.getTeams());
-        teamsPersistedCopied.removeAll(teamsChangedCopied);
-        return !teamsPersistedCopied.isEmpty();
     }
 
     @HandleAfterSave
@@ -101,7 +76,7 @@ public class AccountHandler {
         LOGGER.info("Account: HandleAfterSave");
     }
 
-    @PreAuthorize("hasRole('ROLE_ADMIN') or #account.name == principal.username")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @HandleBeforeDelete
     public void beforeDelete(Account account) {
         LOGGER.info("Account: HandleBeforeDelete");
