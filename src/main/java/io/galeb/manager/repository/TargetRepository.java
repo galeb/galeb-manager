@@ -36,9 +36,9 @@ import static io.galeb.manager.repository.CommonJpaFilters.*;
 public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Long>,
                                           FarmIDable<Target> {
 
-    String QUERY_PREFIX = "SELECT e FROM Target e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
+    String QUERY_PREFIX = "SELECT DISTINCT e FROM Target e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM target e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT e.* FROM target e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
 
     String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " +
                         "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";

@@ -37,12 +37,12 @@ import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
 @RepositoryRestResource(collectionResourceRel = "project", path = "project")
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    String QUERY_PREFIX = "SELECT e FROM Project e "
+    String QUERY_PREFIX = "SELECT DISTINCT e FROM Project e "
                         + "INNER JOIN e.teams t "
                         + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM project e ";
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT e.* FROM project e ";
 
     String NATIVE_QUERY_TEAM_TO_ACCOUNT =
             "inner join project_teams teams on e.id=teams.project_id " +

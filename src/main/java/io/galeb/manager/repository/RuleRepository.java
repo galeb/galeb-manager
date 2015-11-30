@@ -37,12 +37,12 @@ import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
 public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
                                         FarmIDable<Rule> {
 
-    String QUERY_PREFIX = "SELECT e FROM Rule e " +
+    String QUERY_PREFIX = "SELECT DISTINCT e FROM Rule e " +
                         "INNER JOIN e.pool.project.teams t " +
                         "LEFT JOIN t.accounts a WHERE ";
 
     String NATIVE_QUERY_PREFIX =
-                        "SELECT * FROM rule e " +
+                        "SELECT DISTINCT e.* FROM rule e " +
                         "INNER JOIN pool pool_ ON e.pool_id = pool_.id " +
                         "INNER JOIN project p on pool_.project_id=p.id " +
                         "INNER JOIN project_teams teams on p.id=teams.project_id " +

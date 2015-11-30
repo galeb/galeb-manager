@@ -35,7 +35,7 @@ public class VirtualHostRepositoryImpl implements VirtualHostRepositoryCustom {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostRepositoryImpl.class);
 
-    private static final String QUERY_GET_RULES = "SELECT r FROM Rule r " +
+    private static final String QUERY_GET_RULES = "SELECT DISTINCT r FROM Rule r " +
                                                  "INNER JOIN r.parents p " +
                                                  "WHERE p.name = :name";
 

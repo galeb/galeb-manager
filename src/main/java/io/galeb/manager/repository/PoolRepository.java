@@ -40,9 +40,9 @@ public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
                                         FarmIDable<Pool>,
                                         PoolRepositoryCustom {
 
-    String QUERY_PREFIX = "SELECT e FROM Pool e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
+    String QUERY_PREFIX = "SELECT DISTINCT e FROM Pool e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM pool e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT e.* FROM pool e " + NATIVE_QUERY_PROJECT_TO_ACCOUNT;
 
     String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " +
                         "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";

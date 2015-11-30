@@ -35,9 +35,9 @@ import java.util.List;
 @RepositoryRestResource(collectionResourceRel = "account", path = "account")
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
-    String QUERY_PREFIX = "SELECT a FROM Account a WHERE ";
+    String QUERY_PREFIX = "SELECT DISTINCT a FROM Account a WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM account a WHERE ";
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT a.* FROM account a WHERE ";
 
     String QUERY_FINDALL = QUERY_PREFIX + CommonJpaFilters.SECURITY_FILTER;
 

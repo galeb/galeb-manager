@@ -35,11 +35,11 @@ import static io.galeb.manager.repository.CommonJpaFilters.SECURITY_FILTER;
 @RepositoryRestResource(collectionResourceRel = "team", path = "team")
 public interface TeamRepository extends JpaRepository<Team, Long> {
 
-    String QUERY_PREFIX = "SELECT t FROM Team t "
+    String QUERY_PREFIX = "SELECT DISTINCT t FROM Team t "
                         + "LEFT JOIN t.accounts a "
                         + "WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "SELECT * FROM team e ";
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT e.* FROM team e ";
 
     String NATIVE_QUERY_TEAM_TO_ACCOUNT =
                         "left outer join account_teams accounts on e.id=accounts.team_id " +

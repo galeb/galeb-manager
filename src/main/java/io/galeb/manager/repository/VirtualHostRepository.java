@@ -41,9 +41,9 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
                                                FarmIDable<VirtualHost>,
                                                VirtualHostRepositoryCustom {
 
-    String QUERY_PREFIX = "SELECT e FROM VirtualHost e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
+    String QUERY_PREFIX = "SELECT DISTINCT e FROM VirtualHost e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
-    String NATIVE_QUERY_PREFIX = "select * from virtualhost e ";
+    String NATIVE_QUERY_PREFIX = "SELECT DISTINCT e.* FROM virtualhost e ";
 
     String QUERY_FINDONE = QUERY_PREFIX + "e.id = :id AND " + SECURITY_FILTER;
 
