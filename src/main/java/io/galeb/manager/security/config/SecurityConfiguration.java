@@ -165,9 +165,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             break;
 
         default:
-            auth.userDetailsService(userDetailsService).passwordEncoder(ENCODER);
-            break;
+            LOGGER.info("Using only AUTH DEFAULT");
         }
+        auth.userDetailsService(userDetailsService).passwordEncoder(ENCODER);
 
     }
 
