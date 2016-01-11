@@ -18,11 +18,6 @@
 
 package io.galeb.manager.engine.driver.impl;
 
-import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.*;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,21 +26,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import io.galeb.core.model.Backend;
-import io.galeb.core.model.BackendPool;
-import io.galeb.core.model.Rule;
-import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.LoggerUtils;
-import io.galeb.manager.engine.driver.*;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.WithAliases;
-import io.galeb.manager.entity.WithParent;
-import io.galeb.manager.entity.WithParents;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.util.DiffProcessor;
+import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -82,9 +73,19 @@ public class GalebV3Driver implements Driver {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    private DistributedLocker distributedLocker;
+
     @Override
     public String toString() {
         return DRIVER_NAME;
+    }
+
+    @Override
+    public Driver addResource(Object resource) {
+        if (resource instanceof DistributedLocker) {
+            distributedLocker = (DistributedLocker) resource;
+        }
+        return this;
     }
 
     @Override
@@ -214,20 +215,6 @@ public class GalebV3Driver implements Driver {
         return result;
     }
 
-    private JsonNode getJson(String path) throws URISyntaxException, IOException {
-        JsonNode json = null;
-        RestTemplate restTemplate = new RestTemplate();
-        URI uri = new URI(path);
-        RequestEntity<Void> request = RequestEntity.get(uri).build();
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        boolean result = response.getStatusCode().value() < 400;
-
-        if (result) {
-            json = mapper.readTree(response.getBody());
-        }
-        return json;
-    }
-
     @NotThreadSafe
     private static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
 
@@ -266,238 +253,9 @@ public class GalebV3Driver implements Driver {
     @SuppressWarnings("unchecked")
     @Override
     public Map<String, Map<String, Object>> diff(Properties properties) {
-
-        final String apiFromProperties = properties.getOrDefault("api", "localhost:9090").toString();
-        final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
-        final Map <String, List<?>> entitiesMap =
-                (Map <String, List<?>>)properties.getOrDefault("entitiesMap", Collections.emptyMap());
-
-        final Map<String, Map<String, String>> fullMap = extractRemoteMap(api);
-        final Map<String, Map<String, Object>> diffMap = new HashMap<>();
-
-        entitiesMap.keySet().stream().forEach(path -> makeDiffMap(api, path, entitiesMap, fullMap, diffMap));
-        return diffMap;
+        return new DiffProcessor().setProperties(properties).setDistributedLocker(distributedLocker).getDiffMap();
     }
 
-    @SuppressWarnings("unchecked")
-    private void makeDiffMap(String api,
-                             String path,
-                             final Map<String, List<?>> entitiesMap,
-                             final Map<String, Map<String, String>> fullMap,
-                             final Map<String, Map<String, Object>> diffMap) {
-
-        List<?> entities = entitiesMap.get(path);
-
-        fullMap.entrySet().stream()
-                          .filter(entry ->
-                                  entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
-                          .forEach(entry ->
-                          {
-                              final Map<String, String> entityProperties = entry.getValue();
-                              final String id = entityProperties.getOrDefault("id", "UNDEF");
-                              final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
-                              AtomicBoolean hasId = new AtomicBoolean(false);
-
-                              entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
-                                  .map(entity -> ((AbstractEntity<?>) entity))
-                                  .filter(entity -> entity.getName().equals(id))
-                                  .filter(getAbstractEntityPredicate(parentId))
-                                  .forEach(entity ->
-                                  {
-                                      hasId.set(true);
-                                      updateIfNecessary(api, path, id, parentId, entity, entityProperties, diffMap);
-                                  });
-                              entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases).forEach(entity ->
-                              {
-                                  WithAliases<?> withAliases = (WithAliases) entity;
-                                  if (withAliases.getAliases().contains(id)) {
-                                      hasId.set(true);
-                                  }
-                              });
-                              entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents).forEach(entity -> {
-                                  WithParents<?> withParents = (WithParents) entity;
-                                  Set<WithAliases> withAliases = new HashSet<>((Collection<? extends WithAliases>) withParents.getParents());
-                                  boolean isAlias = withAliases.stream().map(WithAliases::getAliases)
-                                          .flatMap(Collection::stream).collect(Collectors.toSet()).contains(parentId);
-                                  if (isAlias) {
-                                      hasId.set(true);
-                                  }
-                              });
-                              removeEntityIfNecessary(api, path, id, parentId, hasId, diffMap);
-                          });
-
-        entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
-                                           ((AbstractEntity<?>)entity).getStatus() != DISABLED)
-                .map(entity -> ((AbstractEntity<?>) entity))
-                .forEach(entity -> createEntityIfNecessary(api, path, entity, fullMap, diffMap));
-    }
-
-    private void updateIfNecessary(String api,
-                                   String path,
-                                   String id,
-                                   String parentId,
-                                   final AbstractEntity<?> entity,
-                                   final Map<String, String> entityProperties,
-                                   final Map<String, Map<String, Object>> diffMap) {
-        final String version = entityProperties.getOrDefault("version", "UNDEF");
-        final String pk = entityProperties.getOrDefault("pk", "UNDEF");
-        LOGGER.debug("Check if is necessary UPDATE");
-        if (!version.equals(String.valueOf(entity.getHash())) || !pk.equals(String.valueOf(entity.getId()))) {
-            changeAction(api, path, id, parentId, diffMap);
-        } else {
-            if (entity.getStatus() == PENDING || entity.getStatus() == ERROR ) {
-                callbackStatusOkAction(api, path, id, parentId, diffMap);
-            }
-        }
-    }
-
-    private void removeEntityIfNecessary(String api,
-                                         String path,
-                                         String id,
-                                         String parentId,
-                                         final AtomicBoolean hasId,
-                                         final Map<String, Map<String, Object>> diffMap) {
-        LOGGER.debug("Check if is necessary REMOVE");
-        if (!hasId.get()) {
-            delAction(api, path, id, parentId, diffMap);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void createEntityIfNecessary(String api,
-                                         String path,
-                                         final AbstractEntity<?> entity,
-                                         final Map<String, Map<String, String>> fullMap,
-                                         final Map<String, Map<String, Object>> diffMap) {
-        String id = entity.getName();
-        LOGGER.debug("Check if is necessary CREATE");
-        if (!(entity instanceof WithParent) && !(entity instanceof WithParents)) {
-            addAction(api, path, id, "", fullMap.keySet(), diffMap);
-        }
-        if (entity instanceof WithParent) {
-            AbstractEntity<?> parentInstance = ((WithParent<AbstractEntity<?>>) entity).getParent();
-            String parentId = parentInstance != null ? parentInstance.getName() : "";
-            addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
-        }
-        if (entity instanceof WithParents) {
-            ((WithParents<AbstractEntity<?>>) entity).getParents().forEach(aParent ->
-            {
-                String parentId = aParent.getName();
-                addAction(api, path, id, parentId, fullMap.keySet(), diffMap);
-            });
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private Predicate<AbstractEntity<?>> getAbstractEntityPredicate(String parentId) {
-        return entity -> (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
-                (entity instanceof WithParent) && (
-                        ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId)) ||
-                (entity instanceof WithParents) &&
-                        !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
-                        ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId);
-    }
-
-    private Map<String, Map<String, String>> extractRemoteMap(final String api) {
-
-        final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final List<String> pathList = Arrays.asList(
-                VirtualHost.class.getSimpleName().toLowerCase(),
-                BackendPool.class.getSimpleName().toLowerCase(),
-                Backend.class.getSimpleName().toLowerCase(),
-                Rule.class.getSimpleName().toLowerCase());
-
-        pathList.stream().map(path -> api + "/" + path).forEach(fullPath ->
-        {
-            try {
-                JsonNode json = getJson(fullPath);
-                if (json.isArray()) {
-                    json.forEach(element -> {
-                        Map<String, String> entityProperties = new HashMap<>();
-                        String id = element.get("id").asText();
-                        JsonNode parentIdObj = element.get("parentId");
-                        String parentId = parentIdObj != null ? parentIdObj.asText() : "";
-                        String pk = element.get("pk").asText();
-                        String version = element.get("version").asText();
-                        String entityType = element.get("_entity_type").asText();
-                        String etag = element.get("_etag").asText();
-
-                        entityProperties.put("id", id);
-                        entityProperties.put("pk", pk);
-                        entityProperties.put("version", version);
-                        entityProperties.put("parentId", parentId);
-                        entityProperties.put("entity_type", entityType);
-                        entityProperties.put("etag", etag);
-                        fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
-                    });
-                }
-            } catch (Exception e) {
-                LOGGER.error(e);
-            }
-        });
-        return fullMap;
-    }
-
-    private void addAction(final String api,
-                           final String path,
-                           final String id,
-                           final String parentId,
-                           final Set<String> setOfKeys,
-                           final Map<String, Map<String, Object>> diffMap) {
-        String key = api + "/" + path + "/" + id + "@" + parentId;
-        if (!setOfKeys.contains(key)) {
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put("ACTION", CREATE);
-            attributes.put("ID", id);
-            attributes.put("PARENT_ID", parentId);
-            attributes.put("ENTITY_TYPE", path);
-            diffMap.put(key, attributes);
-        }
-    }
-
-    private void changeAction(final String api,
-                              final String path,
-                              final String id,
-                              final String parentId,
-                              final Map<String, Map<String, Object>> diffMap) {
-        Map<String, Object> attributes = new HashMap<>();
-        String key = api + "/" + path + "/" + id + "@" + parentId;
-        attributes.put("ACTION", UPDATE);
-        attributes.put("ID", id);
-        attributes.put("PARENT_ID", parentId);
-        attributes.put("ENTITY_TYPE", path);
-        diffMap.put(key, attributes);
-    }
-
-    private void delAction(final String api,
-                           final String path,
-                           final String id,
-                           final String parentId,
-                           final Map<String, Map<String, Object>> diffMap) {
-        Map<String, Object> attributes = new HashMap<>();
-        String key = api + "/" + path + "/" + id + "@" + parentId;
-        attributes.put("ACTION", REMOVE);
-        attributes.put("ID", id);
-        attributes.put("PARENT_ID", parentId);
-        attributes.put("ENTITY_TYPE", path);
-        diffMap.put(key, attributes);
-    }
-
-    private void callbackStatusOkAction(final String api,
-                                        final String path,
-                                        final String id,
-                                        final String parentId,
-                                        final Map<String, Map<String, Object>> diffMap) {
-        Map<String, Object> attributes = new HashMap<>();
-        String key = api + "/" + path + "/" + id + "@" + parentId;
-        attributes.put("ACTION", CALLBACK);
-        attributes.put("ID", id);
-        attributes.put("PARENT_ID", parentId);
-        attributes.put("ENTITY_TYPE", path);
-        diffMap.put(key, attributes);
-    }
 
     private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
         InputStream content = null;
