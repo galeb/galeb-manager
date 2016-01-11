@@ -55,7 +55,7 @@ public class LocalRedisConfiguration {
 
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(128);
-        poolConfig.setBlockWhenExhausted(false);
+        poolConfig.setBlockWhenExhausted(true);
 
         RedisSentinelConfiguration sentinelConfig = null;
         if (useSentinel != null && !useSentinel.equals("false")) {
