@@ -145,7 +145,6 @@ public class GalebV3Driver implements Driver {
 
     @Override
     public boolean create(Properties properties) {
-        remove(properties);
         String api = properties.getOrDefault("api", "NULL").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
