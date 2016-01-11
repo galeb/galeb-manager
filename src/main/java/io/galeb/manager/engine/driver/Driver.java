@@ -58,4 +58,8 @@ public interface Driver {
         return Collections.emptyMap();
     }
 
+    default Driver addResource(Object resource) {
+        return this;
+    }
+
 }

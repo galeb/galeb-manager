@@ -32,6 +32,10 @@ public class DriverBuilder {
         drivers.put(GalebV3Driver.DRIVER_NAME, new GalebV3Driver());
     }
 
+    public static Driver addResource(Driver driver, Object resource) {
+        return driver.addResource(resource);
+    }
+
     public static Driver build(String driverName) {
         final Driver driver = drivers.get(driverName);
         if (driver == null) {
