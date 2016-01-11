@@ -57,6 +57,7 @@ public class DistributedLocker {
                 return redis.get(key.getBytes()) != null;
             }
         } catch (Exception e) {
+            redis.close();
             LOGGER.error(e);
         }
         return false;
@@ -64,12 +65,36 @@ public class DistributedLocker {
 
     public synchronized DistributedLocker release(String key) {
         try {
-            LOGGER.debug("Releasing locker with key " + key);
+            LOGGER.info("Releasing lock " + key);
             redis.del(key.getBytes());
         } catch (Exception e) {
+            redis.close();
             LOGGER.error(e);
         }
         return this;
+    }
+
+    public boolean refresh(String key, long ttl) {
+        boolean result = false;
+        LOGGER.debug("Refreshing TTL (" + key + ").");
+        try {
+            result = redis.pExpire(key.getBytes(), ttl);
+        } catch (Exception e) {
+            redis.close();
+            LOGGER.error(e);
+        }
+        return result;
+    }
+
+    private Long remainTTL(String key) {
+        Long remain = 0L;
+        try {
+            remain = redis.pTtl(key.getBytes());
+        } catch (Exception e) {
+            redis.close();
+            LOGGER.error(e);
+        }
+        return remain != null ? remain : 0L;
     }
 
     private boolean redisSetNxPx(String key, long ttl) {
@@ -88,6 +113,7 @@ public class DistributedLocker {
             os.flush();
             os.close();
         } catch (Exception e) {
+            redis.close();
             LOGGER.error(e);
         }
         return out != null && out.size() > 5;
