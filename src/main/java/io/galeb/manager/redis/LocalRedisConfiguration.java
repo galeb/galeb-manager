@@ -8,9 +8,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import redis.clients.jedis.JedisPoolConfig;
 
-import java.util.*;
-import java.util.stream.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 public class LocalRedisConfiguration {
@@ -51,6 +53,10 @@ public class LocalRedisConfiguration {
                 env.getProperty("spring.redis.sentinel.nodes", "127.0.0.1:26379") : redisSentinelNodes;
         List<String> redisSentinelNodesStringList = Arrays.asList(redisSentinelNodes.split(","));
 
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(128);
+        poolConfig.setBlockWhenExhausted(false);
+
         RedisSentinelConfiguration sentinelConfig = null;
         if (useSentinel != null && !useSentinel.equals("false")) {
             try {
@@ -60,11 +66,13 @@ public class LocalRedisConfiguration {
                 sentinelConfig = new RedisSentinelConfiguration();
                 sentinelConfig.master(masterName).setSentinels(redisSentinelNodesList);
                 jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
+                jedisConnectionFactory.setPoolConfig(poolConfig);
             } catch (Exception e) {
                 LOGGER.error(e);
             }
         } else {
             jedisConnectionFactory = new JedisConnectionFactory();
+            jedisConnectionFactory.setPoolConfig(poolConfig);
             jedisConnectionFactory.setHostName(hostName);
             try {
                 jedisConnectionFactory.setPort(Integer.parseInt(port));
