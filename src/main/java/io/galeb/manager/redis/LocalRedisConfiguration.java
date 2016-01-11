@@ -5,7 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
+import org.springframework.core.env.*;
 import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import redis.clients.jedis.JedisPoolConfig;
@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 public class LocalRedisConfiguration {
 
     private static final Log LOGGER = LogFactory.getLog(LocalRedisConfiguration.class);
+
+    public static final String REDIS_TIMEOUT  = System.getProperty("REDIS_TIMEOUT", "15000");
+    public static final String REDIS_MAXTOTAL = System.getProperty("REDIS_MAXTOTAL", "128");
 
     @Autowired
     private Environment env;
@@ -53,10 +56,6 @@ public class LocalRedisConfiguration {
                 env.getProperty("spring.redis.sentinel.nodes", "127.0.0.1:26379") : redisSentinelNodes;
         List<String> redisSentinelNodesStringList = Arrays.asList(redisSentinelNodes.split(","));
 
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(128);
-        poolConfig.setBlockWhenExhausted(true);
-
         RedisSentinelConfiguration sentinelConfig = null;
         if (useSentinel != null && !useSentinel.equals("false")) {
             try {
@@ -66,14 +65,15 @@ public class LocalRedisConfiguration {
                 sentinelConfig = new RedisSentinelConfiguration();
                 sentinelConfig.master(masterName).setSentinels(redisSentinelNodesList);
                 jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
-                jedisConnectionFactory.setPoolConfig(poolConfig);
+                jedisConnConfig(jedisConnectionFactory);
+
             } catch (Exception e) {
                 LOGGER.error(e);
             }
         } else {
             jedisConnectionFactory = new JedisConnectionFactory();
-            jedisConnectionFactory.setPoolConfig(poolConfig);
             jedisConnectionFactory.setHostName(hostName);
+            jedisConnConfig(jedisConnectionFactory);
             try {
                 jedisConnectionFactory.setPort(Integer.parseInt(port));
             } catch (NumberFormatException e) {
@@ -96,6 +96,16 @@ public class LocalRedisConfiguration {
             LOGGER.error(e);
         }
         return jedisConnectionFactory;
+    }
+
+    private void jedisConnConfig(final JedisConnectionFactory jedisConnectionFactory) {
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(Integer.parseInt(REDIS_MAXTOTAL));
+        poolConfig.setBlockWhenExhausted(true);
+
+        jedisConnectionFactory.setPoolConfig(poolConfig);
+        jedisConnectionFactory.setUsePool(true);
+        jedisConnectionFactory.setTimeout(Integer.parseInt(REDIS_TIMEOUT));
     }
 
 }
