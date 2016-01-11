@@ -23,6 +23,7 @@ package io.galeb.manager.redis;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.redis.connection.jedis.JedisConnection;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
 @Component
+@Scope("prototype")
 public class DistributedLocker {
 
     private static final Log LOGGER = LogFactory.getLog(DistributedLocker.class);
