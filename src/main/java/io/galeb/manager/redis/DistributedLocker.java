@@ -57,7 +57,7 @@ public class DistributedLocker {
                 return redis.get(key.getBytes()) != null;
             }
         } catch (Exception e) {
-            redis.close();
+            closeOnError();
             LOGGER.error(e);
         }
         return false;
@@ -68,7 +68,7 @@ public class DistributedLocker {
             LOGGER.info("Releasing lock " + key);
             redis.del(key.getBytes());
         } catch (Exception e) {
-            redis.close();
+            closeOnError();
             LOGGER.error(e);
         }
         return this;
@@ -80,7 +80,7 @@ public class DistributedLocker {
         try {
             result = redis.pExpire(key.getBytes(), ttl);
         } catch (Exception e) {
-            redis.close();
+            closeOnError();
             LOGGER.error(e);
         }
         return result;
@@ -91,7 +91,7 @@ public class DistributedLocker {
         try {
             remain = redis.pTtl(key.getBytes());
         } catch (Exception e) {
-            redis.close();
+            closeOnError();
             LOGGER.error(e);
         }
         return remain != null ? remain : 0L;
@@ -113,7 +113,7 @@ public class DistributedLocker {
             os.flush();
             os.close();
         } catch (Exception e) {
-            redis.close();
+            closeOnError();
             LOGGER.error(e);
         }
         return out != null && out.size() > 5;
@@ -127,6 +127,14 @@ public class DistributedLocker {
 
         LOGGER.debug(key + " locked by me (" + this + ")");
         return true;
+    }
+
+    private void closeOnError() {
+        try {
+            redis.close();
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
     }
 
 }
