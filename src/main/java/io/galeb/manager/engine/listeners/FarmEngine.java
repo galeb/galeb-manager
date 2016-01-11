@@ -18,27 +18,49 @@
 
 package io.galeb.manager.engine.listeners;
 
-import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.*;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
+import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
+import static io.galeb.manager.engine.driver.DriverBuilder.addResource;
+import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_TTL;
+import static io.galeb.manager.scheduler.tasks.SyncFarms.TASK_LOCKNAME;
 
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
-import io.galeb.manager.entity.*;
-import io.galeb.manager.queue.*;
-import io.galeb.manager.redis.*;
-import io.galeb.manager.repository.*;
+import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Pool;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.WithParent;
+import io.galeb.manager.entity.WithParents;
+import io.galeb.manager.queue.AbstractEnqueuer;
+import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.queue.PoolQueue;
+import io.galeb.manager.queue.RuleQueue;
+import io.galeb.manager.queue.TargetQueue;
+import io.galeb.manager.queue.VirtualHostQueue;
+import io.galeb.manager.redis.DistributedLocker;
+import io.galeb.manager.repository.FarmRepository;
+import io.galeb.manager.repository.JpaRepositoryWithFindByName;
+import io.galeb.manager.repository.PoolRepository;
+import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.repository.TargetRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.jms.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
@@ -151,7 +173,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         String farmLock = farm.getName() + ".lock";
 
         Map<String, Object> diff = entrySet.getValue();
-        Driver driver = DriverBuilder.getDriver(farm);
+        Driver driver = addResource(getDriver(farm), distributedLocker);
         Properties properties = new Properties();
         SystemUserService.runAs();
         properties.put("api", farm.getApi());
@@ -164,7 +186,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
-        diff.entrySet().parallelStream().forEach(diffEntrySet -> {
+        diff.entrySet().parallelStream().parallel().forEach(diffEntrySet -> {
+
+            distributedLocker.refresh(farmLock, LOCK_TTL);
+            distributedLocker.refresh(TASK_LOCKNAME, LOCK_TTL);
 
             final Map<String, Object> attributes = (Map<String, Object>) diffEntrySet.getValue();
 

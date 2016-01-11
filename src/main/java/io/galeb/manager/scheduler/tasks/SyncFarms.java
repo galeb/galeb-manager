@@ -42,7 +42,7 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.scheduler.SchedulerConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -57,6 +57,7 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import static io.galeb.manager.engine.driver.DriverBuilder.addResource;
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
@@ -67,9 +68,22 @@ import static java.util.AbstractMap.SimpleImmutableEntry;
 public class SyncFarms {
 
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
-    private static final String TASK_LOCKNAME = "SyncFarms.task";
     private static final long   INTERVAL      = 10000; // msec
-    private static final int    LOCK_TTL      = 120; // seconds
+
+    public static final String TASK_LOCKNAME = "SyncFarms.task";
+
+    public static int  LOCK_TTL = 120; // seconds
+
+    static {
+        String lockTTL = System.getProperty("LOCK_TTL");
+        if (lockTTL != null) {
+            try {
+                LOCK_TTL = Integer.parseInt(lockTTL);
+            } catch (NumberFormatException ignore) {
+                // ignore
+            }
+        }
+    }
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
@@ -104,7 +118,7 @@ public class SyncFarms {
             Authentication currentUser = CurrentUser.getCurrentAuth();
             SystemUserService.runAs();
 
-            farmRepository.findAll().stream()
+            farmRepository.findAll().parallelStream().parallel()
                     .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
                     .forEach(farm ->
                     {
@@ -131,12 +145,14 @@ public class SyncFarms {
             return;
         }
 
-        final Driver driver = DriverBuilder.getDriver(farm);
+        final Driver driver = addResource(DriverBuilder.getDriver(farm), distributedLocker);
         final Properties properties = getPropertiesWithEntities(farm);
 
         long diffStart = currentTimeMillis();
         LOGGER.info("FARM STATUS - Getting diff from " + farm.getName() + " [" + farm.getApi() + "]");
         Map<String, Map<String, Object>> diff = driver.diff(properties);
+        distributedLocker.refresh(farmLock, LOCK_TTL);
+        distributedLocker.refresh(TASK_LOCKNAME, LOCK_TTL);
         LOGGER.info("FARM STATUS - diff from " + farm.getName() + " [" + farm.getApi() + "] finished ("
                 + (currentTimeMillis() - diffStart) + " ms)");
 
@@ -153,6 +169,9 @@ public class SyncFarms {
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
             if (farm.isAutoReload() && !disableQueue) {
+                distributedLocker.refresh(farmLock, LOCK_TTL);
+                distributedLocker.refresh(TASK_LOCKNAME, LOCK_TTL);
+
                 @SuppressWarnings("unchecked")
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
@@ -168,6 +187,7 @@ public class SyncFarms {
         final Properties properties = new Properties();
         properties.put("api", farm.getApi());
         properties.put("entitiesMap", entitiesMap);
+        properties.put("lockName", farm.getName() + ".lock");
         return properties;
     }
 
