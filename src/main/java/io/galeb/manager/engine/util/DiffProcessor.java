@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Rule;
+import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -48,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -60,8 +63,8 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 
+import static io.galeb.manager.redis.DistributedLocker.FARM_ENTITIES_LIST;
 import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_TTL;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.TASK_LOCKNAME;
 
 public class DiffProcessor {
 
@@ -86,8 +89,18 @@ public class DiffProcessor {
         return this;
     }
 
-    public Map<String, Map<String, Object>> getDiffMap() {
-        getEntitiesMap().keySet().stream().forEach(this::makeDiffMap);
+    public Map<String, Map<String, Object>> getDiffMap() throws Exception {
+        final AtomicReference<String> error = new AtomicReference<>(null);
+        getEntitiesMap().keySet().stream().forEach((path) -> {
+            try {
+                makeDiffMap(path);
+            } catch (Exception e) {
+                error.set(e.getMessage());
+            }
+        });
+        if (error.get() != null) {
+            throw new RuntimeException(error.get());
+        }
         return diffMap;
     }
 
@@ -115,11 +128,11 @@ public class DiffProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private void makeDiffMap(String path) {
+    private void makeDiffMap(String path) throws Exception {
         final Map<String, Map<String, String>> fullMap = extractRemoteMap();
         List<?> entities = getEntitiesMap().get(path);
 
-        refreshLock(getLockName());
+        distributedLocker.refreshAllLock(getLockName());
 
         fullMap.entrySet().stream()
                 .filter(entry ->
@@ -227,19 +240,21 @@ public class DiffProcessor {
                                 .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId);
     }
 
-    private Map<String, Map<String, String>> extractRemoteMap() {
+    private Map<String, Map<String, String>> extractRemoteMap() throws Exception {
 
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
         final List<String> pathList = Arrays.asList(
-                io.galeb.core.model.VirtualHost.class.getSimpleName().toLowerCase(),
+                VirtualHost.class.getSimpleName().toLowerCase(),
                 BackendPool.class.getSimpleName().toLowerCase(),
                 Backend.class.getSimpleName().toLowerCase(),
-                io.galeb.core.model.Rule.class.getSimpleName().toLowerCase());
+                Rule.class.getSimpleName().toLowerCase());
+
+        final AtomicReference<String> error = new AtomicReference<>(null);
 
         pathList.stream().map(path -> getApi() + "/" + path).forEach(fullPath ->
         {
             try {
-                refreshLock(getLockName());
+                distributedLocker.refreshAllLock(getLockName());
 
                 JsonNode json = getJson(fullPath);
                 if (json.isArray()) {
@@ -264,8 +279,12 @@ public class DiffProcessor {
                 }
             } catch (Exception e) {
                 LOGGER.error(e);
+                error.set(e.getMessage());
             }
         });
+        if (error.get() != null) {
+            throw new RuntimeException(error.get());
+        }
         return fullMap;
     }
 
@@ -333,19 +352,6 @@ public class DiffProcessor {
             json = mapper.readTree(response.getBody());
         }
         return json;
-    }
-
-    private void refreshLock(String lockName) {
-        if (distributedLocker == null) {
-            LOGGER.warn("DistributedLocker is NULL");
-            return;
-        }
-        if ("UNDEF".equals(lockName)) {
-            LOGGER.warn("lockName is " + lockName);
-            return;
-        }
-        distributedLocker.refresh(TASK_LOCKNAME, LOCK_TTL);
-        distributedLocker.refresh(lockName, LOCK_TTL);
     }
 
 }
