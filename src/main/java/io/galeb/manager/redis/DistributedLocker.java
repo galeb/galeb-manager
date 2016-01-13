@@ -24,8 +24,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import org.springframework.data.redis.connection.jedis.JedisConnection;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -38,18 +38,18 @@ public class DistributedLocker {
 
     private static final Log LOGGER = LogFactory.getLog(DistributedLocker.class);
 
-    private JedisConnectionFactory jedisConnectionFactory = null;
+    private RedisConnectionFactory connectionFactory = null;
 
-    private JedisConnection redis = null;
+    private RedisConnection redis = null;
 
     @PostConstruct
     public void init() {
-        redis = jedisConnectionFactory.getConnection();
+        redis = connectionFactory.getConnection();
     }
 
     @Autowired
-    private DistributedLocker(JedisConnectionFactory jedisConnectionFactory) {
-        this.jedisConnectionFactory = jedisConnectionFactory;
+    private DistributedLocker(RedisConnectionFactory connectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
     private synchronized boolean getLock(String key, long ttl) {
