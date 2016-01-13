@@ -30,6 +30,7 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
+import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.user.CurrentUser;
@@ -38,7 +39,7 @@ import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.*;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -47,35 +48,28 @@ public class PoolEngine extends AbstractEngine<Pool> {
 
     private static final Log LOGGER = LogFactory.getLog(PoolEngine.class);
 
-    @Autowired
-    private FarmRepository farmRepository;
-
-    @Autowired
-    private PoolRepository poolRepository;
-
-    @Autowired
-    private GenericEntityService genericEntityService;
-
-    @Autowired
-    private PoolQueue poolQueue;
-
-    @Autowired
-    private FarmQueue farmQueue;
+    @Autowired private FarmRepository farmRepository;
+    @Autowired private PoolRepository poolRepository;
+    @Autowired private GenericEntityService genericEntityService;
+    @Autowired private PoolQueue poolQueue;
+    @Autowired private FarmQueue farmQueue;
+    @Autowired private DistributedLocker distributedLocker;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        createTarget(pool, driver);
+        createPool(pool, driver);
     }
 
-    private void createTarget(Pool pool, final Driver driver) {
+    private void createPool(Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
             isOk = driver.create(makeProperties(pool));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            releaseLocks(pool, "", distributedLocker);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -85,16 +79,17 @@ public class PoolEngine extends AbstractEngine<Pool> {
     public void update(Pool pool) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        updateTarget(pool, driver);
+        updatePool(pool, driver);
     }
 
-    private void updateTarget(final Pool pool, final Driver driver) {
+    private void updatePool(final Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
             isOk = driver.update(makeProperties(pool));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            releaseLocks(pool, "", distributedLocker);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -104,10 +99,10 @@ public class PoolEngine extends AbstractEngine<Pool> {
     public void remove(Pool pool) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        removeTarget(pool, driver);
+        removePool(pool, driver);
     }
 
-    private void removeTarget(final Pool pool, final Driver driver) {
+    private void removePool(final Pool pool, final Driver driver) {
         boolean isOk = false;
 
         try {
@@ -115,6 +110,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            releaseLocks(pool, "", distributedLocker);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }

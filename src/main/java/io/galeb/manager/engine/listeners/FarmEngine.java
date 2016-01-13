@@ -24,8 +24,8 @@ import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.manager.redis.DistributedLocker.LOCK_PREFIX;
 import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_TTL;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.TASK_LOCKNAME;
 
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
@@ -54,7 +54,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -67,9 +66,11 @@ import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import javax.annotation.PostConstruct;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -92,7 +93,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private DistributedLocker distributedLocker;
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
-    private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
 
     @PostConstruct
     public void init() {
@@ -170,7 +170,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Map.Entry<Farm, Map<String, Object>> entrySet) {
         Farm farm = entrySet.getKey();
-        String farmLock = farm.getName() + ".lock";
+        String farmLock = LOCK_PREFIX + String.valueOf(farm.getId());
 
         Map<String, Object> diff = entrySet.getValue();
         Driver driver = addResource(getDriver(farm), distributedLocker);
@@ -186,10 +186,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
-        diff.entrySet().parallelStream().parallel().forEach(diffEntrySet -> {
+        Set<String> entityTypes = new HashSet<>();
 
-            distributedLocker.refresh(farmLock, LOCK_TTL);
-            distributedLocker.refresh(TASK_LOCKNAME, LOCK_TTL);
+        diff.entrySet().stream().forEach(diffEntrySet -> {
 
             final Map<String, Object> attributes = (Map<String, Object>) diffEntrySet.getValue();
 
@@ -198,54 +197,64 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final String parentId = String.valueOf(attributes.get("PARENT_ID"));
             final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
 
-            final String internalEntityType = getInternalEntityType(entityType);
+            if (distributedLocker.lock(farmLock, entityType, id + "__" + parentId, LOCK_TTL)) {
 
-            JpaRepositoryWithFindByName repository = getRepository(internalEntityType);
-            if (repository != null) {
-                AbstractEntity<?> entityFromRepository = null;
-                int pageSize = 100;
-                int page = 0;
-                SystemUserService.runAs();
-                Page<?> elements = repository.findByName(id, new PageRequest(page, pageSize));
+                distributedLocker.refreshAllLock(farmLock);
+                entityTypes.add(entityType);
 
-                while (elements.hasContent() && entityFromRepository == null) {
-                    entityFromRepository = getEntityIfExist(id, parentId, (Iterator<AbstractEntity<?>>) elements.iterator()).orElse(null);
-                    if (!elements.isLast()) {
-                        elements = repository.findByName(id, new PageRequest(++page, pageSize));
-                    } else {
-                        break;
-                    }
-                }
-                SystemUserService.clearContext();
+                final String internalEntityType = getInternalEntityType(entityType);
 
-                if (entityFromRepository == null && action != REMOVE) {
-                    LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + internalEntityType + "]");
-                } else {
-                    AbstractEnqueuer queue = getQueue(internalEntityType);
-                    if (action == REMOVE) {
-                        LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
-                        removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
-                    } else {
-                        LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
-                        switch (action) {
-                            case CREATE:
-                                createEntityOnFarm(queue, entityFromRepository);
-                                break;
-                            case UPDATE:
-                                updateEntityOnFarm(queue, entityFromRepository);
-                                break;
-                            case CALLBACK:
-                                resendCallBackWithOK(queue, entityFromRepository);
-                                break;
-                            default:
-                                LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                JpaRepositoryWithFindByName repository = getRepository(internalEntityType);
+                if (repository != null) {
+                    AbstractEntity<?> entityFromRepository = null;
+                    int pageSize = 100;
+                    int page = 0;
+                    SystemUserService.runAs();
+                    Page<?> elements = repository.findByName(id, new PageRequest(page, pageSize));
+
+                    while (elements.hasContent() && entityFromRepository == null) {
+                        entityFromRepository = getEntityIfExist(id, parentId, (Iterator<AbstractEntity<?>>) elements.iterator()).orElse(null);
+                        if (!elements.isLast()) {
+                            elements = repository.findByName(id, new PageRequest(++page, pageSize));
+                        } else {
+                            break;
                         }
-                        LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
+                    }
+                    SystemUserService.clearContext();
+
+                    if (entityFromRepository == null && action != REMOVE) {
+                        LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + internalEntityType + "]");
+                    } else {
+                        AbstractEnqueuer queue = getQueue(internalEntityType);
+                        if (action == REMOVE) {
+                            LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
+                            removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                            String lockPrefix = farmLock + "." + getExternalEntityType(entityType).getSimpleName();
+                            distributedLocker.release(lockPrefix + "__" + id + "__" + parentId);
+                            if (!distributedLocker.containsLockWithPrefix(lockPrefix + "__")) {
+                                distributedLocker.release(lockPrefix);
+                            }
+                        } else {
+                            LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
+                            switch (action) {
+                                case CREATE:
+                                    createEntityOnFarm(queue, entityFromRepository);
+                                    break;
+                                case UPDATE:
+                                    updateEntityOnFarm(queue, entityFromRepository);
+                                    break;
+                                case CALLBACK:
+                                    resendCallBackWithOK(queue, entityFromRepository);
+                                    break;
+                                default:
+                                    LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                            }
+                            LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
+                        }
                     }
                 }
             }
         });
-        distributedLocker.release(farmLock);
     }
 
     private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {
@@ -301,13 +310,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
             }
         }
         return Optional.empty();
-    }
-
-    private String getInternalEntityType(String entityType) {
-        return entityType.toLowerCase().equals(BackendPool.class.getSimpleName().toLowerCase()) ?
-                    Pool.class.getSimpleName().toLowerCase() :
-                entityType.toLowerCase().equals(Backend.class.getSimpleName().toLowerCase()) ?
-                    Target.class.getSimpleName().toLowerCase() : entityType;
     }
 
     @JmsListener(destination = FarmQueue.QUEUE_CALLBK)

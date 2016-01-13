@@ -20,13 +20,16 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
-import io.galeb.manager.entity.*;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.RuleOrder;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
+import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.annotation.*;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +59,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Autowired private FarmQueue farmQueue;
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
+    @Autowired private DistributedLocker distributedLocker;
 
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule) {
