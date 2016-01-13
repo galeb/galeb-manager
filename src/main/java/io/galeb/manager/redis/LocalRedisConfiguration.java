@@ -5,10 +5,10 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.*;
-import org.springframework.data.redis.connection.*;
+import org.springframework.core.env.Environment;
+import org.springframework.data.redis.connection.RedisNode;
+import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
-import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Arrays;
 import java.util.List;
@@ -65,7 +65,6 @@ public class LocalRedisConfiguration {
                 sentinelConfig = new RedisSentinelConfiguration();
                 sentinelConfig.master(masterName).setSentinels(redisSentinelNodesList);
                 jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
-                jedisConnConfig(jedisConnectionFactory);
 
             } catch (Exception e) {
                 LOGGER.error(e);
@@ -73,7 +72,6 @@ public class LocalRedisConfiguration {
         } else {
             jedisConnectionFactory = new JedisConnectionFactory();
             jedisConnectionFactory.setHostName(hostName);
-            jedisConnConfig(jedisConnectionFactory);
             try {
                 jedisConnectionFactory.setPort(Integer.parseInt(port));
             } catch (NumberFormatException e) {
@@ -96,16 +94,6 @@ public class LocalRedisConfiguration {
             LOGGER.error(e);
         }
         return jedisConnectionFactory;
-    }
-
-    private void jedisConnConfig(final JedisConnectionFactory jedisConnectionFactory) {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(Integer.parseInt(REDIS_MAXTOTAL));
-        poolConfig.setBlockWhenExhausted(true);
-
-        jedisConnectionFactory.setPoolConfig(poolConfig);
-        jedisConnectionFactory.setUsePool(true);
-        jedisConnectionFactory.setTimeout(Integer.parseInt(REDIS_TIMEOUT));
     }
 
 }
