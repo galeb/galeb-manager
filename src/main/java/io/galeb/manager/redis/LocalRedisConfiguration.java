@@ -19,14 +19,15 @@ public class LocalRedisConfiguration {
 
     private static final Log LOGGER = LogFactory.getLog(LocalRedisConfiguration.class);
 
-    public static final String REDIS_TIMEOUT  = System.getProperty("REDIS_TIMEOUT", "15000");
-    public static final String REDIS_MAXTOTAL = System.getProperty("REDIS_MAXTOTAL", "128");
+    public static final String REDIS_MAXIDLE  = System.getProperty("REDIS_MAXIDLE", "300");
+    public static final String REDIS_TIMEOUT  = System.getProperty("REDIS_TIMEOUT", "10000");
+    public static final String REDIS_MAXTOTAL = System.getProperty("REDIS_MAXTOTAL", "10000");
 
     @Autowired
     private Environment env;
 
     @Bean
-    public JedisConnectionFactory connectionFactory() {
+    public RedisConnectionFactory connectionFactory() {
         String hostName = System.getenv("REDIS_HOSTNAME");
         hostName = hostName == null ?
                 env.getProperty("spring.redis.host", "127.0.0.1") : hostName;
@@ -100,12 +101,17 @@ public class LocalRedisConfiguration {
 
     private void jedisConnConfig(final JedisConnectionFactory jedisConnectionFactory) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(Integer.parseInt(REDIS_MAXTOTAL));
-        poolConfig.setBlockWhenExhausted(true);
+        try {
+            poolConfig.setMaxTotal(Integer.parseInt(REDIS_MAXTOTAL));
+            poolConfig.setMaxIdle(Integer.parseInt(REDIS_MAXIDLE));
+            poolConfig.setBlockWhenExhausted(true);
 
-        jedisConnectionFactory.setPoolConfig(poolConfig);
-        jedisConnectionFactory.setUsePool(true);
-        jedisConnectionFactory.setTimeout(Integer.parseInt(REDIS_TIMEOUT));
+            jedisConnectionFactory.setPoolConfig(poolConfig);
+            jedisConnectionFactory.setUsePool(true);
+            jedisConnectionFactory.setTimeout(Integer.parseInt(REDIS_TIMEOUT));
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
     }
 
 }
