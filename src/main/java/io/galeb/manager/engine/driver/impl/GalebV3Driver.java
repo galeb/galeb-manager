@@ -251,7 +251,7 @@ public class GalebV3Driver implements Driver {
 
     @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Map<String, Object>> diff(Properties properties) {
+    public Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
         return new DiffProcessor().setProperties(properties).setDistributedLocker(distributedLocker).getDiffMap();
     }
 

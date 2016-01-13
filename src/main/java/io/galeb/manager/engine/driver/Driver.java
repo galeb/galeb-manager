@@ -54,7 +54,7 @@ public interface Driver {
         return true;
     }
 
-    default Map<String, Map<String, Object>> diff(Properties properties) {
+    default Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
         return Collections.emptyMap();
     }
 
