@@ -20,15 +20,22 @@ package io.galeb.manager.engine.listeners;
 
 import java.util.Optional;
 
-import io.galeb.manager.engine.provisioning.*;
-import io.galeb.manager.engine.provisioning.impl.*;
+import io.galeb.core.model.Backend;
+import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Rule;
+import io.galeb.core.model.VirtualHost;
+import io.galeb.manager.engine.provisioning.Provisioning;
+import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
+import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Pool;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
+import io.galeb.manager.redis.DistributedLocker;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.user.CurrentUser;
@@ -87,6 +94,33 @@ public abstract class AbstractEngine<T> {
                 farm.get().setStatus(EntityStatus.ERROR);
                 farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm.get());
             }
+        }
+    }
+
+    protected String getInternalEntityType(String entityType) {
+        return entityType.toLowerCase().equals(BackendPool.class.getSimpleName().toLowerCase()) ?
+                Pool.class.getSimpleName().toLowerCase() :
+                entityType.toLowerCase().equals(Backend.class.getSimpleName().toLowerCase()) ?
+                        Target.class.getSimpleName().toLowerCase() : entityType;
+    }
+
+    protected Class<?> getExternalEntityType(String entityType) {
+        return entityType.toLowerCase().equals(
+                Pool.class.getSimpleName().toLowerCase()) ? BackendPool.class :
+                entityType.toLowerCase().equals(
+                        Target.class.getSimpleName().toLowerCase()) ? Backend.class :
+                        entityType.toLowerCase().equals(
+                                VirtualHost.class.getSimpleName().toLowerCase()) ? VirtualHost.class :
+                                entityType.toLowerCase().equals(
+                                        Rule.class.getSimpleName().toLowerCase()) ? Rule.class : null;
+    }
+
+    protected void releaseLocks(AbstractEntity<?> entity, String parentName, final DistributedLocker distributedLocker) {
+        String lockPrefix = DistributedLocker.LOCK_PREFIX + ((WithFarmID)entity).getFarmId() +
+                "." + getExternalEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
+        distributedLocker.release(lockPrefix + "__" + entity.getName() + "__" + parentName);
+        if (!distributedLocker.containsLockWithPrefix(lockPrefix + "__")) {
+            distributedLocker.release(lockPrefix);
         }
     }
 }
