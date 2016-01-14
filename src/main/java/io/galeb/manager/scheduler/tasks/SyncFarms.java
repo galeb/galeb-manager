@@ -69,7 +69,8 @@ public class SyncFarms {
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final String TASK_LOCKNAME = "SyncFarms.task";
     private static final long   INTERVAL      = 10000; // msec
-    private static final int    LOCK_TTL      = 120; // seconds
+
+    public static final int    LOCK_TTL      = 120; // seconds
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
