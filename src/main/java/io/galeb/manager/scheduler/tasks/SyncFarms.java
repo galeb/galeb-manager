@@ -74,15 +74,12 @@ public class SyncFarms {
     private static final long   INTERVAL      = 10000; // msec
 
     public static int  LOCK_TTL = 120; // seconds
-
     static {
-        String lockTTL = System.getProperty("LOCK_TTL");
-        if (lockTTL != null) {
-            try {
-                LOCK_TTL = Integer.parseInt(lockTTL);
-            } catch (NumberFormatException ignore) {
-                // ignore
-            }
+        String lockTTL = System.getProperty("LOCK_TTL", "120");
+        try {
+            LOCK_TTL = Integer.parseInt(lockTTL);
+        } catch (NumberFormatException ignore) {
+            // ignore
         }
     }
 
