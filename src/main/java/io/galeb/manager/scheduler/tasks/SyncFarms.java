@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.Properties;
@@ -33,7 +35,6 @@ import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
-import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.repository.RuleRepository;
@@ -42,7 +43,7 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.scheduler.SchedulerConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -78,7 +79,8 @@ public class SyncFarms {
     @Autowired private TargetRepository      targetRepository;
     @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
-    @Autowired private DistributedLocker     distributedLocker;
+
+    CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     private final ObjectMapper mapper   = new ObjectMapper();
     private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
@@ -97,7 +99,8 @@ public class SyncFarms {
             LOGGER.debug(SyncFarms.class.getSimpleName() + " aborted (GALEB_DISABLE_SCHED is TRUE)");
             return;
         }
-        if (!distributedLocker.lock(TASK_LOCKNAME, INTERVAL / 1000)) {
+        if (!cacheFactory.lock(TASK_LOCKNAME)) {
+            LOGGER.warn("syncFarm LOCKED (" + TASK_LOCKNAME + "). Waiting for release lock");
             return;
         }
 
@@ -120,14 +123,15 @@ public class SyncFarms {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            distributedLocker.release(TASK_LOCKNAME);
+            cacheFactory.release(TASK_LOCKNAME);
+            LOGGER.info("Lock " + TASK_LOCKNAME + " released");
             LOGGER.debug("TASK checkFarm finished");
         }
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
         String farmLock = farm.getName() + ".lock";
-        if (!distributedLocker.lock(farmLock, LOCK_TTL)) {
+        if (!cacheFactory.lock(farmLock)) {
             LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting for release lock");
             return;
         }
@@ -142,7 +146,8 @@ public class SyncFarms {
                 + (currentTimeMillis() - diffStart) + " ms)");
 
         if (diff.isEmpty()) {
-            distributedLocker.release(farmLock);
+            cacheFactory.release(farmLock);
+            LOGGER.info("Lock " + farmLock + " released");
             LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
             farm.setStatus(EntityStatus.OK);
             farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
@@ -158,7 +163,8 @@ public class SyncFarms {
                 Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
             } else {
-                distributedLocker.release(farmLock);
+                cacheFactory.release(farmLock);
+                LOGGER.info("Lock " + farmLock + " released");
                 LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
             }
         }

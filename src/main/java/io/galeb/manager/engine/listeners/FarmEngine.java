@@ -21,6 +21,8 @@ package io.galeb.manager.engine.listeners;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.*;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 
+import io.galeb.core.jcache.*;
+import io.galeb.core.logging.*;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
@@ -67,7 +69,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private TargetQueue targetQueue;
     @Autowired private RuleQueue ruleQueue;
     @Autowired private PoolQueue poolQueue;
-    @Autowired private DistributedLocker distributedLocker;
+
+    CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
     private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
@@ -220,7 +223,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
             }
         });
-        distributedLocker.release(farmLock);
+        cacheFactory.release(farmLock);
+        LOGGER.info("Lock " + farmLock + " released");
     }
 
     private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {
