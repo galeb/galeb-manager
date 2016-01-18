@@ -20,12 +20,15 @@
 
 package io.galeb.manager.scheduler.tasks;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Rule;
@@ -34,7 +37,6 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
-import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.repository.RuleRepository;
@@ -59,8 +61,6 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import static io.galeb.manager.engine.driver.DriverBuilder.addResource;
-import static io.galeb.manager.redis.DistributedLocker.FARM_ENTITIES_LIST;
-import static io.galeb.manager.redis.DistributedLocker.LOCK_PREFIX;
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
@@ -72,6 +72,12 @@ public class SyncFarms {
 
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final long   INTERVAL      = 10000; // msec
+
+    public static final List<Class> FARM_ENTITIES_LIST = Arrays.asList(
+            Backend.class, BackendPool.class, Rule.class, VirtualHost.class
+    );
+
+    public static final String LOCK_PREFIX    = "lock_";
 
     public static int  LOCK_TTL = 120; // seconds
     static {
@@ -89,7 +95,8 @@ public class SyncFarms {
     @Autowired private TargetRepository      targetRepository;
     @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
-    @Autowired private DistributedLocker     distributedLocker;
+
+    private CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     private final ObjectMapper mapper   = new ObjectMapper();
     private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
@@ -139,7 +146,7 @@ public class SyncFarms {
             return;
         }
 
-        final Driver driver = addResource(DriverBuilder.getDriver(farm), distributedLocker);
+        final Driver driver = addResource(DriverBuilder.getDriver(farm), cacheFactory);
         final Properties properties = getPropertiesWithEntities(farm);
 
         long diffStart = currentTimeMillis();
@@ -152,7 +159,7 @@ public class SyncFarms {
                     + (currentTimeMillis() - diffStart) + " ms)");
 
             if (diff.isEmpty()) {
-                distributedLocker.releaseAllLocks(farmLock, null);
+                releaseAllLocks(farmLock, null);
                 LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
                 farm.setStatus(EntityStatus.OK);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
@@ -164,27 +171,30 @@ public class SyncFarms {
                 farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
                 if (farm.isAutoReload() && !disableQueue) {
-                    distributedLocker.refreshAllLock(farmLock);
-
                     @SuppressWarnings("unchecked")
                     Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
                     farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
                 } else {
-                    distributedLocker.releaseAllLocks(farmLock, null);
+                    releaseAllLocks(farmLock, null);
                     LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
                 }
             }
         } catch (Exception e) {
             LOGGER.error(e);
-            distributedLocker.releaseAllLocks(farmLock, null);
+            releaseAllLocks(farmLock, null);
         }
     }
 
-    private boolean checkAndLockAll(String farmLockName) {
+    // TODO: implements
+    public void releaseAllLocks(String farmLock, Object o) {
+        //
+    }
+
+    public boolean checkAndLockAll(String farmLockName) {
         final AtomicBoolean isLocked = new AtomicBoolean(true);
         FARM_ENTITIES_LIST.stream().forEach(clazz -> {
             String lockName = farmLockName + "." + clazz.getSimpleName();
-            isLocked.set(isLocked.get() && !distributedLocker.lock(lockName, LOCK_TTL));
+            isLocked.set(isLocked.get() && !cacheFactory.lock(lockName));
         });
         return isLocked.get();
     }

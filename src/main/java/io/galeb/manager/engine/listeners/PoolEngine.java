@@ -30,7 +30,6 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
-import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.user.CurrentUser;
@@ -53,7 +52,6 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private PoolQueue poolQueue;
     @Autowired private FarmQueue farmQueue;
-    @Autowired private DistributedLocker distributedLocker;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool) {
@@ -69,7 +67,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", distributedLocker);
+            releaseLocks(pool, "", cacheFactory);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -89,7 +87,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", distributedLocker);
+            releaseLocks(pool, "", cacheFactory);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -110,7 +108,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", distributedLocker);
+            releaseLocks(pool, "", cacheFactory);
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }

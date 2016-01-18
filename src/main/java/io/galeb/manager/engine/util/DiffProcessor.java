@@ -22,6 +22,7 @@ package io.galeb.manager.engine.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Rule;
@@ -31,7 +32,6 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
-import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.RequestEntity;
@@ -63,24 +63,21 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 
-import static io.galeb.manager.redis.DistributedLocker.FARM_ENTITIES_LIST;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_TTL;
-
 public class DiffProcessor {
 
     private static final Log LOGGER = LogFactory.getLog(DiffProcessor.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private DistributedLocker distributedLocker;
     private Properties properties;
     private String lockName = "";
     private String api = "";
     private final Map<String, Map<String, Object>> diffMap = new HashMap<>();
     private Map<String, List<?>> entitiesMap = new HashMap<>();
+    private CacheFactory cacheFactory;
 
-    public DiffProcessor setDistributedLocker(DistributedLocker distributedLocker) {
-        this.distributedLocker = distributedLocker;
+    public DiffProcessor setCacheFactory(CacheFactory cacheFactory) {
+        this.cacheFactory = cacheFactory;
         return this;
     }
 
@@ -132,7 +129,7 @@ public class DiffProcessor {
         final Map<String, Map<String, String>> fullMap = extractRemoteMap();
         List<?> entities = getEntitiesMap().get(path);
 
-        distributedLocker.refreshAllLock(getLockName());
+        refreshAllLock(getLockName());
 
         fullMap.entrySet().stream()
                 .filter(entry ->
@@ -176,6 +173,11 @@ public class DiffProcessor {
                 ((AbstractEntity<?>)entity).getStatus() != DISABLED)
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, fullMap));
+    }
+
+    // TODO: implements
+    private void refreshAllLock(String lockName) {
+        //
     }
 
     private void updateIfNecessary(String path,
@@ -254,7 +256,7 @@ public class DiffProcessor {
         pathList.stream().map(path -> getApi() + "/" + path).forEach(fullPath ->
         {
             try {
-                distributedLocker.refreshAllLock(getLockName());
+                refreshAllLock(getLockName());
 
                 JsonNode json = getJson(fullPath);
                 if (json.isArray()) {

@@ -20,6 +20,7 @@ package io.galeb.manager.engine.listeners;
 
 import java.util.Optional;
 
+import io.galeb.core.jcache.*;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Rule;
@@ -32,7 +33,7 @@ import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
-import io.galeb.manager.redis.DistributedLocker;
+import io.galeb.manager.scheduler.tasks.SyncFarms;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
@@ -52,6 +53,8 @@ public abstract class AbstractEngine<T> {
     protected abstract FarmRepository getFarmRepository();
 
     protected abstract FarmQueue farmQueue();
+
+    protected CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
@@ -115,12 +118,17 @@ public abstract class AbstractEngine<T> {
                                         Rule.class.getSimpleName().toLowerCase()) ? Rule.class : null;
     }
 
-    protected void releaseLocks(AbstractEntity<?> entity, String parentName, final DistributedLocker distributedLocker) {
-        String lockPrefix = DistributedLocker.LOCK_PREFIX + ((WithFarmID)entity).getFarmId() +
+    protected void releaseLocks(AbstractEntity<?> entity, String parentName, final CacheFactory cacheFactory) {
+        String lockPrefix = SyncFarms.LOCK_PREFIX + ((WithFarmID)entity).getFarmId() +
                 "." + getExternalEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
-        distributedLocker.release(lockPrefix + "__" + entity.getName() + "__" + parentName);
-        if (!distributedLocker.containsLockWithPrefix(lockPrefix + "__")) {
-            distributedLocker.release(lockPrefix);
+        cacheFactory.release(lockPrefix + "__" + entity.getName() + "__" + parentName);
+        if (!containsLockWithPrefix(lockPrefix + "__")) {
+            cacheFactory.release(lockPrefix);
         }
+    }
+
+    // TODO: implements
+    private boolean containsLockWithPrefix(String s) {
+        return false;
     }
 }

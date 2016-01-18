@@ -18,12 +18,13 @@
 
 package io.galeb.manager.engine.listeners;
 
+import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
-import io.galeb.manager.redis.DistributedLocker;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
@@ -58,7 +59,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @Autowired private RuleQueue ruleQueue;
     @Autowired private FarmQueue farmQueue;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
-    @Autowired private DistributedLocker distributedLocker;
+
+    private CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
@@ -77,7 +79,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", distributedLocker);
+            releaseLocks(virtualHost, "", cacheFactory);
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -108,7 +110,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", distributedLocker);
+            releaseLocks(virtualHost, "", cacheFactory);
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -133,7 +135,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", distributedLocker);
+            releaseLocks(virtualHost, "", cacheFactory);
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }

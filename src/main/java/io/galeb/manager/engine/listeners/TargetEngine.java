@@ -22,7 +22,6 @@ import io.galeb.core.model.Backend;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.TargetQueue;
-import io.galeb.manager.redis.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +53,6 @@ public class TargetEngine extends AbstractEngine<Target> {
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private TargetQueue targetQueue;
     @Autowired private FarmQueue farmQueue;
-    @Autowired private DistributedLocker distributedLocker;
 
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target) {
@@ -70,7 +68,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(target, pool.getName(), distributedLocker);
+            releaseLocks(target, pool.getName(), cacheFactory);
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }

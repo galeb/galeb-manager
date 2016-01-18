@@ -33,10 +33,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.util.DiffProcessor;
-import io.galeb.manager.redis.DistributedLocker;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -73,7 +73,7 @@ public class GalebV3Driver implements Driver {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private DistributedLocker distributedLocker;
+    private CacheFactory cacheFactory;
 
     @Override
     public String toString() {
@@ -82,8 +82,8 @@ public class GalebV3Driver implements Driver {
 
     @Override
     public Driver addResource(Object resource) {
-        if (resource instanceof DistributedLocker) {
-            distributedLocker = (DistributedLocker) resource;
+        if (resource instanceof CacheFactory) {
+            cacheFactory = (CacheFactory) resource;
         }
         return this;
     }
@@ -252,7 +252,7 @@ public class GalebV3Driver implements Driver {
     @SuppressWarnings("unchecked")
     @Override
     public Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
-        return new DiffProcessor().setProperties(properties).setDistributedLocker(distributedLocker).getDiffMap();
+        return new DiffProcessor().setProperties(properties).setCacheFactory(cacheFactory).getDiffMap();
     }
 
 
