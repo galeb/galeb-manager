@@ -21,9 +21,9 @@ public class LocalRedisConfiguration {
 
     private static final Log LOGGER = LogFactory.getLog(LocalRedisConfiguration.class);
 
-    public static final String REDIS_MAXIDLE  = System.getProperty("REDIS_MAXIDLE", "300");
-    public static final String REDIS_TIMEOUT  = System.getProperty("REDIS_TIMEOUT", "10000");
-    public static final String REDIS_MAXTOTAL = System.getProperty("REDIS_MAXTOTAL", "10000");
+    public static final String REDIS_MAXIDLE  = System.getProperty("REDIS_MAXIDLE", "100");
+    public static final String REDIS_TIMEOUT  = System.getProperty("REDIS_TIMEOUT", "60000");
+    public static final String REDIS_MAXTOTAL = System.getProperty("REDIS_MAXTOTAL", "128");
 
     @Autowired
     private Environment env;
