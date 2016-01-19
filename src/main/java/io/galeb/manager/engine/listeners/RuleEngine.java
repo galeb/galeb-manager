@@ -45,7 +45,7 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
-import java.util.*;
+import java.util.Optional;
 
 @Component
 public class RuleEngine extends AbstractEngine<Rule> {
@@ -78,6 +78,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
+                releaseLocks(rule, virtualhost.getName());
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
@@ -108,6 +109,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
+                releaseLocks(rule, virtualhost.getName());
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
@@ -133,6 +135,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
+                releaseLocks(rule, virtualhost.getName());
                 rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }

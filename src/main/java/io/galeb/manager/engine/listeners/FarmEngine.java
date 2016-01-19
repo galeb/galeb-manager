@@ -25,10 +25,7 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_PREFIX;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_TTL;
 
-import io.galeb.core.jcache.CacheFactory;
-import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
@@ -46,7 +43,6 @@ import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.scheduler.tasks.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,8 +84,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private TargetQueue targetQueue;
     @Autowired private RuleQueue ruleQueue;
     @Autowired private PoolQueue poolQueue;
-
-    CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
 
@@ -185,7 +179,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
 
-        Set<String> entityTypes = new HashSet<>();
+        final Set<String> entityTypes = new HashSet<>();
 
         diff.entrySet().stream().forEach(diffEntrySet -> {
 
@@ -196,7 +190,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final String parentId = String.valueOf(attributes.get("PARENT_ID"));
             final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
 
-            if (lock(farmLock, entityType, id + "__" + parentId)) {
+            if (lockWithId(farmLock, entityType, id + SEPARATOR + parentId)) {
 
                 entityTypes.add(entityType);
 
@@ -227,11 +221,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
                         if (action == REMOVE) {
                             LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
                             removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
-                            String lockPrefix = farmLock + "." + getExternalEntityType(entityType).getSimpleName();
-                            cacheFactory.release(lockPrefix + "__" + id + "__" + parentId);
-                            if (!containsLockWithPrefix(lockPrefix + "__")) {
-                                cacheFactory.release(lockPrefix);
-                            }
+                            String lockPrefix = farmLock + SEPARATOR + getExternalEntityType(entityType).getSimpleName();
+                            releaseLockWithId(id, parentId, lockPrefix);
                         } else {
                             LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
                             switch (action) {
@@ -253,16 +244,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
             }
         });
-    }
-
-    // TODO: implements
-    private boolean containsLockWithPrefix(String s) {
-        return false;
-    }
-
-    // TODO: implements
-    private boolean lock(String farmLock, String entityType, String s) {
-        return false;
     }
 
     private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {

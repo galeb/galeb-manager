@@ -18,13 +18,20 @@
 
 package io.galeb.manager.engine.listeners;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
-import io.galeb.core.jcache.*;
+import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
+import io.galeb.core.util.map.ConcurrentHashMapExpirable;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.entity.AbstractEntity;
@@ -33,7 +40,6 @@ import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
-import io.galeb.manager.scheduler.tasks.SyncFarms;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
@@ -42,7 +48,15 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import static io.galeb.core.util.Constants.ENTITY_MAP;
+import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_PREFIX;
+
 public abstract class AbstractEngine<T> {
+
+    public static final Map<String, Set<String>> inProgress =
+            new ConcurrentHashMapExpirable<>(1, TimeUnit.DAYS, 16, 0.9f, 1);
+
+    public static final String SEPARATOR = "__";
 
     protected abstract void create(T entity);
 
@@ -118,17 +132,36 @@ public abstract class AbstractEngine<T> {
                                         Rule.class.getSimpleName().toLowerCase()) ? Rule.class : null;
     }
 
-    protected void releaseLocks(AbstractEntity<?> entity, String parentName, final CacheFactory cacheFactory) {
-        String lockPrefix = SyncFarms.LOCK_PREFIX + ((WithFarmID)entity).getFarmId() +
-                "." + getExternalEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
-        cacheFactory.release(lockPrefix + "__" + entity.getName() + "__" + parentName);
-        if (!containsLockWithPrefix(lockPrefix + "__")) {
-            cacheFactory.release(lockPrefix);
-        }
+    protected void releaseLocks(AbstractEntity<?> entity, String parentName) {
+        String lockPrefix = LOCK_PREFIX + ((WithFarmID)entity).getFarmId() + SEPARATOR
+                + getExternalEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
+        releaseLockWithId(entity.getName(), parentName, lockPrefix);
     }
 
-    // TODO: implements
-    private boolean containsLockWithPrefix(String s) {
-        return false;
+    protected boolean containsLock(String lockName) {
+        return inProgress.containsKey(lockName) && !inProgress.get(lockName).isEmpty();
+    }
+
+    protected boolean lockWithId(String farmLock, String entityType, String id) {
+        Class<? extends Entity> clazz = ENTITY_MAP.get(entityType);
+        String className = clazz != null ? clazz.getSimpleName() : "NULL";
+        String lockName = farmLock + SEPARATOR + className;
+        if (!inProgress.containsKey(lockName)) {
+            inProgress.put(lockName, new HashSet<>());
+            cacheFactory.lock(lockName);
+        }
+        return inProgress.get(lockName).add(lockName + SEPARATOR + id);
+    }
+
+    protected void releaseLockWithId(String id, String parentId, String lockPrefix) {
+        Set<String> localLock = inProgress.get(lockPrefix);
+        if (localLock == null) {
+            return;
+        }
+        localLock.remove(lockPrefix + SEPARATOR + id + SEPARATOR + parentId);
+        if (!containsLock(lockPrefix)) {
+            cacheFactory.release(lockPrefix);
+            inProgress.remove(lockPrefix);
+        }
     }
 }

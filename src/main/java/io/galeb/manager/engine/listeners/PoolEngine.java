@@ -67,7 +67,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", cacheFactory);
+            releaseLocks(pool, "");
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -87,7 +87,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", cacheFactory);
+            releaseLocks(pool, "");
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
@@ -108,7 +108,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(pool, "", cacheFactory);
+            releaseLocks(pool, "");
             pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }

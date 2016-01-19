@@ -129,8 +129,6 @@ public class DiffProcessor {
         final Map<String, Map<String, String>> fullMap = extractRemoteMap();
         List<?> entities = getEntitiesMap().get(path);
 
-        refreshAllLock(getLockName());
-
         fullMap.entrySet().stream()
                 .filter(entry ->
                         entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
@@ -173,11 +171,6 @@ public class DiffProcessor {
                 ((AbstractEntity<?>)entity).getStatus() != DISABLED)
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, fullMap));
-    }
-
-    // TODO: implements
-    private void refreshAllLock(String lockName) {
-        //
     }
 
     private void updateIfNecessary(String path,
@@ -256,8 +249,6 @@ public class DiffProcessor {
         pathList.stream().map(path -> getApi() + "/" + path).forEach(fullPath ->
         {
             try {
-                refreshAllLock(getLockName());
-
                 JsonNode json = getJson(fullPath);
                 if (json.isArray()) {
                     json.forEach(element -> {

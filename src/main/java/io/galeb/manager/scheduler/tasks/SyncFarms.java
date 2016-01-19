@@ -20,10 +20,10 @@
 
 package io.galeb.manager.scheduler.tasks;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -52,15 +52,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import static io.galeb.core.util.Constants.ENTITY_CLASSES;
+import static io.galeb.core.util.Constants.ENTITY_MAP;
 import static io.galeb.manager.engine.driver.DriverBuilder.addResource;
+import static io.galeb.manager.engine.listeners.AbstractEngine.SEPARATOR;
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
@@ -72,10 +73,6 @@ public class SyncFarms {
 
     private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
     private static final long   INTERVAL      = 10000; // msec
-
-    public static final List<Class> FARM_ENTITIES_LIST = Arrays.asList(
-            Backend.class, BackendPool.class, Rule.class, VirtualHost.class
-    );
 
     public static final String LOCK_PREFIX    = "lock_";
 
@@ -98,7 +95,6 @@ public class SyncFarms {
 
     private CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
-    private final ObjectMapper mapper   = new ObjectMapper();
     private final Pageable     pageable = new PageRequest(0, Integer.MAX_VALUE);
 
     private boolean disableQueue = Boolean.getBoolean(
@@ -111,6 +107,8 @@ public class SyncFarms {
 
     @Scheduled(fixedRate = INTERVAL)
     private void task() {
+        long start = currentTimeMillis();
+        LOGGER.info("Executing " + this.getClass().getSimpleName() + ".task");
         if (disableSched) {
             LOGGER.debug(SyncFarms.class.getSimpleName() + " aborted (GALEB_DISABLE_SCHED is TRUE)");
             return;
@@ -120,8 +118,9 @@ public class SyncFarms {
             Authentication currentUser = CurrentUser.getCurrentAuth();
             SystemUserService.runAs();
 
-            farmRepository.findAll().parallelStream().parallel()
+            farmRepository.findAll().stream()
                     .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
+                    .parallel()
                     .forEach(farm ->
                     {
                         try {
@@ -135,13 +134,16 @@ public class SyncFarms {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            LOGGER.debug("TASK checkFarm finished");
+            LOGGER.info("Finished " + this.getClass().getSimpleName() + ".task (" + (currentTimeMillis() - start) + " ms)");
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void syncFarm(Farm farm) throws JsonProcessingException {
+        long start = currentTimeMillis();
+        LOGGER.info("Starting sync farm " + farm.getName());
         String farmLock = LOCK_PREFIX + String.valueOf(farm.getId());
-        if (checkAndLockAll(farmLock)) {
+        if (!checkAndLockAll(farmLock)) {
             LOGGER.warn("syncFarm LOCKED (" + farm.getName() + "). Waiting for release lock");
             return;
         }
@@ -160,23 +162,26 @@ public class SyncFarms {
 
             if (diff.isEmpty()) {
                 releaseAllLocks(farmLock, null);
-                LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "]");
+                LOGGER.info("FARM STATUS OK: " + farm.getName() + " [" + farm.getApi() + "] ("
+                        + (currentTimeMillis() - start) + " ms)");
                 farm.setStatus(EntityStatus.OK);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
             } else {
-                //String json = mapper.writeValueAsString(diff);
-                LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: " + diff.size() + " fix(es)");
+                //String json = new ObjectMapper().writeValueAsString(diff);
+                LOGGER.warn("FARM " + farm.getName() + " INCONSISTENT: " + diff.size() +
+                        " fix(es) (" + (currentTimeMillis() - start) + " ms).");
                 farm.setStatus(EntityStatus.ERROR);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
 
                 if (farm.isAutoReload() && !disableQueue) {
-                    @SuppressWarnings("unchecked")
-                    Entry<Farm, Map<String, Object>> entrySet = new SimpleImmutableEntry(farm, diff);
-                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, entrySet);
+                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, new SimpleImmutableEntry(farm, diff));
+                    LOGGER.warn("Sended to farm queue [" + farm.getName() +
+                            " / " + farm.getApi() + "] (" + (currentTimeMillis() - start) + " ms)");
                 } else {
                     releaseAllLocks(farmLock, null);
-                    LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() + " [" + farm.getApi() + "]");
+                    LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " + farm.getName() +
+                            " [" + farm.getApi() + "] (" + (currentTimeMillis() - start) + " ms)");
                 }
             }
         } catch (Exception e) {
@@ -185,17 +190,25 @@ public class SyncFarms {
         }
     }
 
-    // TODO: implements
-    public void releaseAllLocks(String farmLock, Object o) {
-        //
+    public void releaseAllLocks(String farmLock, Set<String> entityTypes) {
+        ENTITY_MAP.entrySet().stream()
+                .map(Entry::getValue)
+                .filter(clazz -> entityTypes == null || !entityTypes.contains(clazz.getSimpleName().toLowerCase()))
+                .map(clazz -> farmLock + SEPARATOR + clazz.getSimpleName())
+                .forEach(cacheFactory::release);
     }
 
-    public boolean checkAndLockAll(String farmLockName) {
+    public boolean checkAndLockAll(final String farmLockName) {
         final AtomicBoolean isLocked = new AtomicBoolean(true);
-        FARM_ENTITIES_LIST.stream().forEach(clazz -> {
-            String lockName = farmLockName + "." + clazz.getSimpleName();
-            isLocked.set(isLocked.get() && !cacheFactory.lock(lockName));
-        });
+        ENTITY_CLASSES.stream()
+                    .map(clazz -> farmLockName + SEPARATOR + clazz.getSimpleName())
+                    .map(lockName -> isLocked.get() && cacheFactory.isLocked(lockName))
+                    .forEach(isLocked::set);
+        if (!isLocked.get()) {
+            ENTITY_CLASSES.stream()
+                    .map(clazz -> farmLockName + SEPARATOR + clazz.getSimpleName())
+                    .forEach(cacheFactory::lock);
+        }
         return isLocked.get();
     }
 

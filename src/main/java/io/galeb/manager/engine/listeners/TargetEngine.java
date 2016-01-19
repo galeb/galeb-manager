@@ -68,7 +68,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(target, pool.getName(), cacheFactory);
+            releaseLocks(target, pool.getName());
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
@@ -88,6 +88,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            releaseLocks(target, pool.getName());
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
@@ -108,6 +109,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
+            releaseLocks(target, pool.getName());
             target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }

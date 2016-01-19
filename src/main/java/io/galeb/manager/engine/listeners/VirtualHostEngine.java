@@ -60,8 +60,6 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @Autowired private FarmQueue farmQueue;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
-    private CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
-
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
     public void create(VirtualHost virtualHost) {
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
@@ -79,7 +77,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", cacheFactory);
+            releaseLocks(virtualHost, "");
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -110,7 +108,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", cacheFactory);
+            releaseLocks(virtualHost, "");
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -135,7 +133,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "", cacheFactory);
+            releaseLocks(virtualHost, "");
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
