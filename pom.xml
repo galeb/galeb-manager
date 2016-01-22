@@ -237,7 +237,7 @@
                       -Xmx2048m -Xms2048m
                       -Dauth_method=LDAP_TEST
                       -DINTERNAL_PASSWORD=password
-                      d-DIGNITE_JETTY_PORT=50001
+                      -DIGNITE_JETTY_PORT=50001
                     </argLine>
                 </configuration>
             </plugin>
