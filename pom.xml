@@ -71,6 +71,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-tomcat</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jetty</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -227,6 +237,7 @@
                       -Xmx2048m -Xms2048m
                       -Dauth_method=LDAP_TEST
                       -DINTERNAL_PASSWORD=password
+                      d-DIGNITE_JETTY_PORT=50001
                     </argLine>
                 </configuration>
             </plugin>
@@ -241,6 +252,7 @@
                       -Dauth_method=DEFAULT
                       -Dserver.port=8000
                       -DINTERNAL_PASSWORD=password
+                      -DIGNITE_JETTY_PORT=50001
                   </jvmArguments>
                 </configuration>
             </plugin>
