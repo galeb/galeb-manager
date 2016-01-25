@@ -125,8 +125,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         try {
             poolRepository.save(pool);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            setFarmStatusOnError(pool);
+            LOGGER.debug(e.getMessage());
         } finally {
             SystemUserService.runAs(currentUser);
         }

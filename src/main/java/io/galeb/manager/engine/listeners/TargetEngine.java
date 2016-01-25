@@ -126,8 +126,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         try {
             targetRepository.save(target);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            setFarmStatusOnError(target);
+            LOGGER.debug(e.getMessage());
         } finally {
             SystemUserService.runAs(currentUser);
         }

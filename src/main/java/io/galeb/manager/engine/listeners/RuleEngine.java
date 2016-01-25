@@ -153,8 +153,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         try {
             ruleRepository.save(rule);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            setFarmStatusOnError(rule);
+            LOGGER.debug(e.getMessage());
         } finally {
             SystemUserService.runAs(currentUser);
         }

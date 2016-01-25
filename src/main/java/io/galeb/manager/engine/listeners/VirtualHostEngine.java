@@ -150,8 +150,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         try {
             virtualHostRepository.save(virtualHost);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
-            setFarmStatusOnError(virtualHost);
+            LOGGER.debug(e.getMessage());
         } finally {
             SystemUserService.runAs(currentUser);
         }
