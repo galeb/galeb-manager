@@ -48,6 +48,11 @@ public class TargetEngine extends AbstractEngine<Target> {
 
     private static final Log LOGGER = LogFactory.getLog(TargetEngine.class);
 
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
+
     @Autowired private FarmRepository farmRepository;
     @Autowired private TargetRepository targetRepository;
     @Autowired private GenericEntityService genericEntityService;

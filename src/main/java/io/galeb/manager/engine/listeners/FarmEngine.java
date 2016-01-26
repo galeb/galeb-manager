@@ -74,6 +74,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
+
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;

@@ -35,6 +35,7 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
+import org.apache.commons.logging.Log;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
@@ -61,6 +62,8 @@ public abstract class AbstractEngine<T> {
     protected abstract FarmRepository getFarmRepository();
 
     protected abstract FarmQueue farmQueue();
+
+    protected abstract Log getLogger();
 
     protected CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
@@ -121,22 +124,40 @@ public abstract class AbstractEngine<T> {
         Class<? extends Entity> clazz = ENTITY_MAP.get(entityType);
         String className = clazz != null ? clazz.getSimpleName() : "NULL";
         String lockName = farmLock + SEPARATOR + className;
+        String fullLockName = lockName + SEPARATOR + id;
         if (!inProgress.containsKey(lockName)) {
             inProgress.put(lockName, new HashSet<>());
             cacheFactory.lock(lockName);
+            getLogger().info("++ Locking " + lockName);
+        } else {
+            getLogger().info("-- " + lockName + " lock already locked");
         }
-        return inProgress.get(lockName).add(lockName + SEPARATOR + id);
+        boolean result = inProgress.get(lockName).add(fullLockName);
+        if (result) {
+            getLogger().info(">> Locking " + fullLockName);
+        } else {
+            getLogger().info("<< " + fullLockName + " lock already locked");
+        }
+        return result;
     }
 
     protected void releaseLockWithId(String id, String parentId, String lockPrefix) {
         Set<String> localLock = inProgress.get(lockPrefix);
         if (localLock == null) {
+            getLogger().warn("++ " + lockPrefix + " lock NOT FOUND");
             return;
         }
-        localLock.remove(lockPrefix + SEPARATOR + id + SEPARATOR + parentId);
+        String fullLockName = lockPrefix + SEPARATOR + id + SEPARATOR + parentId;
+        boolean result = localLock.remove(fullLockName);
+        if (result) {
+            getLogger().info(">> Releasing " + fullLockName);
+        } else {
+            getLogger().warn("<< " + fullLockName + " lock NOT FOUND");
+        }
         if (!containsLock(lockPrefix)) {
             cacheFactory.release(lockPrefix);
             inProgress.remove(lockPrefix);
+            getLogger().warn("++ Releasing " + lockPrefix);
         }
     }
 }

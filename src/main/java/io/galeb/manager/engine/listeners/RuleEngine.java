@@ -52,6 +52,11 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
 
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
+
     @Autowired private FarmRepository farmRepository;
     @Autowired private RuleRepository ruleRepository;
     @Autowired private RuleQueue ruleQueue;

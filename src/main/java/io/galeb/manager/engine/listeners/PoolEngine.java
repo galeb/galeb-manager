@@ -47,6 +47,11 @@ public class PoolEngine extends AbstractEngine<Pool> {
 
     private static final Log LOGGER = LogFactory.getLog(PoolEngine.class);
 
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
+
     @Autowired private FarmRepository farmRepository;
     @Autowired private PoolRepository poolRepository;
     @Autowired private GenericEntityService genericEntityService;

@@ -18,8 +18,6 @@
 
 package io.galeb.manager.engine.listeners;
 
-import io.galeb.core.jcache.CacheFactory;
-import io.galeb.core.jcache.IgniteCacheFactory;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.FarmQueue;
@@ -50,6 +48,11 @@ import io.galeb.manager.engine.listeners.services.GenericEntityService;
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostEngine.class);
+
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
