@@ -33,7 +33,7 @@ public class ManagerToFarmConverter {
         MANAGER_TO_FARM_ENTITY_MAP.put(Target.class.getSimpleName().toLowerCase(), Backend.class);
 
         FARM_TO_MANAGER_ENTITY_MAP.put(VirtualHost.class.getSimpleName().toLowerCase(), VirtualHost.class);
-        FARM_TO_MANAGER_ENTITY_MAP.put(BackendPool.class.getSimpleName().toLowerCase(), BackendPool.class);
+        FARM_TO_MANAGER_ENTITY_MAP.put(BackendPool.class.getSimpleName().toLowerCase(), Pool.class);
         FARM_TO_MANAGER_ENTITY_MAP.put(Rule.class.getSimpleName().toLowerCase(), Rule.class);
         FARM_TO_MANAGER_ENTITY_MAP.put(Backend.class.getSimpleName().toLowerCase(), Target.class);
     }
