@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.listeners;
 
+import static io.galeb.core.util.Constants.ENTITY_MAP;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 import static io.galeb.manager.engine.driver.DriverBuilder.addResource;
 import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
@@ -194,9 +195,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                 entityTypes.add(entityType);
 
-                final String internalEntityType = getInternalEntityType(entityType);
+                final String managerEntityType = getManagerEntityType(entityType);
 
-                JpaRepositoryWithFindByName repository = getRepository(internalEntityType);
+                JpaRepositoryWithFindByName repository = getRepository(managerEntityType);
                 if (repository != null) {
                     AbstractEntity<?> entityFromRepository = null;
                     int pageSize = 100;
@@ -215,14 +216,17 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     SystemUserService.clearContext();
 
                     if (entityFromRepository == null && action != REMOVE) {
-                        LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + internalEntityType + "]");
+                        LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
                     } else {
-                        AbstractEnqueuer queue = getQueue(internalEntityType);
+                        AbstractEnqueuer queue = getQueue(managerEntityType);
                         if (action == REMOVE) {
                             LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
                             removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
-                            String lockPrefix = farmLock + SEPARATOR + getExternalEntityType(entityType).getSimpleName();
-                            releaseLockWithId(id, parentId, lockPrefix);
+                            Class<?> entityTypeClass = ENTITY_MAP.get(entityType);
+                            if (entityTypeClass != null) {
+                                String lockPrefix = farmLock + SEPARATOR + entityTypeClass.getSimpleName();
+                                releaseLockWithId(id, parentId, lockPrefix);
+                            }
                         } else {
                             LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
                             switch (action) {

@@ -26,24 +26,18 @@ import java.util.concurrent.TimeUnit;
 
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.jcache.IgniteCacheFactory;
-import io.galeb.core.model.Backend;
-import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
-import io.galeb.core.model.Rule;
-import io.galeb.core.model.VirtualHost;
 import io.galeb.core.util.map.ConcurrentHashMapExpirable;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
+import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Pool;
-import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
 import org.springframework.security.core.Authentication;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
@@ -104,37 +98,18 @@ public abstract class AbstractEngine<T> {
         return farm;
     }
 
-    protected void setFarmStatusOnError(AbstractEntity<?> entity) {
-        if (entity.getStatus().equals(EntityStatus.ERROR)) {
-            Optional<Farm> farm = findFarm(entity);
-            if (farm.isPresent()) {
-                farm.get().setStatus(EntityStatus.ERROR);
-                farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm.get());
-            }
-        }
+    protected String getManagerEntityType(String farmEntityType) {
+        Class<?> internalEntityType = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(farmEntityType);
+        return internalEntityType != null ? internalEntityType.getSimpleName().toLowerCase() : null;
     }
 
-    protected String getInternalEntityType(String entityType) {
-        return entityType.toLowerCase().equals(BackendPool.class.getSimpleName().toLowerCase()) ?
-                Pool.class.getSimpleName().toLowerCase() :
-                entityType.toLowerCase().equals(Backend.class.getSimpleName().toLowerCase()) ?
-                        Target.class.getSimpleName().toLowerCase() : entityType;
-    }
-
-    protected Class<?> getExternalEntityType(String entityType) {
-        return entityType.toLowerCase().equals(
-                Pool.class.getSimpleName().toLowerCase()) ? BackendPool.class :
-                entityType.toLowerCase().equals(
-                        Target.class.getSimpleName().toLowerCase()) ? Backend.class :
-                        entityType.toLowerCase().equals(
-                                VirtualHost.class.getSimpleName().toLowerCase()) ? VirtualHost.class :
-                                entityType.toLowerCase().equals(
-                                        Rule.class.getSimpleName().toLowerCase()) ? Rule.class : null;
+    protected Class<?> getFarmEntityType(String managerEntityType) {
+        return ManagerToFarmConverter.MANAGER_TO_FARM_ENTITY_MAP.get(managerEntityType);
     }
 
     protected void releaseLocks(AbstractEntity<?> entity, String parentName) {
         String lockPrefix = LOCK_PREFIX + ((WithFarmID)entity).getFarmId() + SEPARATOR
-                + getExternalEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
+                + getFarmEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
         releaseLockWithId(entity.getName(), parentName, lockPrefix);
     }
 
