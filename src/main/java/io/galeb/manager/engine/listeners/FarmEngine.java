@@ -62,12 +62,13 @@ import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import javax.annotation.PostConstruct;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Component
 public class FarmEngine extends AbstractEngine<Farm> {
@@ -205,19 +206,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 JpaRepositoryWithFindByName repository = getRepository(managerEntityType);
                 if (repository != null) {
                     AbstractEntity<?> entityFromRepository = null;
-                    int pageSize = 100;
-                    int page = 0;
-                    SystemUserService.runAs();
-                    Page<?> elements = repository.findByName(id, new PageRequest(page, pageSize));
 
-                    while (elements.hasContent() && entityFromRepository == null) {
-                        entityFromRepository = getEntityIfExist(id, parentId, (Iterator<AbstractEntity<?>>) elements.iterator()).orElse(null);
-                        if (!elements.isLast()) {
-                            elements = repository.findByName(id, new PageRequest(++page, pageSize));
-                        } else {
-                            break;
-                        }
-                    }
+                    SystemUserService.runAs();
+                    Page<?> elements = repository.findByName(id, new PageRequest(0, Integer.MAX_VALUE));
+                    Stream<AbstractEntity<?>> elementsStream = ((Stream<AbstractEntity<?>>)StreamSupport.stream(elements.spliterator(), false));
+                    entityFromRepository = getEntityIfExist(id, parentId, elementsStream).orElse(null);
                     SystemUserService.clearContext();
 
                     if (entityFromRepository == null && action != REMOVE) {
@@ -292,22 +285,19 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     @SuppressWarnings("unchecked")
-    private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, final Iterator<AbstractEntity<?>> iterator) {
-        while (iterator.hasNext()) {
-            AbstractEntity<?> entity = iterator.next();
-            if ((entity.getName().equals(id)) &&
-                    ((!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
-                            (entity instanceof WithParent && (
-                                    ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
-                                            ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId))) ||
-                            (entity instanceof WithParents &&
-                                    !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
-                                    ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                            .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId)))) {
-                return Optional.of(entity);
-            }
-        }
-        return Optional.empty();
+    private Optional<AbstractEntity<?>> getEntityIfExist(String id, String parentId, final Stream<AbstractEntity<?>> stream) {
+        return stream
+                .filter(entity -> entity.getName().equals(id))
+                .filter(entity ->
+                    (!(entity instanceof WithParent) && !(entity instanceof WithParents)) ||
+                    (entity instanceof WithParent && (
+                            ((WithParent<AbstractEntity<?>>) entity).getParent() != null &&
+                                    ((WithParent<AbstractEntity<?>>) entity).getParent().getName().equals(parentId))) ||
+                    (entity instanceof WithParents &&
+                            !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
+                            ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
+                                    .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
+        ).findAny();
     }
 
     @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
