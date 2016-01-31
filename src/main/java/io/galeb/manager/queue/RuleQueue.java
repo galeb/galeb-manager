@@ -21,8 +21,10 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Rule;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.*;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,10 +36,13 @@ public class RuleQueue extends AbstractEnqueuer<Rule> {
     public static final String QUEUE_CALLBK = "queue-rule-callback";
     public static final String QUEUE_RELOAD = "queue-rule-reload";
 
+    private static final Log LOGGER = LogFactory.getLog(RuleQueue.class);
+
     @Autowired
     private JmsTemplate template;
 
     public RuleQueue() {
+        super(LOGGER);
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);

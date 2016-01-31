@@ -46,6 +46,10 @@ public class Environment extends AbstractEntity<Environment> {
     @OneToMany(mappedBy = "environment")
     private final Set<Target> targets = new HashSet<>();
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "environment")
+    private final Set<Pool> pools = new HashSet<>();
+
     public Environment(String name) {
         setName(name);
     }

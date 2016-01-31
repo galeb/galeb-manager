@@ -21,8 +21,10 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Pool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.*;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,10 +36,13 @@ public class PoolQueue extends AbstractEnqueuer<Pool> {
     public static final String QUEUE_CALLBK = "queue-pool-callback";
     public static final String QUEUE_RELOAD = "queue-pool-reload";
 
+    private static final Log LOGGER = LogFactory.getLog(PoolQueue.class);
+
     @Autowired
     private JmsTemplate template;
 
     public PoolQueue() {
+        super(LOGGER);
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
