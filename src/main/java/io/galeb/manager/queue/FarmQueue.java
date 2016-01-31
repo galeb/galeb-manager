@@ -21,8 +21,10 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.Farm;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jms.core.*;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -36,10 +38,13 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
     public static final String QUEUE_SYNC   = "queue-farm-sync";
     public static final String QUEUE_CALLBK = "queue-farm-callback";
 
+    private static final Log LOGGER = LogFactory.getLog(FarmQueue.class);
+
     @Autowired
     private JmsTemplate template;
 
     public FarmQueue() {
+        super(LOGGER);
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);

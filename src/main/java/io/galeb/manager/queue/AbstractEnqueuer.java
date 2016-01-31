@@ -21,13 +21,18 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.AbstractEntity;
-import org.springframework.jms.core.*;
+import org.apache.commons.logging.Log;
+import org.springframework.jms.core.JmsTemplate;
+
+import javax.jms.Message;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
-public abstract class AbstractEnqueuer<T> {
+public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
+
+    private static final String UNIQUE_ID_SEP = ".";
 
     private static final boolean DISABLE_QUEUE;
     static {
@@ -41,7 +46,13 @@ public abstract class AbstractEnqueuer<T> {
     private String queueUpdateName   = QUEUE_UNDEF;
     private String queueRemoveName   = QUEUE_UNDEF;
     private String queueCallBackName = QUEUE_UNDEF;
-    private String queueSyncName = QUEUE_UNDEF;
+    private String queueSyncName     = QUEUE_UNDEF;
+
+    private final Log logger;
+
+    public AbstractEnqueuer(Log logger) {
+        this.logger = logger;
+    }
 
     protected static boolean isDisableQueue() {
         return DISABLE_QUEUE;
@@ -51,6 +62,10 @@ public abstract class AbstractEnqueuer<T> {
 
     public String getQueueCreateName() {
         return queueCreateName;
+    }
+
+    protected Log logger() {
+        return logger;
     }
 
     protected AbstractEnqueuer<T> setQueueCreateName(String queueCreateName) {
@@ -94,23 +109,31 @@ public abstract class AbstractEnqueuer<T> {
         return this;
     }
 
-    public void sendByStatus(AbstractEntity<?> entity) {
+    public void sendByStatus(T entity) {
         final AbstractEntity.EntityStatus status = entity.getStatus();
         if (DISABLED.equals(status)) {
-            sendToQueue(getQueueRemoveName(), (T) entity);
+            sendToQueue(getQueueRemoveName(), entity);
         } else {
             if (ENABLE.equals(status)) {
                 entity.setStatus(PENDING);
-                sendToQueue(getQueueCreateName(), (T) entity);
+                sendToQueue(getQueueCreateName(), entity);
             } else {
-                sendToQueue(getQueueUpdateName(), (T) entity);
+                sendToQueue(getQueueUpdateName(), entity);
             }
         }
     }
 
     public void sendToQueue(String queue, T entity) {
         if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
-            template().convertAndSend(queue, entity);
+            template().send(queue, session -> {
+                Message message = session.createObjectMessage(entity);
+                String uniqueId = "ID:" + queue + UNIQUE_ID_SEP +
+                        entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+                message.setStringProperty("_HQ_DUPL_ID", uniqueId);
+                message.setJMSMessageID(uniqueId);
+                logger.info(uniqueId + " " + entity.getName());
+                return message;
+            });
         }
     }
 }
