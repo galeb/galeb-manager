@@ -22,7 +22,7 @@ package io.galeb.manager.engine.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.cluster.ClusterLocker;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Rule;
@@ -74,12 +74,6 @@ public class DiffProcessor {
     private String api = "";
     private final Map<String, Map<String, Object>> diffMap = new HashMap<>();
     private Map<String, List<?>> entitiesMap = new HashMap<>();
-    private CacheFactory cacheFactory;
-
-    public DiffProcessor setCacheFactory(CacheFactory cacheFactory) {
-        this.cacheFactory = cacheFactory;
-        return this;
-    }
 
     public DiffProcessor setProperties(Properties properties) {
         this.properties = properties;

@@ -80,7 +80,6 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "");
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -111,7 +110,6 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "");
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
                 virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
                 virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
@@ -136,7 +134,6 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            releaseLocks(virtualHost, "");
             virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
             virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }

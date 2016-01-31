@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.util.DiffProcessor;
@@ -64,6 +63,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.galeb.manager.common.Properties;
 
+import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter;
+
 public class GalebV3Driver implements Driver {
 
     public static final String DRIVER_NAME = GalebV3Driver.class.getSimpleName()
@@ -73,8 +74,6 @@ public class GalebV3Driver implements Driver {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private CacheFactory cacheFactory;
-
     @Override
     public String toString() {
         return DRIVER_NAME;
@@ -82,9 +81,6 @@ public class GalebV3Driver implements Driver {
 
     @Override
     public Driver addResource(Object resource) {
-        if (resource instanceof CacheFactory) {
-            cacheFactory = (CacheFactory) resource;
-        }
         return this;
     }
 
@@ -146,6 +142,7 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean create(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
+        String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
@@ -160,6 +157,8 @@ public class GalebV3Driver implements Driver {
             result = getResultFromStatusCode(request, response);
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+        } finally {
+            decrementDiffCounter(keyInProgress);
         }
         return result;
     }
@@ -167,6 +166,7 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean update(Properties properties) {
         String api = properties.getOrDefault("api", "NULL").toString();
+        String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
@@ -181,6 +181,8 @@ public class GalebV3Driver implements Driver {
             result = getResultFromStatusCode(request, response);
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error("PUT "+uriPath+" ("+e.getMessage()+")");
+        } finally {
+            decrementDiffCounter(keyInProgress);
         }
         return result;
     }
@@ -189,6 +191,7 @@ public class GalebV3Driver implements Driver {
     public boolean remove(Properties properties) {
         boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
+        String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
@@ -210,6 +213,8 @@ public class GalebV3Driver implements Driver {
             result = getResultFromStatusCode(delete, response);
         } catch (Exception e) {
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
+        } finally {
+            decrementDiffCounter(keyInProgress);
         }
         return result;
     }
@@ -252,9 +257,8 @@ public class GalebV3Driver implements Driver {
     @SuppressWarnings("unchecked")
     @Override
     public Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
-        return new DiffProcessor().setProperties(properties).setCacheFactory(cacheFactory).getDiffMap();
+        return new DiffProcessor().setProperties(properties).getDiffMap();
     }
-
 
     private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
         InputStream content = null;

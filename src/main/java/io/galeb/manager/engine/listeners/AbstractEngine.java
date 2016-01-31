@@ -18,16 +18,13 @@
 
 package io.galeb.manager.engine.listeners;
 
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import io.galeb.core.jcache.CacheFactory;
-import io.galeb.core.jcache.IgniteCacheFactory;
-import io.galeb.core.model.Entity;
-import io.galeb.core.util.map.ConcurrentHashMapExpirable;
+import io.galeb.core.cluster.ClusterLocker;
+import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
@@ -43,13 +40,7 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import static io.galeb.core.util.Constants.ENTITY_MAP;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_PREFIX;
-
 public abstract class AbstractEngine<T> {
-
-    public static final Map<String, Set<String>> inProgress =
-            new ConcurrentHashMapExpirable<>(1, TimeUnit.DAYS, 16, 0.9f, 1);
 
     public static final String SEPARATOR = "__";
 
@@ -65,11 +56,11 @@ public abstract class AbstractEngine<T> {
 
     protected abstract Log getLogger();
 
-    protected CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
+    protected ClusterLocker locker = IgniteClusterLocker.INSTANCE;
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
-            return Optional.ofNullable((Farm)entity);
+            return Optional.of((Farm)entity);
         }
         long farmId = -1L;
         if (entity instanceof WithFarmID) {
@@ -106,58 +97,4 @@ public abstract class AbstractEngine<T> {
         return internalEntityType != null ? internalEntityType.getSimpleName().toLowerCase() : null;
     }
 
-    protected Class<?> getFarmEntityType(String managerEntityType) {
-        return ManagerToFarmConverter.MANAGER_TO_FARM_ENTITY_MAP.get(managerEntityType);
-    }
-
-    protected void releaseLocks(AbstractEntity<?> entity, String parentName) {
-        String lockPrefix = LOCK_PREFIX + ((WithFarmID)entity).getFarmId() + SEPARATOR
-                + getFarmEntityType(entity.getClass().getSimpleName().toLowerCase()).getSimpleName();
-        releaseLockWithId(entity.getName(), parentName, lockPrefix);
-    }
-
-    protected boolean containsLock(String lockName) {
-        return inProgress.containsKey(lockName) && !inProgress.get(lockName).isEmpty();
-    }
-
-    protected boolean lockWithId(String farmLock, String entityType, String id) {
-        Class<? extends Entity> clazz = ENTITY_MAP.get(entityType);
-        String className = clazz != null ? clazz.getSimpleName() : "NULL";
-        String lockName = farmLock + SEPARATOR + className;
-        String fullLockName = lockName + SEPARATOR + id;
-        if (!inProgress.containsKey(lockName)) {
-            inProgress.put(lockName, new HashSet<>());
-            cacheFactory.lock(lockName);
-            getLogger().info("++ Locking " + lockName);
-        } else {
-            getLogger().info("-- " + lockName + " lock already locked");
-        }
-        boolean result = inProgress.get(lockName).add(fullLockName);
-        if (result) {
-            getLogger().info(">> Locking " + fullLockName);
-        } else {
-            getLogger().info("<< " + fullLockName + " lock already locked");
-        }
-        return result;
-    }
-
-    protected void releaseLockWithId(String id, String parentId, String lockPrefix) {
-        Set<String> localLock = inProgress.get(lockPrefix);
-        if (localLock == null) {
-            getLogger().warn("++ " + lockPrefix + " lock NOT FOUND");
-            return;
-        }
-        String fullLockName = lockPrefix + SEPARATOR + id + SEPARATOR + parentId;
-        boolean result = localLock.remove(fullLockName);
-        if (result) {
-            getLogger().info(">> Releasing " + fullLockName);
-        } else {
-            getLogger().warn("<< " + fullLockName + " lock NOT FOUND");
-        }
-        if (!containsLock(lockPrefix)) {
-            cacheFactory.release(lockPrefix);
-            inProgress.remove(lockPrefix);
-            getLogger().warn("++ Releasing " + lockPrefix);
-        }
-    }
 }
