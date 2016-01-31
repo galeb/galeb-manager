@@ -27,8 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Service
 public class FarmQueue extends AbstractEnqueuer<Farm> {
 
@@ -37,6 +35,7 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
     public static final String QUEUE_REMOVE = "queue-farm-remove";
     public static final String QUEUE_SYNC   = "queue-farm-sync";
     public static final String QUEUE_CALLBK = "queue-farm-callback";
+    public static final String QUEUE_RELOAD = "queue-farm-reload";
 
     private static final Log LOGGER = LogFactory.getLog(FarmQueue.class);
 
@@ -50,12 +49,6 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
         setQueueRemoveName(QUEUE_REMOVE);
         setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_SYNC);
-    }
-
-    public void sendToQueue(String queue, Map.Entry<Farm, Map<String, Object>> entry) {
-        if (!isDisableQueue()) {
-            template.convertAndSend(queue, entry);
-        }
     }
 
     @Override

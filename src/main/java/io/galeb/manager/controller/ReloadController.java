@@ -1,16 +1,16 @@
 package io.galeb.manager.controller;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-import static java.util.AbstractMap.*;
 
 import io.galeb.manager.queue.FarmQueue;
-import org.apache.commons.logging.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.*;
-import org.springframework.security.core.context.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -40,7 +40,7 @@ public class ReloadController {
         if (farm != null) {
             farm.setStatus(PENDING).setSaveOnly(true);
             farmRepository.save(farm);
-            farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, new SimpleImmutableEntry<>(farm, null));
+            farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, farm);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

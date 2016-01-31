@@ -141,6 +141,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
     }
 
+    @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
+    public void reload(Farm farm) {
+        executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm));
+    }
+
     @JmsListener(destination = FarmQueue.QUEUE_CREATE)
     public void create(Farm farm) {
         LOGGER.info("Creating " + farm.getClass().getSimpleName() + " " + farm.getName());
