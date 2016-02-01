@@ -226,12 +226,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
             } catch (Exception e) {
                 CounterDownLatch.reset(latchId);
                 LOGGER.error(e);
-
+                LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
                 farm.setStatus(AbstractEntity.EntityStatus.ERROR);
                 farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
             }
         } else {
-            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by other process/node. Aborting Check & Sync Task.");
+            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
         }
     }
 
@@ -240,7 +240,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                          final Map<String, Map<String, Object>> diff,
                          final Driver driver) {
 
-        LOGGER.warn("Syncing " + farm.getClass().getSimpleName() + " " + farm.getName());
+        LOGGER.warn("FARM STATUS - Synchronizing Farm " + farm.getName());
 
         final Set<String> entityTypes = new HashSet<>();
 

@@ -109,16 +109,24 @@ public class SyncFarms {
         String latchId = farm.getApi();
         final boolean containsKey = CounterDownLatch.refreshAndCheckContainsKey(latchId);
         final Integer latchCount = CounterDownLatch.refreshAndGet(latchId);
-        if (containsKey && latchCount != null && latchCount == 0) {
-            locker.release(LOCK_PREFIX + farm.getId());
-            CounterDownLatch.remove(latchId);
-            LOGGER.info("Releasing Farm ID " + farm.getId() + " lock");
+        long farmId = farm.getId();
+        String farmName = farm.getName();
+        String farmFull = farmName + " (" + farmId + ") [ " + latchId + " ]";
+        String farmStatusMsgPrefix = "FARM STATUS - ";
+
+        if (containsKey) {
+            if (latchCount != null && latchCount == 0) {
+                locker.release(LOCK_PREFIX + farm.getId());
+                CounterDownLatch.remove(latchId);
+                LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farmFull);
+            } else {
+                LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull);
+            }
         } else {
             if (farm.isAutoReload() && !disableQueue) {
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
             } else {
-                LOGGER.warn("FARM STATUS FAIL (But AutoSync is disabled): " +
-                        farm.getName() + " [" + farm.getApi() + "]");
+                LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farmFull);
             }
         }
     }
