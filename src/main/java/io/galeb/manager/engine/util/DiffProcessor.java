@@ -108,7 +108,7 @@ public class DiffProcessor {
 
     @SuppressWarnings("unchecked")
     private void makeDiffMap(String path) throws Exception {
-        final Map<String, Map<String, String>> fullMap = extractRemoteMap();
+        final Map<String, Map<String, String>> fullMap = extractRemoteMap(path);
         List<?> entities = getEntitiesMap().get(path);
 
         fullMap.entrySet().stream()
@@ -217,46 +217,33 @@ public class DiffProcessor {
                                 .map(AbstractEntity::getName).collect(toList()).contains(parentId);
     }
 
-    private Map<String, Map<String, String>> extractRemoteMap() throws Exception {
-
+    private Map<String, Map<String, String>> extractRemoteMap(String path) throws Exception {
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final List<String> pathList = Constants.ENTITY_CLASSES.stream().map(clazz ->
-                clazz.getSimpleName().toLowerCase()).collect(toList());
-
         final AtomicReference<String> error = new AtomicReference<>(null);
+        String fullPath = getApi() + "/" + path;
 
-        pathList.stream().map(path -> getApi() + "/" + path).forEach(fullPath ->
-        {
-            try {
-                JsonNode json = getJson(fullPath);
-                if (json.isArray()) {
-                    json.forEach(element -> {
-                        Map<String, String> entityProperties = new HashMap<>();
-                        String id = element.get("id").asText();
-                        JsonNode parentIdObj = element.get("parentId");
-                        String parentId = parentIdObj != null ? parentIdObj.asText() : "";
-                        String pk = element.get("pk").asText();
-                        String version = element.get("version").asText();
-                        String entityType = element.get("_entity_type").asText();
-                        String etag = element.get("_etag").asText();
+        JsonNode json = getJson(fullPath);
+        if (json.isArray()) {
+            json.forEach(element -> {
+                Map<String, String> entityProperties = new HashMap<>();
+                String id = element.get("id").asText();
+                JsonNode parentIdObj = element.get("parentId");
+                String parentId = parentIdObj != null ? parentIdObj.asText() : "";
+                String pk = element.get("pk").asText();
+                String version = element.get("version").asText();
+                String entityType = element.get("_entity_type").asText();
+                String etag = element.get("_etag").asText();
 
-                        entityProperties.put("id", id);
-                        entityProperties.put("pk", pk);
-                        entityProperties.put("version", version);
-                        entityProperties.put("parentId", parentId);
-                        entityProperties.put("entity_type", entityType);
-                        entityProperties.put("etag", etag);
-                        fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
-                    });
-                }
-            } catch (Exception e) {
-                LOGGER.error(e);
-                error.set(e.getMessage());
-            }
-        });
-        if (error.get() != null) {
-            throw new RuntimeException(error.get());
+                entityProperties.put("id", id);
+                entityProperties.put("pk", pk);
+                entityProperties.put("version", version);
+                entityProperties.put("parentId", parentId);
+                entityProperties.put("entity_type", entityType);
+                entityProperties.put("etag", etag);
+                fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
+            });
         }
+
         return fullMap;
     }
 
