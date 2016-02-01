@@ -22,11 +22,7 @@ package io.galeb.manager.engine.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.galeb.core.cluster.ClusterLocker;
-import io.galeb.core.model.Backend;
-import io.galeb.core.model.BackendPool;
-import io.galeb.core.model.Rule;
-import io.galeb.core.model.VirtualHost;
+import io.galeb.core.util.Constants;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -41,7 +37,6 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,6 +57,7 @@ import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
+import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
 
@@ -70,7 +66,6 @@ public class DiffProcessor {
     private final ObjectMapper mapper = new ObjectMapper();
 
     private Properties properties;
-    private String lockName = "";
     private String api = "";
     private final Map<String, Map<String, Object>> diffMap = new HashMap<>();
     private Map<String, List<?>> entitiesMap = new HashMap<>();
@@ -82,7 +77,7 @@ public class DiffProcessor {
 
     public Map<String, Map<String, Object>> getDiffMap() throws Exception {
         final AtomicReference<String> error = new AtomicReference<>(null);
-        getEntitiesMap().keySet().stream().forEach((path) -> {
+        getEntitiesMap().keySet().stream().forEach(path -> {
             try {
                 makeDiffMap(path);
             } catch (Exception e) {
@@ -93,13 +88,6 @@ public class DiffProcessor {
             throw new RuntimeException(error.get());
         }
         return diffMap;
-    }
-
-    private String getLockName() {
-        if ("".equals(lockName) && properties != null) {
-            lockName = properties.getOrDefault("lockName", "UNDEF").toString();
-        }
-        return lockName;
     }
 
     private String getApi() {
@@ -226,17 +214,14 @@ public class DiffProcessor {
                 (entity instanceof WithParents) &&
                         !((WithParents<AbstractEntity<?>>) entity).getParents().isEmpty() &&
                         ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
-                                .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId);
+                                .map(AbstractEntity::getName).collect(toList()).contains(parentId);
     }
 
     private Map<String, Map<String, String>> extractRemoteMap() throws Exception {
 
         final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final List<String> pathList = Arrays.asList(
-                VirtualHost.class.getSimpleName().toLowerCase(),
-                BackendPool.class.getSimpleName().toLowerCase(),
-                Backend.class.getSimpleName().toLowerCase(),
-                Rule.class.getSimpleName().toLowerCase());
+        final List<String> pathList = Constants.ENTITY_CLASSES.stream().map(clazz ->
+                clazz.getSimpleName().toLowerCase()).collect(toList());
 
         final AtomicReference<String> error = new AtomicReference<>(null);
 

@@ -23,27 +23,115 @@ package io.galeb.manager.engine.util;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import static java.lang.System.currentTimeMillis;
 
 public class CounterDownLatch {
 
-    public static final Map<String, Integer> mapOfDiffCounters =
+    private static final Map<String, Map.Entry<Long, Integer>> mapOfDiffCounters =
                 Collections.synchronizedMap(new HashMap<>());
 
-    public static int decrementDiffCounter(String key) {
+    private static final Long IDLE_TIMEOUT =
+            Long.valueOf(System.getProperty("LOCK_IDLE_TIMEOUT", String.valueOf(30000L))); // default: 30 sec
+
+    private CounterDownLatch() {
+        // singleton?
+    }
+
+    public static synchronized int decrementDiffCounter(String key) {
         int oldValue = -1;
-        if (mapOfDiffCounters.containsKey(key)) {
-            oldValue = mapOfDiffCounters.get(key);
+        if (refreshAndCheckContainsKey(key)) {
+           final Map.Entry entry = mapOfDiffCounters.get(key);
+            oldValue = (int) entry.getValue();
             if (oldValue > 0 ) {
-                mapOfDiffCounters.put(key, --oldValue);
+                put(key, --oldValue);
             } else {
-                mapOfDiffCounters.put(key, 0);
-                return 0;
+                oldValue = reset(key);
             }
         }
         return oldValue;
     }
 
-    private CounterDownLatch() {
-        // singleton?
+    public static synchronized Integer refreshAndGet(String key) {
+        if (mapOfDiffCounters.containsKey(key) && isExpired(key)) {
+            return reset(key);
+        }
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        if (entry != null) {
+            int value = (Integer) entry.getValue();
+            put(key, value);
+            return value;
+        }
+        return null;
+    }
+
+    public static synchronized Integer put(String key, Integer value) {
+        final Map.Entry entry = mapOfDiffCounters.put(key, new KV(currentTimeMillis(), value));
+        return (Integer) (entry != null ? entry.getValue() : null);
+    }
+
+    public static synchronized Integer remove(String key) {
+        final Map.Entry entry = mapOfDiffCounters.remove(key);
+        return (Integer) (entry != null ? entry.getValue() : null);
+    }
+
+    public static synchronized boolean refreshAndCheckContainsKey(String key) {
+        final boolean containsKey = mapOfDiffCounters.containsKey(key);
+        if (containsKey && isExpired(key)) {
+            reset(key);
+        }
+        return containsKey;
+    }
+
+    public static synchronized boolean isExpired(String key) {
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        return entry != null && ((Long) entry.getKey()) < currentTimeMillis() - IDLE_TIMEOUT;
+    }
+
+    public static synchronized int reset(String key) {
+        put(key, 0);
+        return 0;
+    }
+
+    private static class KV implements Map.Entry<Long, Integer> {
+
+        private final long timestamp;
+        private int value;
+
+        public KV(Long timestamp, Integer value ) {
+            this.value = value;
+            this.timestamp = timestamp;
+        }
+
+        @Override
+        public Long getKey() {
+            return timestamp;
+        }
+
+        @Override
+        public Integer getValue() {
+            return value;
+        }
+
+        @Override
+        public Integer setValue(Integer value) {
+            int oldValue = this.value;
+            this.value = value;
+            return oldValue;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || getClass() != o.getClass()) return false;
+            KV kv = (KV) o;
+            return timestamp == kv.timestamp &&
+                   value == kv.value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(timestamp, value);
+        }
     }
 }

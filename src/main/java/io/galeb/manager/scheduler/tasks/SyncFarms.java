@@ -23,6 +23,7 @@ package io.galeb.manager.scheduler.tasks;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.cluster.ClusterLocker;
 import io.galeb.core.cluster.ignite.IgniteClusterLocker;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
@@ -42,7 +43,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import static io.galeb.manager.engine.util.CounterDownLatch.mapOfDiffCounters;
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
@@ -106,12 +106,13 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
-        String keyInProgress = farm.getApi();
-        if (mapOfDiffCounters.containsKey(keyInProgress) &&
-                (mapOfDiffCounters.get(keyInProgress) == 0)) {
+        String latchId = farm.getApi();
+        final boolean containsKey = CounterDownLatch.refreshAndCheckContainsKey(latchId);
+        final Integer latchCount = CounterDownLatch.refreshAndGet(latchId);
+        if (containsKey && latchCount != null && latchCount == 0) {
             locker.release(LOCK_PREFIX + farm.getId());
-            mapOfDiffCounters.remove(keyInProgress);
-            LOGGER.info("Farm " + farm.getId() + " released");
+            CounterDownLatch.remove(latchId);
+            LOGGER.info("Releasing Farm ID " + farm.getId() + " lock");
         } else {
             if (farm.isAutoReload() && !disableQueue) {
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
