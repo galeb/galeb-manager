@@ -269,6 +269,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                 if (entityFromRepository == null && action != REMOVE) {
                     LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
+                    CounterDownLatch.decrementDiffCounter(farm.getApi());
                 } else {
                     AbstractEnqueuer queue = getQueue(managerEntityType);
                     if (action == REMOVE) {

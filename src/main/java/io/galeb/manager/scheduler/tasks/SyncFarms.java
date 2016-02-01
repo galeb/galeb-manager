@@ -50,9 +50,8 @@ import static java.lang.System.currentTimeMillis;
 @Component
 public class SyncFarms {
 
-    private static final Log    LOGGER        = LogFactory.getLog(SyncFarms.class);
-    private static final long   INTERVAL      = 10000; // msec
-
+    private static final Log   LOGGER         = LogFactory.getLog(SyncFarms.class);
+    private static final long  SCHED_INTERVAL = 5000; //sec
     public static final String LOCK_PREFIX    = "lock_";
 
     @Autowired private FarmRepository        farmRepository;
@@ -72,7 +71,7 @@ public class SyncFarms {
             getProperty(SchedulerConfiguration.GALEB_DISABLE_SCHED,
                     getenv(SchedulerConfiguration.GALEB_DISABLE_SCHED)));
 
-    @Scheduled(fixedRate = INTERVAL)
+    @Scheduled(fixedRate = SCHED_INTERVAL)
     private void task() {
         long start = currentTimeMillis();
         LOGGER.debug("Executing " + this.getClass().getSimpleName() + ".task");
