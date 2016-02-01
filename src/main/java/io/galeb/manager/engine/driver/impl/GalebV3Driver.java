@@ -72,6 +72,8 @@ public class GalebV3Driver implements Driver {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV3Driver.class);
 
+    private static final String NO_DECREMENT = "NO_DECREMENT";
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -139,8 +141,15 @@ public class GalebV3Driver implements Driver {
         return parentFound.get();
     }
 
+    private void removeBeforeCreate(final Properties properties) {
+        properties.put(NO_DECREMENT, true);
+        remove(properties);
+        properties.remove(NO_DECREMENT);
+    }
+
     @Override
     public boolean create(Properties properties) {
+        removeBeforeCreate(properties);
         String api = properties.getOrDefault("api", "NULL").toString();
         String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
@@ -190,6 +199,7 @@ public class GalebV3Driver implements Driver {
     @Override
     public boolean remove(Properties properties) {
         boolean result = false;
+        Boolean noDecrement = (Boolean) properties.getOrDefault(NO_DECREMENT, false);
         String api = properties.getOrDefault("api", "NULL").toString();
         String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
@@ -214,7 +224,9 @@ public class GalebV3Driver implements Driver {
         } catch (Exception e) {
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
         } finally {
-            decrementDiffCounter(keyInProgress);
+            if (!noDecrement) {
+                decrementDiffCounter(keyInProgress);
+            }
         }
         return result;
     }
