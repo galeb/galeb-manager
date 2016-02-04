@@ -22,7 +22,6 @@ package io.galeb.manager.engine.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.galeb.core.util.Constants;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -63,8 +62,6 @@ public class DiffProcessor {
 
     private static final Log LOGGER = LogFactory.getLog(DiffProcessor.class);
 
-    private final ObjectMapper mapper = new ObjectMapper();
-
     private Properties properties;
     private String api = "";
     private final Map<String, Map<String, Object>> diffMap = new HashMap<>();
@@ -75,11 +72,13 @@ public class DiffProcessor {
         return this;
     }
 
-    public Map<String, Map<String, Object>> getDiffMap() throws Exception {
+    public Map<String, Map<String, Object>> getDiffMap(Map<String, Map<String, Map<String, String>>> remoteMultiMap)
+            throws Exception {
         final AtomicReference<String> error = new AtomicReference<>(null);
         getEntitiesMap().keySet().stream().forEach(path -> {
+            final Map<String, Map<String, String>> remoteMap = remoteMultiMap.get(path);
             try {
-                makeDiffMap(path);
+                makeDiffMap(path, remoteMap);
             } catch (Exception e) {
                 error.set(e.getMessage());
             }
@@ -107,11 +106,10 @@ public class DiffProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    private void makeDiffMap(String path) throws Exception {
-        final Map<String, Map<String, String>> fullMap = extractRemoteMap(path);
+    private void makeDiffMap(String path, final Map<String, Map<String, String>> remoteMap) throws Exception {
         List<?> entities = getEntitiesMap().get(path);
 
-        fullMap.entrySet().stream()
+        remoteMap.entrySet().stream()
                 .filter(entry ->
                         entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
                 .forEach(entry ->
@@ -152,7 +150,7 @@ public class DiffProcessor {
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
                 ((AbstractEntity<?>)entity).getStatus() != DISABLED)
                 .map(entity -> ((AbstractEntity<?>) entity))
-                .forEach(entity -> createEntityIfNecessary(path, entity, fullMap));
+                .forEach(entity -> createEntityIfNecessary(path, entity, remoteMap));
     }
 
     private void updateIfNecessary(String path,
@@ -217,36 +215,6 @@ public class DiffProcessor {
                                 .map(AbstractEntity::getName).collect(toList()).contains(parentId);
     }
 
-    private Map<String, Map<String, String>> extractRemoteMap(String path) throws Exception {
-        final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        final AtomicReference<String> error = new AtomicReference<>(null);
-        String fullPath = getApi() + "/" + path;
-
-        JsonNode json = getJson(fullPath);
-        if (json.isArray()) {
-            json.forEach(element -> {
-                Map<String, String> entityProperties = new HashMap<>();
-                String id = element.get("id").asText();
-                JsonNode parentIdObj = element.get("parentId");
-                String parentId = parentIdObj != null ? parentIdObj.asText() : "";
-                String pk = element.get("pk").asText();
-                String version = element.get("version").asText();
-                String entityType = element.get("_entity_type").asText();
-                String etag = element.get("_etag").asText();
-
-                entityProperties.put("id", id);
-                entityProperties.put("pk", pk);
-                entityProperties.put("version", version);
-                entityProperties.put("parentId", parentId);
-                entityProperties.put("entity_type", entityType);
-                entityProperties.put("etag", etag);
-                fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
-            });
-        }
-
-        return fullMap;
-    }
-
     private void addAction(final String path,
                            final String id,
                            final String parentId,
@@ -297,20 +265,6 @@ public class DiffProcessor {
         attributes.put("PARENT_ID", parentId);
         attributes.put("ENTITY_TYPE", path);
         diffMap.put(key, attributes);
-    }
-
-    private JsonNode getJson(String path) throws URISyntaxException, IOException {
-        JsonNode json = null;
-        RestTemplate restTemplate = new RestTemplate();
-        URI uri = new URI(path);
-        RequestEntity<Void> request = RequestEntity.get(uri).build();
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        boolean result = response.getStatusCode().value() < 400;
-
-        if (result) {
-            json = mapper.readTree(response.getBody());
-        }
-        return json;
     }
 
 }
