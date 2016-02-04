@@ -3,6 +3,7 @@ package io.galeb.manager.engine.util;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
+import io.galeb.core.model.Farm;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.entity.Pool;
@@ -31,11 +32,13 @@ public class ManagerToFarmConverter {
         MANAGER_TO_FARM_ENTITY_MAP.put(Pool.class.getSimpleName().toLowerCase(), BackendPool.class);
         MANAGER_TO_FARM_ENTITY_MAP.put(Rule.class.getSimpleName().toLowerCase(), Rule.class);
         MANAGER_TO_FARM_ENTITY_MAP.put(Target.class.getSimpleName().toLowerCase(), Backend.class);
+        MANAGER_TO_FARM_ENTITY_MAP.put(Farm.class.getSimpleName().toLowerCase(), Farm.class);
 
         FARM_TO_MANAGER_ENTITY_MAP.put(VirtualHost.class.getSimpleName().toLowerCase(), VirtualHost.class);
         FARM_TO_MANAGER_ENTITY_MAP.put(BackendPool.class.getSimpleName().toLowerCase(), Pool.class);
         FARM_TO_MANAGER_ENTITY_MAP.put(Rule.class.getSimpleName().toLowerCase(), Rule.class);
         FARM_TO_MANAGER_ENTITY_MAP.put(Backend.class.getSimpleName().toLowerCase(), Target.class);
+        FARM_TO_MANAGER_ENTITY_MAP.put(Farm.class.getSimpleName().toLowerCase(), Farm.class);
     }
 
     private ManagerToFarmConverter() {
