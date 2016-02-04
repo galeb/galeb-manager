@@ -18,13 +18,12 @@
 
 package io.galeb.manager.engine.listeners;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import io.galeb.core.cluster.ClusterLocker;
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.cluster.ignite.IgniteClusterLocker;
+import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
@@ -57,6 +56,8 @@ public abstract class AbstractEngine<T> {
     protected abstract Log getLogger();
 
     protected ClusterLocker locker = IgniteClusterLocker.INSTANCE;
+
+    protected CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
