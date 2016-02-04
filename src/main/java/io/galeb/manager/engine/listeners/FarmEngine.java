@@ -25,8 +25,10 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 import static java.lang.System.currentTimeMillis;
 
+import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
+import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.engine.driver.Driver;
@@ -34,6 +36,7 @@ import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.CounterDownLatch;
+import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.WithParent;
@@ -64,6 +67,7 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import javax.annotation.PostConstruct;
+import javax.cache.Cache;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -189,6 +193,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                 CounterDownLatch.put(latchId, diffSize);
 
+                updateStatus(remoteMultiMap);
                 if (diffSize == 0) {
                     LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
                             + (currentTimeMillis() - start) + " ms)");
@@ -213,6 +218,24 @@ public class FarmEngine extends AbstractEngine<Farm> {
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
         }
+    }
+
+    private void updateStatus(Map<String, Map<String, Map<String, String>>> remoteMultiMap) {
+        remoteMultiMap.entrySet().stream().forEach(entryWithPath -> {
+            final String path = entryWithPath.getKey();
+            final Class<?> internalEntityTypeClass = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(path);
+            entryWithPath.getValue().entrySet().forEach(entryWithEntity -> {
+                Entity entity = new Entity();
+                Map<String, String> entityMap = entryWithEntity.getValue();
+                String id = entityMap.get("id");
+                String parentId = entityMap.get("parentId");
+                parentId = parentId != null ? parentId : "";
+                entity.setId(id);
+                entity.setParentId(parentId);
+                Cache<String, String> distMap = cacheFactory.getCache(internalEntityTypeClass.getSimpleName());
+                distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
+            });
+        });
     }
 
     @SuppressWarnings("unchecked")
