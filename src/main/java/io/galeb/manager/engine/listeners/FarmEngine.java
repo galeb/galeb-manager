@@ -31,6 +31,8 @@ import io.galeb.core.model.Rule;
 import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
+import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
@@ -38,10 +40,6 @@ import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
-import io.galeb.manager.queue.PoolQueue;
-import io.galeb.manager.queue.RuleQueue;
-import io.galeb.manager.queue.TargetQueue;
-import io.galeb.manager.queue.VirtualHostQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.JpaRepositoryWithFindByName;
 import io.galeb.manager.repository.PoolRepository;
@@ -64,7 +62,6 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
@@ -96,11 +93,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private RuleRepository ruleRepository;
     @Autowired private TargetRepository targetRepository;
     @Autowired private PoolRepository poolRepository;
-    @Autowired private FarmQueue farmQueue;
-    @Autowired private VirtualHostQueue virtualHostQueue;
-    @Autowired private TargetQueue targetQueue;
-    @Autowired private RuleQueue ruleQueue;
-    @Autowired private PoolQueue poolQueue;
+    @Autowired private QueueLocator queueLocator;
 
     private AtomicBoolean isRead = new AtomicBoolean(false);
 
@@ -125,22 +118,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
         }
     }
 
-    private AbstractEnqueuer getQueue(String entityClass) {
-        switch (entityClass) {
-            case "virtualhost":
-                return virtualHostQueue;
-            case "rule":
-                return ruleQueue;
-            case "pool":
-                return poolQueue;
-            case "target":
-                return targetQueue;
-            default:
-                LOGGER.error("Entity Class " + entityClass + " NOT FOUND");
-                return null;
-        }
-    }
-
     @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
     public void reload(Farm farm) {
         executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm));
@@ -157,7 +134,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? OK : ERROR);
-            farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
@@ -172,7 +149,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             LOGGER.error(e);
         } finally {
             farm.setStatus(isOk ? OK : ERROR);
-            farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
@@ -198,10 +175,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final Driver driver = getDriver(farm);
             final Properties properties = getPropertiesWithEntities(farm);
             Map<String, Map<String, Object>> diff = new HashMap<>();
+            Map<String, Map<String, Map<String, String>>> remoteMultiMap;
 
             try {
                 long diffStart = currentTimeMillis();
-                diff.putAll(driver.diff(properties));
+                remoteMultiMap = driver.getAll(properties);
+                diff.putAll(driver.diff(properties, remoteMultiMap));
                 int diffSize = diff.size();
 
                 String diffDurationMsg = farmStatusMsgPrefix + "diff from " + farmFull + " finished ("
@@ -214,21 +193,22 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
                             + (currentTimeMillis() - start) + " ms)");
                     farm.setStatus(AbstractEntity.EntityStatus.OK);
-                    farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+                    farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
                 } else {
                     LOGGER.warn(farmStatusMsgPrefix + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
                             + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
                     farm.setStatus(AbstractEntity.EntityStatus.PENDING);
-                    farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+                    farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
                     fixFarm(farm, diff, driver);
                 }
 
             } catch (Exception e) {
                 CounterDownLatch.reset(latchId);
                 LOGGER.error(e);
+                e.printStackTrace();
                 LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
                 farm.setStatus(AbstractEntity.EntityStatus.ERROR);
-                farmQueue.sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+                farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
             }
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
@@ -271,7 +251,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
                     CounterDownLatch.decrementDiffCounter(farm.getApi());
                 } else {
-                    AbstractEnqueuer queue = getQueue(managerEntityType);
+                    AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
                     if (action == REMOVE) {
                         LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
                         removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
@@ -377,7 +357,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @Override
     protected FarmQueue farmQueue() {
-        return farmQueue;
+        return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
     private Properties getPropertiesWithEntities(Farm farm) {
@@ -404,4 +384,5 @@ public class FarmEngine extends AbstractEngine<Farm> {
         SystemUserService.runAs(currentUser);
         return entitiesMap;
     }
+
 }

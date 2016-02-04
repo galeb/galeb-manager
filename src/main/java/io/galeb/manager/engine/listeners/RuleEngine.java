@@ -19,10 +19,14 @@
 package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
+import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
 import org.apache.commons.logging.Log;
@@ -43,7 +47,6 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 import java.util.Optional;
 
@@ -59,8 +62,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private RuleRepository ruleRepository;
-    @Autowired private RuleQueue ruleQueue;
-    @Autowired private FarmQueue farmQueue;
+    @Autowired private QueueLocator queueLocator;
     @Autowired private GenericEntityService genericEntityService;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
@@ -83,8 +85,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
+                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
@@ -99,7 +101,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
             try {
                 if (!driver.exist(makeProperties(rule, virtualhost))) {
-                    ruleQueue.sendToQueue(RuleQueue.QUEUE_CREATE, rule);
+                    ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule);
                     return;
                 }
                 isOk = driver.update(makeProperties(rule, virtualhost));
@@ -113,8 +115,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
+                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
@@ -138,8 +140,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                ruleQueue.sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
+                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
@@ -168,7 +170,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
 
     @Override
     protected FarmQueue farmQueue() {
-        return farmQueue;
+        return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
     private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
@@ -200,4 +202,9 @@ public class RuleEngine extends AbstractEngine<Rule> {
         properties.put("path", "rule");
         return properties;
     }
+
+    private AbstractEnqueuer<Rule> ruleQueue() {
+        return (RuleQueue)queueLocator.getQueue(Rule.class);
+    }
+
 }

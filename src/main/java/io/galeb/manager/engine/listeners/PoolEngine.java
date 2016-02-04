@@ -26,15 +26,18 @@ import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
+import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
+import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
+import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +58,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private PoolRepository poolRepository;
     @Autowired private GenericEntityService genericEntityService;
-    @Autowired private PoolQueue poolQueue;
-    @Autowired private FarmQueue farmQueue;
+    @Autowired private QueueLocator queueLocator;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool) {
@@ -72,8 +74,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
+            pool.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
     }
 
@@ -91,8 +93,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
+            pool.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
     }
 
@@ -111,8 +113,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            pool.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            poolQueue.sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
+            pool.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
     }
 
@@ -140,7 +142,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
 
     @Override
     protected FarmQueue farmQueue() {
-        return farmQueue;
+        return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
     private Properties makeProperties(Pool pool) {
@@ -160,4 +162,9 @@ public class PoolEngine extends AbstractEngine<Pool> {
         properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
         return properties;
     }
+
+    private AbstractEnqueuer<Pool> poolQueue() {
+        return (PoolQueue)queueLocator.getQueue(Pool.class);
+    }
+
 }

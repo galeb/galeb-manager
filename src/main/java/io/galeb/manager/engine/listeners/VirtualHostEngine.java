@@ -18,8 +18,13 @@
 
 package io.galeb.manager.engine.listeners;
 
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
+import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
@@ -42,7 +47,6 @@ import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
@@ -58,9 +62,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository ruleRepository;
     @Autowired private GenericEntityService genericEntityService;
-    @Autowired private VirtualHostQueue virtualHostQueue;
-    @Autowired private RuleQueue ruleQueue;
-    @Autowired private FarmQueue farmQueue;
+    @Autowired private QueueLocator queueLocator;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
@@ -81,8 +83,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             LOGGER.error(e);
         } finally {
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+                virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
             }
         }
     }
@@ -111,8 +113,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             LOGGER.error(e);
         } finally {
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-                virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+                virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
             }
         }
     }
@@ -134,8 +136,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            virtualHostQueue.sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
+            virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
     }
 
@@ -163,7 +165,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     @Override
     protected FarmQueue farmQueue() {
-        return farmQueue;
+        return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
     private Properties makeProperties(VirtualHost virtualHost) {
@@ -186,7 +188,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         virtualHost.getRulesOrdered().stream()
                 .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
                 .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue.sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
+                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
         SystemUserService.runAs(currentUser);
     }
 
@@ -196,8 +198,16 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         virtualHost.getRulesOrdered().stream()
                 .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
                 .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue.sendToQueue(RuleQueue.QUEUE_CREATE, rule));
+                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule));
         SystemUserService.runAs(currentUser);
+    }
+
+    private AbstractEnqueuer<VirtualHost> virtualHostQueue() {
+        return (VirtualHostQueue)queueLocator.getQueue(VirtualHost.class);
+    }
+
+    private AbstractEnqueuer<Rule> ruleQueue() {
+        return (RuleQueue)queueLocator.getQueue(Rule.class);
     }
 
 }

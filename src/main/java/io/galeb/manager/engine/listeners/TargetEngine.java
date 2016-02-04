@@ -19,7 +19,12 @@
 package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.Backend;
+import io.galeb.manager.engine.listeners.services.GenericEntityService;
+import io.galeb.manager.engine.listeners.services.QueueLocator;
+import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
+import io.galeb.manager.entity.Target;
+import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.TargetQueue;
 import org.apache.commons.logging.Log;
@@ -36,12 +41,10 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.entity.Target;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 
 @Component
 public class TargetEngine extends AbstractEngine<Target> {
@@ -56,8 +59,7 @@ public class TargetEngine extends AbstractEngine<Target> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private TargetRepository targetRepository;
     @Autowired private GenericEntityService genericEntityService;
-    @Autowired private TargetQueue targetQueue;
-    @Autowired private FarmQueue farmQueue;
+    @Autowired private QueueLocator queueLocator;
 
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target) {
@@ -73,8 +75,8 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
+            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
@@ -92,8 +94,8 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
+            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
@@ -112,8 +114,8 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.OK : EntityStatus.ERROR);
-            targetQueue.sendToQueue(TargetQueue.QUEUE_CALLBK, target);
+            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
 
@@ -141,7 +143,7 @@ public class TargetEngine extends AbstractEngine<Target> {
 
     @Override
     protected FarmQueue farmQueue() {
-        return farmQueue;
+        return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
     private Properties makeProperties(Target target, Pool pool) {
@@ -160,4 +162,9 @@ public class TargetEngine extends AbstractEngine<Target> {
         properties.put("path", Backend.class.getSimpleName().toLowerCase());
         return properties;
     }
+
+    private AbstractEnqueuer<Target> targetQueue() {
+        return (TargetQueue)queueLocator.getQueue(Target.class);
+    }
+
 }
