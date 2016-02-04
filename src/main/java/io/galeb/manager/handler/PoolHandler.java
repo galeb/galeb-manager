@@ -33,7 +33,6 @@ import io.galeb.manager.security.services.SystemUserService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -53,7 +52,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
 
-    private PageRequest pageable = new PageRequest(0, 99999);
+    private Cache<String, String> distMap = CACHE_FACTORY.getCache(Pool.class.getSimpleName());
 
     @Override
     protected void setBestFarm(final Pool pool) throws Exception {
@@ -84,6 +83,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeSave
     public void beforeSave(Pool pool) throws Exception {
+        distMap.remove(pool.getName() + AbstractEngine.SEPARATOR);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeSave");
             throw new BadRequestException();
@@ -99,7 +99,6 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeDelete
     public void beforeDelete(Pool pool) throws Exception {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(Pool.class.getSimpleName());
         distMap.remove(pool.getName() + AbstractEngine.SEPARATOR);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeDelete");

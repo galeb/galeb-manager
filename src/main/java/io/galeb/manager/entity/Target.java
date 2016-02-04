@@ -31,6 +31,8 @@ import javax.persistence.UniqueConstraint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.core.json.JsonObject;
+import io.galeb.core.model.Backend;
 import io.galeb.manager.engine.listeners.AbstractEngine;
 
 @Entity
@@ -127,8 +129,13 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @Override
     public EntityStatus getStatus() {
         javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        if (distMap.containsKey(getName() + AbstractEngine.SEPARATOR + getParent().getName())) {
-            return EntityStatus.OK;
+        String key = getName() + AbstractEngine.SEPARATOR + getParent().getName();
+        String json = distMap.get(key);
+        if (json != null) {
+            Backend backend = (Backend) JsonObject.fromJson(json, Backend.class);
+            if (backend.getVersion() == getHash()) {
+                return EntityStatus.OK;
+            }
         }
         return super.getStatus();
     }

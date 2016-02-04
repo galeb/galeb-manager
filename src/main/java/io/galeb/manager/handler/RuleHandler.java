@@ -47,11 +47,10 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     private static Log LOGGER = LogFactory.getLog(RuleHandler.class);
 
-    @Autowired
-    private RuleRepository ruleRepository;
+    @Autowired private RuleRepository ruleRepository;
+    @Autowired private PoolRepository poolRepository;
 
-    @Autowired
-    private PoolRepository poolRepository;
+    private Cache<String, String> distMap = CACHE_FACTORY.getCache(Rule.class.getSimpleName());
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -85,6 +84,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleBeforeSave
     public void beforeSave(Rule rule) throws Exception {
+        distMap.remove(rule.getName() + AbstractEngine.SEPARATOR);
         beforeSave(rule, ruleRepository, LOGGER);
         setTargetGlobalIfNecessary(rule);
     }
@@ -96,7 +96,6 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleBeforeDelete
     public void beforeDelete(Rule rule) throws Exception {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(Rule.class.getSimpleName());
         distMap.remove(rule.getName() + AbstractEngine.SEPARATOR);
         beforeDelete(rule, LOGGER);
     }

@@ -40,6 +40,8 @@ import javax.persistence.Version;
 
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
+import io.galeb.core.json.JsonObject;
+import io.galeb.core.model.Entity;
 import io.galeb.manager.common.JsonCustomProperties;
 import io.galeb.manager.engine.listeners.AbstractEngine;
 import org.springframework.data.annotation.CreatedBy;
@@ -197,8 +199,13 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     public EntityStatus getStatus() {
         Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        if (distMap.containsKey(getName() + AbstractEngine.SEPARATOR)) {
-            return EntityStatus.OK;
+        String key = getName() + AbstractEngine.SEPARATOR;
+        String json = distMap.get(key);
+        if (json != null) {
+            Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
+            if (entity.getVersion() == getHash()) {
+                return EntityStatus.OK;
+            }
         }
         return status;
     }

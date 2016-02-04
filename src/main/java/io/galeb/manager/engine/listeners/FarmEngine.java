@@ -210,7 +210,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
             } catch (Exception e) {
                 CounterDownLatch.reset(latchId);
                 LOGGER.error(e);
-                e.printStackTrace();
                 LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
                 farm.setStatus(AbstractEntity.EntityStatus.ERROR);
                 farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
@@ -230,8 +229,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 String id = entityMap.get("id");
                 String parentId = entityMap.get("parentId");
                 parentId = parentId != null ? parentId : "";
+                String version = entityMap.get("version");
+                version = version != null ? version : "0";
                 entity.setId(id);
                 entity.setParentId(parentId);
+                entity.setVersion(Integer.parseInt(version));
                 Cache<String, String> distMap = cacheFactory.getCache(internalEntityTypeClass.getSimpleName());
                 distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
             });

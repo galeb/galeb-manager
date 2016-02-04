@@ -27,7 +27,6 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -55,7 +54,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
 
-    private PageRequest pageable = new PageRequest(0, 99999);
+    private Cache<String, String> distMap = CACHE_FACTORY.getCache(VirtualHost.class.getSimpleName());
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -84,6 +83,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleBeforeSave
     public void beforeSave(VirtualHost virtualhost) throws Exception {
+        distMap.remove(virtualhost.getName() + AbstractEngine.SEPARATOR);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
     }
@@ -95,7 +95,6 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleBeforeDelete
     public void beforeDelete(VirtualHost virtualhost) {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(VirtualHost.class.getSimpleName());
         distMap.remove(virtualhost.getName() + AbstractEngine.SEPARATOR);
         beforeDelete(virtualhost, LOGGER);
     }

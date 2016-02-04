@@ -53,6 +53,8 @@ public class TargetHandler extends AbstractHandler<Target> {
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
 
+   private Cache<String, String> distMap = CACHE_FACTORY.getCache(Target.class.getSimpleName());
+
     @Override
     protected void setBestFarm(final Target target) throws Exception {
         long farmId = -1L;
@@ -95,6 +97,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeSave
     public void beforeSave(Target target) throws Exception {
+        distMap.remove(target.getName() + AbstractEngine.SEPARATOR + target.getParent().getName());
         setParentIfNull(target);
         beforeSave(target, targetRepository, LOGGER);
         setGlobalIfNecessary(target);
@@ -107,7 +110,6 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeDelete
     public void beforeDelete(Target target) throws Exception {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(Target.class.getSimpleName());
         distMap.remove(target.getName() + AbstractEngine.SEPARATOR + target.getParent().getName());
         beforeDelete(target, LOGGER);
     }
