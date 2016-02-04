@@ -18,7 +18,11 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.entity.*;
+import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.RuleOrder;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +42,7 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import javax.cache.Cache;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,6 +95,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleBeforeDelete
     public void beforeDelete(VirtualHost virtualhost) {
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(VirtualHost.class.getSimpleName());
+        distMap.remove(virtualhost.getName() + AbstractEngine.SEPARATOR);
         beforeDelete(virtualhost, LOGGER);
     }
 

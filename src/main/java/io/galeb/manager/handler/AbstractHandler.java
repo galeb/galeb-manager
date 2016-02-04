@@ -22,8 +22,10 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
+import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.entity.WithFarmID;
-import io.galeb.manager.exceptions.*;
+import io.galeb.manager.exceptions.ServiceUnavailableException;
 import org.apache.commons.logging.Log;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -31,6 +33,8 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
+
+    protected static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.INSTANCE;
 
     protected abstract void setBestFarm(T entity) throws Exception;
 
@@ -43,7 +47,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
             }
         }
     }
-
 
     public void beforeCreate(T entity, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");

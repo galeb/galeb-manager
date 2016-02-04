@@ -20,11 +20,18 @@ package io.galeb.manager.entity;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.ForeignKey;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.manager.engine.listeners.AbstractEngine;
 
 @Entity
 @JsonInclude(NON_NULL)
@@ -115,6 +122,15 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
             this.global = global;
         }
         return this;
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
+        if (distMap.containsKey(getName() + AbstractEngine.SEPARATOR + getParent().getName())) {
+            return EntityStatus.OK;
+        }
+        return super.getStatus();
     }
 
 }

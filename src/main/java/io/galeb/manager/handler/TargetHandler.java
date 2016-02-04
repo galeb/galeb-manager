@@ -18,6 +18,7 @@
 
 package io.galeb.manager.handler;
 
+import io.galeb.manager.engine.listeners.AbstractEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
@@ -40,6 +41,8 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import javax.cache.Cache;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
@@ -104,6 +107,8 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeDelete
     public void beforeDelete(Target target) throws Exception {
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(Target.class.getSimpleName());
+        distMap.remove(target.getName() + AbstractEngine.SEPARATOR + target.getParent().getName());
         beforeDelete(target, LOGGER);
     }
 
