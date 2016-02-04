@@ -19,6 +19,7 @@
 package io.galeb.manager.engine.driver.impl;
 
 import com.fasterxml.jackson.databind.*;
+import io.galeb.core.util.*;
 import io.galeb.manager.common.*;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.*;
@@ -234,10 +235,32 @@ public class GalebV32Driver implements Driver {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
-        return new DiffProcessor().setProperties(properties).getDiffMap();
+    public Map<String, Map<String, Object>> diff(Properties properties,
+                Map<String,Map<String,Map<String,String>>> getAll) throws Exception {
+        return new DiffProcessor().setProperties(properties).getDiffMap(getAll);
+    }
+
+    @Override
+    public Map<String,Map<String,Map<String,String>>> getAll(Properties properties) throws Exception {
+        Map<String,Map<String,Map<String,String>>> remoteMultiMap = new HashMap<>();
+        AtomicReference<Exception> exception = new AtomicReference<>(null);
+        String apiFromProperties = properties.getOrDefault("api", "NULL").toString();
+        final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
+        Constants.ENTITY_CLASSES.stream().map(clazz -> clazz.getSimpleName().toLowerCase())
+                .forEach(path -> {
+                    try {
+                        if (exception.get() == null) {
+                            remoteMultiMap.put(path, extractRemoteMap(path, api));
+                        }
+                    } catch (Exception e) {
+                        exception.set(e);
+                    }
+                });
+        if (exception.get() != null) {
+            throw exception.get();
+        }
+        return remoteMultiMap;
     }
 
     private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
@@ -339,4 +362,46 @@ public class GalebV32Driver implements Driver {
         }
     }
 
+    private Map<String, Map<String, String>> extractRemoteMap(String path, String api) throws Exception {
+        final Map<String, Map<String, String>> fullMap = new HashMap<>();
+        String fullPath = api + "/" + path;
+
+        JsonNode json = getJson(fullPath);
+        if (json.isArray()) {
+            json.forEach(element -> {
+                Map<String, String> entityProperties = new HashMap<>();
+                String id = element.get("id").asText();
+                JsonNode parentIdObj = element.get("parentId");
+                String parentId = parentIdObj != null ? parentIdObj.asText() : "";
+                String pk = element.get("pk").asText();
+                String version = element.get("version").asText();
+                String entityType = element.get("_entity_type").asText();
+                String etag = element.get("_etag").asText();
+
+                entityProperties.put("id", id);
+                entityProperties.put("pk", pk);
+                entityProperties.put("version", version);
+                entityProperties.put("parentId", parentId);
+                entityProperties.put("entity_type", entityType);
+                entityProperties.put("etag", etag);
+                fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
+            });
+        }
+
+        return fullMap;
+    }
+
+    private JsonNode getJson(String path) throws URISyntaxException, IOException {
+        JsonNode json = null;
+        RestTemplate restTemplate = new RestTemplate();
+        URI uri = new URI(path);
+        RequestEntity<Void> request = RequestEntity.get(uri).build();
+        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        boolean result = response.getStatusCode().value() < 400;
+
+        if (result) {
+            json = mapper.readTree(response.getBody());
+        }
+        return json;
+    }
 }

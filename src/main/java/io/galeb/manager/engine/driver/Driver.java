@@ -54,12 +54,17 @@ public interface Driver {
         return true;
     }
 
-    default Map<String, Map<String, Object>> diff(Properties properties) throws Exception {
+    default Map<String, Map<String, Object>> diff(Properties properties,
+              Map<String, Map<String, Map<String, String>>> getAll) throws Exception {
         return Collections.emptyMap();
     }
 
     default Driver addResource(Object resource) {
         return this;
+    }
+
+    default Map<String,Map<String,Map<String,String>>> getAll(Properties properties) throws Exception {
+        return Collections.emptyMap();
     }
 
 }
