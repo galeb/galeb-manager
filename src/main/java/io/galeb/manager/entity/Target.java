@@ -34,6 +34,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Backend;
 import io.galeb.manager.engine.listeners.AbstractEngine;
+import org.springframework.data.annotation.Transient;
+
+import java.util.Map;
 
 @Entity
 @JsonInclude(NON_NULL)
@@ -126,18 +129,41 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    @Override
-    public EntityStatus getStatus() {
+    private Backend extractBackend() {
         javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
         String key = getName() + AbstractEngine.SEPARATOR + getParent().getName();
         String json = distMap.get(key);
         if (json != null) {
-            Backend backend = (Backend) JsonObject.fromJson(json, Backend.class);
+            return  (Backend) JsonObject.fromJson(json, Backend.class);
+        }
+        return null;
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        Backend backend = extractBackend();
+        if (backend != null) {
             if (backend.getVersion() == getHash()) {
                 return EntityStatus.OK;
             }
         }
         return super.getStatus();
+    }
+
+    @Transient
+    public String getHealth() {
+        Backend backend = extractBackend();
+        String health = Backend.Health.UNKNOWN.toString();
+        if (backend != null) {
+            Map<String, Object> backendProperties = backend.getProperties();
+            if (backendProperties != null && !backendProperties.isEmpty()) {
+                String healthFromProperties = (String) backendProperties.get("health");
+                if (healthFromProperties != null) {
+                    health = healthFromProperties;
+                }
+            }
+        }
+        return health;
     }
 
 }

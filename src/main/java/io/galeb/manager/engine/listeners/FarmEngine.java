@@ -231,9 +231,15 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 parentId = parentId != null ? parentId : "";
                 String version = entityMap.get("version");
                 version = version != null ? version : "0";
+                String health = entityMap.get("health");
                 entity.setId(id);
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
+                if (health != null) {
+                    Map<String, Object> entityProperties = new HashMap<>();
+                    entityProperties.put("health", health);
+                    entity.setProperties(entityProperties);
+                }
                 Cache<String, String> distMap = cacheFactory.getCache(internalEntityTypeClass.getSimpleName());
                 distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
             });

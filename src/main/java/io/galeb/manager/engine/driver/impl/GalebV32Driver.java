@@ -18,33 +18,54 @@
 
 package io.galeb.manager.engine.driver.impl;
 
-import com.fasterxml.jackson.databind.*;
-import io.galeb.core.util.*;
-import io.galeb.manager.common.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.galeb.core.model.Backend;
+import io.galeb.core.util.Constants;
+import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.driver.*;
-import io.galeb.manager.engine.util.*;
-import org.apache.commons.logging.*;
-import org.apache.http.*;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.util.DiffProcessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.http.Header;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHeaders;
-import org.apache.http.annotation.*;
-import org.apache.http.client.methods.*;
-import org.apache.http.entity.*;
-import org.apache.http.impl.client.*;
-import org.springframework.boot.logging.*;
-import org.springframework.http.*;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.annotation.NotThreadSafe;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.springframework.boot.logging.LogLevel;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.*;
-import org.springframework.web.client.*;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.*;
-import java.net.*;
-import java.nio.charset.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.stream.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
-import static io.galeb.manager.engine.util.CounterDownLatch.*;
+import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter;
 
 public class GalebV32Driver implements Driver {
 
@@ -377,6 +398,8 @@ public class GalebV32Driver implements Driver {
                 String version = element.get("version").asText();
                 String entityType = element.get("_entity_type").asText();
                 String etag = element.get("_etag").asText();
+                JsonNode healthObj = element.get("health");
+                String health = healthObj != null ? healthObj.asText() : Backend.Health.UNKNOWN.toString();
 
                 entityProperties.put("id", id);
                 entityProperties.put("pk", pk);
@@ -384,6 +407,7 @@ public class GalebV32Driver implements Driver {
                 entityProperties.put("parentId", parentId);
                 entityProperties.put("entity_type", entityType);
                 entityProperties.put("etag", etag);
+                entityProperties.put("health", health);
                 fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
             });
         }
