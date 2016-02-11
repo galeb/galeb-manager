@@ -150,20 +150,4 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return super.getStatus();
     }
 
-    @Transient
-    public String getHealth() {
-        Backend backend = extractBackend();
-        String health = Backend.Health.UNKNOWN.toString();
-        if (backend != null) {
-            Map<String, Object> backendProperties = backend.getProperties();
-            if (backendProperties != null && !backendProperties.isEmpty()) {
-                String healthFromProperties = (String) backendProperties.get("health");
-                if (healthFromProperties != null) {
-                    health = healthFromProperties;
-                }
-            }
-        }
-        return health;
-    }
-
 }
