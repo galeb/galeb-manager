@@ -69,8 +69,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         ERROR,
         UNKNOWN,
         DISABLED,
-        ENABLE,
-        SYNCHRONIZING
+        ENABLE
     }
 
     @Id

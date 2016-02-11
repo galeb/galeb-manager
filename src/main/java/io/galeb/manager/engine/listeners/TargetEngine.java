@@ -75,7 +75,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            target.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
             targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
@@ -94,7 +94,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            target.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
             targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }
@@ -114,7 +114,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            target.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            target.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
             targetQueue().sendToQueue(TargetQueue.QUEUE_CALLBK, target);
         }
     }

@@ -83,7 +83,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             LOGGER.error(e);
         } finally {
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
                 virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
             }
         }
@@ -113,7 +113,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             LOGGER.error(e);
         } finally {
             if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
                 virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
             }
         }
@@ -136,7 +136,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+            virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
             virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
         }
     }

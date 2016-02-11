@@ -85,7 +85,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
                 ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
@@ -115,7 +115,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
                 ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
@@ -140,7 +140,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             } catch (Exception e) {
                 LOGGER.error(e);
             } finally {
-                rule.setStatus(isOk ? EntityStatus.SYNCHRONIZING : EntityStatus.ERROR);
+                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
                 ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
