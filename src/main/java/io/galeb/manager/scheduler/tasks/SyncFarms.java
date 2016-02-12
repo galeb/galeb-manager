@@ -119,7 +119,7 @@ public class SyncFarms {
                 CounterDownLatch.remove(latchId);
                 LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farmFull);
             } else {
-                LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + CounterDownLatch.refreshAndGet(latchId) + " tasks)");
+                LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
             }
         } else {
             if (farm.isAutoReload() && !disableQueue) {
