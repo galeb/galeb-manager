@@ -164,7 +164,7 @@ public class DiffProcessor {
         if (!version.equals(String.valueOf(entity.getHash())) || !pk.equals(String.valueOf(entity.getId()))) {
             changeAction(path, id, parentId);
         } else {
-            if (entity.getStatus() == PENDING || entity.getStatus() == ERROR ) {
+            if (entity.getStatus() == ERROR ) {
                 callbackStatusOkAction(path, id, parentId);
             }
         }
