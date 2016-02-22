@@ -412,8 +412,8 @@ public class GalebV3Driver implements Driver {
                 entityProperties.put("pk", pk);
                 entityProperties.put("version", version);
                 entityProperties.put("parentId", parentId);
-                entityProperties.put("entity_type", entityType);
-                entityProperties.put("etag", etag);
+                entityProperties.put("_entity_type", entityType);
+                entityProperties.put("_etag", etag);
                 fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
             });
         }

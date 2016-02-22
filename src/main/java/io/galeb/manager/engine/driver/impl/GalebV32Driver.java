@@ -405,8 +405,8 @@ public class GalebV32Driver implements Driver {
                 entityProperties.put("pk", pk);
                 entityProperties.put("version", version);
                 entityProperties.put("parentId", parentId);
-                entityProperties.put("entity_type", entityType);
-                entityProperties.put("etag", etag);
+                entityProperties.put("_entity_type", entityType);
+                entityProperties.put("_etag", etag);
                 entityProperties.put("health", health);
                 fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
             });
