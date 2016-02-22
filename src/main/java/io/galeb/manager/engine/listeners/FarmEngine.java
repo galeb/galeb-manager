@@ -232,7 +232,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 String version = entityMap.get("version");
                 version = version != null ? version : "0";
                 String health = entityMap.get("health");
-                String entityType = entityMap.get("_entity_type");
+                String entityType = entityMap.get("entity_type");
                 entity.setId(id);
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
