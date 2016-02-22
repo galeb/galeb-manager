@@ -35,6 +35,7 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
+import io.galeb.manager.engine.service.FarmBuilder;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
@@ -98,12 +99,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private TargetRepository targetRepository;
     @Autowired private PoolRepository poolRepository;
     @Autowired private QueueLocator queueLocator;
+    @Autowired private FarmBuilder farmBuilder;
 
-    private AtomicBoolean isRead = new AtomicBoolean(false);
+    private AtomicBoolean isReady = new AtomicBoolean(false);
 
     @PostConstruct
     public void init() {
-        isRead.set(true);
+        isReady.set(true);
+        cacheFactory.setFarm(farmBuilder.build());
     }
 
     private JpaRepositoryWithFindByName getRepository(String entityClass) {
