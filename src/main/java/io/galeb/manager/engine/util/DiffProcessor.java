@@ -111,7 +111,7 @@ public class DiffProcessor {
 
         remoteMap.entrySet().stream()
                 .filter(entry ->
-                        entry.getValue().getOrDefault("entity_type", "UNDEF").equals(path))
+                        entry.getValue().getOrDefault("_entity_type", "UNDEF").equals(path))
                 .forEach(entry ->
                 {
                     final Map<String, String> entityProperties = entry.getValue();
