@@ -235,7 +235,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 String health = entityMap.get("health");
                 String entityType = entityMap.get("_entity_type");
                 String parentId = entityMap.get("parentId");
-                parentId = parentId != null || !Rule.class.getSimpleName().toLowerCase().equals(entityType) ? parentId : "";
+                parentId = parentId != null && !Rule.class.getSimpleName().toLowerCase().equals(entityType) ? parentId : "";
                 entity.setId(id);
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
