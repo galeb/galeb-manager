@@ -7,7 +7,7 @@ import org.springframework.session.web.http.HeaderHttpSessionStrategy;
 import org.springframework.session.web.http.HttpSessionStrategy;
 
 @Configuration
-@EnableRedisHttpSession(maxInactiveIntervalInSeconds = Integer.MAX_VALUE)
+@EnableRedisHttpSession
 public class SessionRepositoryConfig {
 
     @Bean
