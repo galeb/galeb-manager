@@ -34,7 +34,7 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
-    protected static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.INSTANCE;
+    protected static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
 
     protected abstract void setBestFarm(T entity) throws Exception;
 

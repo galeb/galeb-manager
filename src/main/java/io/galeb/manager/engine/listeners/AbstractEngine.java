@@ -55,9 +55,9 @@ public abstract class AbstractEngine<T> {
 
     protected abstract Log getLogger();
 
-    protected ClusterLocker locker = IgniteClusterLocker.INSTANCE;
+    protected ClusterLocker locker = IgniteClusterLocker.getInstance().start();
 
-    protected CacheFactory cacheFactory = IgniteCacheFactory.INSTANCE;
+    protected CacheFactory cacheFactory = IgniteCacheFactory.getInstance().start();
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
