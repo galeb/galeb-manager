@@ -61,7 +61,7 @@ public class SyncFarms {
     @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
 
-    private ClusterLocker locker = IgniteClusterLocker.INSTANCE;
+    private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
 
     private boolean disableQueue = Boolean.getBoolean(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
