@@ -23,6 +23,7 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.Target;
+import io.galeb.manager.exceptions.AcceptOnDeleteException;
 import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,6 +44,8 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import javax.cache.Cache;
+
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.QUARANTINE;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
@@ -110,8 +113,10 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeDelete
     public void beforeDelete(Target target) throws Exception {
-        distMap.remove(target.getName() + AbstractEngine.SEPARATOR + target.getParent().getName());
         beforeDelete(target, LOGGER);
+        target.setStatus(QUARANTINE);
+        targetRepository.save(target);
+        throw new AcceptOnDeleteException();
     }
 
     @HandleAfterDelete

@@ -20,8 +20,6 @@
 
 package io.galeb.manager.engine.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -29,13 +27,7 @@ import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,9 +45,7 @@ import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.UPDATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
@@ -121,21 +111,30 @@ public class DiffProcessor {
 
                     entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
                             .map(entity -> ((AbstractEntity<?>) entity))
+                            .filter(entity -> entity.getStatus() != QUARANTINE &&
+                                              entity.getStatus() != REMOVED)
                             .filter(entity -> entity.getName().equals(id))
                             .filter(getAbstractEntityPredicate(parentId))
                             .forEach(entity ->
-                            {
-                                hasId.set(true);
-                                updateIfNecessary(path, id, parentId, entity, entityProperties);
-                            });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases).forEach(entity ->
+                    {
+                        hasId.set(true);
+                        updateIfNecessary(path, id, parentId, entity, entityProperties);
+                    });
+                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases)
+                            .filter(entity -> ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
+                                              ((AbstractEntity<?>)entity).getStatus() != REMOVED)
+                            .forEach(entity ->
                     {
                         WithAliases<?> withAliases = (WithAliases) entity;
                         if (withAliases.getAliases().contains(id)) {
                             hasId.set(true);
                         }
                     });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents).forEach(entity -> {
+                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents)
+                            .filter(entity -> ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
+                                              ((AbstractEntity<?>)entity).getStatus() != REMOVED)
+                            .forEach(entity ->
+                    {
                         WithParents<?> withParents = (WithParents) entity;
                         Set<WithAliases> withAliases = new HashSet<>((Collection<? extends WithAliases>) withParents.getParents());
                         boolean isAlias = withAliases.stream().map(WithAliases::getAliases)
@@ -148,7 +147,9 @@ public class DiffProcessor {
                 });
 
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
-                ((AbstractEntity<?>)entity).getStatus() != DISABLED)
+                ((AbstractEntity<?>)entity).getStatus() != DISABLED &&
+                ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
+                ((AbstractEntity<?>)entity).getStatus() != REMOVED)
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, remoteMap));
     }

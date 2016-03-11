@@ -23,6 +23,7 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.exceptions.AcceptOnDeleteException;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,6 +46,8 @@ import javax.cache.Cache;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.QUARANTINE;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -95,8 +98,10 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleBeforeDelete
     public void beforeDelete(VirtualHost virtualhost) {
-        distMap.remove(virtualhost.getName() + AbstractEngine.SEPARATOR);
         beforeDelete(virtualhost, LOGGER);
+        virtualhost.setStatus(QUARANTINE);
+        virtualHostRepository.save(virtualhost);
+        throw new AcceptOnDeleteException();
     }
 
     @HandleAfterDelete

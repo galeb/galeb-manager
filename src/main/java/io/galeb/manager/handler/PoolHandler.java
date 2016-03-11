@@ -25,6 +25,7 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.exceptions.AcceptOnDeleteException;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
@@ -43,6 +44,8 @@ import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.core.Authentication;
 
 import javax.cache.Cache;
+
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.QUARANTINE;
 
 @RepositoryEventHandler(Pool.class)
 public class PoolHandler extends AbstractHandler<Pool> {
@@ -99,12 +102,16 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeDelete
     public void beforeDelete(Pool pool) throws Exception {
-        distMap.remove(pool.getName() + AbstractEngine.SEPARATOR);
+        beforeDelete(pool, LOGGER);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeDelete");
             throw new BadRequestException();
+        } else {
+            beforeDelete(pool, LOGGER);
+            pool.setStatus(QUARANTINE);
+            poolRepository.save(pool);
+            throw new AcceptOnDeleteException();
         }
-        beforeDelete(pool, LOGGER);
     }
 
     @HandleAfterDelete

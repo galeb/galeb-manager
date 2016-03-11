@@ -20,12 +20,16 @@ package io.galeb.manager.engine.driver.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
+import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Backend;
 import io.galeb.core.util.Constants;
 import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.listeners.AbstractEngine;
 import io.galeb.manager.engine.util.DiffProcessor;
+import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -48,6 +52,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import javax.cache.Cache;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,6 +79,8 @@ public class GalebV32Driver implements Driver {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
+    private static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -91,7 +98,7 @@ public class GalebV32Driver implements Driver {
         String api = properties.getOrDefault("api", "NULL").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString() + "/" + getJsonElement(json, "id", true);
         String uriPath = api + "/" + path;
 
         JsonNode jsonNode = null;
@@ -171,7 +178,7 @@ public class GalebV32Driver implements Driver {
         String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString() + "/" + getJsonElement(json, "id", true);
         String uriPath = api + "/" + path;
         RestTemplate restTemplate = new RestTemplate();
         boolean result = false;
@@ -197,7 +204,7 @@ public class GalebV32Driver implements Driver {
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
-        String id = getIdEncoded(json);
+        String id = getJsonElement(json, "id", true);
         path = !"".equals(id) ? path + "/" + id : path;
         String uriPath = api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
@@ -213,12 +220,25 @@ public class GalebV32Driver implements Driver {
             HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
             httpClient.close();
             result = getResultFromStatusCode(delete, response);
+            removeFromDistMap(json, path);
         } catch (Exception e) {
             LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
         } finally {
             decrementDiffCounter(keyInProgress);
         }
         return result;
+    }
+
+    private void removeFromDistMap(String json, String path) {
+        String id = getJsonElement(json, "id", false);
+        String parentId = getJsonElement(json, "parentId", false);
+        final Class<?> internalEntityTypeClass = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(path);
+        if (internalEntityTypeClass != null) {
+            final Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName());
+            if (distMap != null) {
+                distMap.remove(id + AbstractEngine.SEPARATOR + parentId);
+            }
+        }
     }
 
     @NotThreadSafe
@@ -235,18 +255,18 @@ public class GalebV32Driver implements Driver {
         }
     }
 
-    private String getIdEncoded(String json) {
+    private String getJsonElement(String json, String elementName, boolean encode) {
         if (json == null) {
             return "";
         }
         try {
-            JsonNode idObj = mapper.readTree(json).get("id");
+            JsonNode idObj = mapper.readTree(json).get(elementName);
             if (idObj == null) {
                 return "";
             }
             String id = idObj.asText();
             if (id!=null) {
-                id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
+                id = encode ? URLEncoder.encode(id, StandardCharsets.UTF_8.toString()) : id;
             } else {
                 id = "";
             }

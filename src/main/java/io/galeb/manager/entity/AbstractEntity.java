@@ -69,7 +69,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         ERROR,
         UNKNOWN,
         DISABLED,
-        ENABLE
+        ENABLE,
+        QUARANTINE,
+        REMOVED
     }
 
     @Id
@@ -200,10 +202,16 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
         String key = getName() + AbstractEngine.SEPARATOR;
         String json = distMap.get(key);
-        if (json != null) {
-            Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
-            if (entity.getVersion() == getHash()) {
-                return EntityStatus.OK;
+        if (status != EntityStatus.QUARANTINE) {
+            if (json != null) {
+                Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
+                if (entity.getVersion() == getHash()) {
+                    return EntityStatus.OK;
+                }
+            }
+        } else {
+            if (json == null) {
+                return EntityStatus.REMOVED;
             }
         }
         return status;

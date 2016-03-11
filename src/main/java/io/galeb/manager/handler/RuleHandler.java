@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 import io.galeb.manager.engine.listeners.AbstractEngine;
 import io.galeb.manager.entity.Pool;
+import io.galeb.manager.exceptions.AcceptOnDeleteException;
 import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +42,8 @@ import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.RuleRepository;
 
 import javax.cache.Cache;
+
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.QUARANTINE;
 
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler extends AbstractHandler<Rule> {
@@ -96,8 +99,10 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleBeforeDelete
     public void beforeDelete(Rule rule) throws Exception {
-        distMap.remove(rule.getName() + AbstractEngine.SEPARATOR);
         beforeDelete(rule, LOGGER);
+        rule.setStatus(QUARANTINE);
+        ruleRepository.save(rule);
+        throw new AcceptOnDeleteException();
     }
 
     @HandleAfterDelete
