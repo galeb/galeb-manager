@@ -64,4 +64,8 @@ public class Team extends AbstractEntity<Team> {
         return this;
     }
 
+    @Override
+    public EntityStatus getStatus() {
+        return status;
+    }
 }

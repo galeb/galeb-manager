@@ -111,7 +111,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @Column(name = "_status", nullable = false)
     @JsonProperty("_status")
-    private EntityStatus status;
+    protected EntityStatus status;
 
     @JsonIgnore
     @Transient
