@@ -76,6 +76,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -165,7 +166,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "unused" })
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Farm farm) {
         long farmId = farm.getId();
@@ -258,59 +259,65 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         LOGGER.warn("FARM STATUS - Synchronizing Farm " + farm.getName());
 
-        final Set<String> entityTypes = new HashSet<>();
+        final AtomicReference<Set<String>> entityTypes = new AtomicReference<>(new HashSet<>());
 
         diff.entrySet().stream().forEach(diffEntrySet -> {
 
-            final Map<String, Object> attributes = diffEntrySet.getValue();
+            try {
 
-            final ActionOnDiff action = (ActionOnDiff) attributes.get("ACTION");
-            final String id = String.valueOf(attributes.get("ID"));
-            final String parentId = String.valueOf(attributes.get("PARENT_ID"));
-            final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
+                final Map<String, Object> attributes = diffEntrySet.getValue();
 
-            entityTypes.add(entityType);
+                final ActionOnDiff action = (ActionOnDiff) attributes.get("ACTION");
+                final String id = String.valueOf(attributes.get("ID"));
+                final String parentId = String.valueOf(attributes.get("PARENT_ID"));
+                final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
 
-            final String managerEntityType = getManagerEntityType(entityType);
+                entityTypes.get().add(entityType);
 
-            JpaRepositoryWithFindByName repository = getRepository(managerEntityType);
-            if (repository != null) {
-                AbstractEntity<?> entityFromRepository = null;
+                final String managerEntityType = getManagerEntityType(entityType);
 
-                SystemUserService.runAs();
-                Page<?> elements = repository.findByName(id, new PageRequest(0, Integer.MAX_VALUE));
-                Stream<AbstractEntity<?>> elementsStream = (Stream<AbstractEntity<?>>)StreamSupport.stream(elements.spliterator(), false);
-                entityFromRepository = getEntityIfExist(id, parentId, elementsStream).orElse(null);
-                SystemUserService.clearContext();
+                JpaRepositoryWithFindByName repository = getRepository(managerEntityType);
+                if (repository != null) {
+                    AbstractEntity<?> entityFromRepository = null;
 
-                if (entityFromRepository == null && action != REMOVE) {
-                    LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
-                    CounterDownLatch.decrementDiffCounter(farm.getApi());
-                } else {
-                    AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
-                    if (action == REMOVE) {
-                        LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
-                        removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                    SystemUserService.runAs();
+                    Page<?> elements = repository.findByName(id, new PageRequest(0, Integer.MAX_VALUE));
+                    Stream<AbstractEntity<?>> elementsStream = (Stream<AbstractEntity<?>>) StreamSupport.stream(elements.spliterator(), false);
+                    entityFromRepository = getEntityIfExist(id, parentId, elementsStream).orElse(null);
+                    SystemUserService.clearContext();
+
+                    if (entityFromRepository == null && action != REMOVE) {
+                        LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
+                        CounterDownLatch.decrementDiffCounter(farm.getApi());
                     } else {
-                        LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
-                        switch (action) {
-                            case CREATE:
-                                createEntityOnFarm(queue, entityFromRepository);
-                                break;
-                            case UPDATE:
-                                updateEntityOnFarm(queue, entityFromRepository);
-                                break;
-                            case CALLBACK:
-                                resendCallBackWithOK(queue, entityFromRepository);
-                                break;
-                            default:
-                                LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                        AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
+                        if (action == REMOVE) {
+                            LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
+                            removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                        } else {
+                            LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
+                            switch (action) {
+                                case CREATE:
+                                    createEntityOnFarm(queue, entityFromRepository);
+                                    break;
+                                case UPDATE:
+                                    updateEntityOnFarm(queue, entityFromRepository);
+                                    break;
+                                case CALLBACK:
+                                    resendCallBackWithOK(queue, entityFromRepository);
+                                    break;
+                                default:
+                                    LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
+                            }
+                            LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
                         }
-                        LOGGER.debug("Send " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "] finish");
                     }
+                } else {
+                    LOGGER.error("Repository is NULL: " + managerEntityType);
                 }
-            } else {
-                LOGGER.error("Repository is NULL: " + managerEntityType);
+            } catch (Exception e) {
+                LOGGER.error(e);
+                CounterDownLatch.decrementDiffCounter(farm.getApi());
             }
         });
     }
@@ -367,6 +374,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         ).findAny();
     }
 
+    @SuppressWarnings("unused")
     @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
     public void callBack(Farm farm) {
         if (genericEntityService.isNew(farm)) {
