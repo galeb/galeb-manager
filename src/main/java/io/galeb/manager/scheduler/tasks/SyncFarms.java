@@ -67,7 +67,7 @@ public class SyncFarms {
             getProperty(JmsConfiguration.DISABLE_QUEUE,
                     Boolean.toString(false)));
 
-    private boolean disableSched = Boolean.getBoolean(
+    private boolean disableSched = Boolean.valueOf(
             getProperty(SchedulerConfiguration.GALEB_DISABLE_SCHED,
                     getenv(SchedulerConfiguration.GALEB_DISABLE_SCHED)));
 
