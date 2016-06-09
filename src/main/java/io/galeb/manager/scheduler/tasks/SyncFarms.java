@@ -63,7 +63,7 @@ public class SyncFarms {
 
     private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
 
-    private boolean disableQueue = Boolean.getBoolean(
+    private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
                     Boolean.toString(false)));
 
@@ -76,7 +76,7 @@ public class SyncFarms {
         long start = currentTimeMillis();
         LOGGER.debug("Executing " + this.getClass().getSimpleName() + ".task");
         if (disableSched) {
-            LOGGER.debug(SyncFarms.class.getSimpleName() + " aborted (GALEB_DISABLE_SCHED is TRUE)");
+            LOGGER.warn(SyncFarms.class.getSimpleName() + " aborted (GALEB_DISABLE_SCHED is TRUE)");
             return;
         }
 
