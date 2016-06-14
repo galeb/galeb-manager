@@ -58,4 +58,8 @@ public class Environment extends AbstractEntity<Environment> {
         //
     }
 
+    @Override
+    public EntityStatus getStatus() {
+        return status;
+    }
 }

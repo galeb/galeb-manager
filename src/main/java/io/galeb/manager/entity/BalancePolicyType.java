@@ -54,4 +54,9 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
         }
         return this;
     }
+
+    @Override
+    public EntityStatus getStatus() {
+        return status;
+    }
 }

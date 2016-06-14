@@ -73,4 +73,9 @@ public class Provider extends AbstractEntity<Provider> {
         this.provisioning = provisioning;
         return this;
     }
+
+    @Override
+    public EntityStatus getStatus() {
+        return status;
+    }
 }

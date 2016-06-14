@@ -122,4 +122,8 @@ public class Account extends AbstractEntity<Account> {
         return this;
     }
 
+    @Override
+    public EntityStatus getStatus() {
+        return status;
+    }
 }
