@@ -19,9 +19,6 @@
  */
 
 package io.galeb.manager.engine.util;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -29,13 +26,7 @@ import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,7 +45,6 @@ import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static java.util.stream.Collectors.toList;
 

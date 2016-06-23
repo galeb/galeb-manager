@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.listeners;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.galeb.core.cluster.ClusterLocker;
@@ -43,11 +44,11 @@ public abstract class AbstractEngine<T> {
 
     public static final String SEPARATOR = "__";
 
-    protected abstract void create(T entity);
+    protected abstract void create(T entity, final Map<String, String> jmsHeaders);
 
-    protected abstract void remove(T entity);
+    protected abstract void remove(T entity, final Map<String, String> jmsHeaders);
 
-    protected abstract void update(T entity);
+    protected abstract void update(T entity, final Map<String, String> jmsHeaders);
 
     protected abstract FarmRepository getFarmRepository();
 
@@ -70,9 +71,11 @@ public abstract class AbstractEngine<T> {
         return findFarmById(farmId);
     }
 
-    protected Properties fromEntity(AbstractEntity<?> entity) {
+    protected Properties fromEntity(AbstractEntity<?> entity, final Map<String, String> jmsHeaders) {
         Properties properties = new Properties();
-        properties.put("api", findApi(entity));
+        jmsHeaders.entrySet().stream().forEach(entry -> {
+            properties.put(entry.getKey(), entry.getValue());
+        });
         return properties;
     }
 

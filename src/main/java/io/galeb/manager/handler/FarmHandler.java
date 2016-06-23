@@ -20,6 +20,7 @@ package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
+import io.galeb.manager.exceptions.ConflictException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.repository.FarmRepository;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RepositoryEventHandler(Farm.class)
 public class FarmHandler extends AbstractHandler<Farm> {
@@ -64,6 +68,17 @@ public class FarmHandler extends AbstractHandler<Farm> {
     @HandleBeforeSave
     public void beforeSave(Farm farm) throws Exception {
         beforeSave(farm, farmRepository, LOGGER);
+        if (!apiIsUnique(farm)) {
+            throw new ConflictException("API exist in other farm");
+        }
+    }
+
+    private boolean apiIsUnique(final Farm farm) {
+        return farmRepository.findAll().stream()
+                .filter(otherFarm -> otherFarm != farm)
+                .map(otherFarm -> Arrays.asList(otherFarm.getApi().split(",")))
+                .filter(otherApi -> otherApi.containsAll(Arrays.asList(farm.getApi().split(","))))
+                .count() == 0;
     }
 
     @HandleAfterSave

@@ -35,6 +35,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +48,8 @@ import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.Map;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
@@ -66,17 +69,18 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
-    public void create(VirtualHost virtualHost) {
+    public void create(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
+
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(virtualHost));
+            isOk = driver.create(makeProperties(virtualHost, jmsHeaders));
             if (isOk) {
                 virtualHost.getAliases().forEach(virtualHostName -> {
                     VirtualHost virtualHostAlias = virtualHostAliasBuilder
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    create(virtualHostAlias);
+                    create(virtualHostAlias, jmsHeaders);
                 });
             }
         } catch (Exception e) {
@@ -90,21 +94,21 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     }
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_UPDATE)
-    public void update(VirtualHost virtualHost) {
+    public void update(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(virtualHost));
+            isOk = driver.update(makeProperties(virtualHost, jmsHeaders));
             if (isOk) {
                 virtualHost.getAliases().forEach(virtualHostName -> {
                     VirtualHost virtualHostAlias = virtualHostAliasBuilder
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    if (!driver.exist(makeProperties(virtualHostAlias))) {
-                        create(virtualHostAlias);
+                    if (!driver.exist(makeProperties(virtualHostAlias, jmsHeaders))) {
+                        create(virtualHostAlias, jmsHeaders);
                         createRules(virtualHostAlias);
                     } else {
-                        update(virtualHostAlias);
+                        update(virtualHostAlias, jmsHeaders);
                     }
                 });
                 updateRules(virtualHost);
@@ -120,17 +124,17 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     }
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_REMOVE)
-    public void remove(VirtualHost virtualHost) {
+    public void remove(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
         boolean isOk = false;
         try {
-            isOk = driver.remove(makeProperties(virtualHost));
+            isOk = driver.remove(makeProperties(virtualHost, jmsHeaders));
             if (isOk) {
                 virtualHost.getAliases().forEach(virtualHostName -> {
                     VirtualHost virtualHostAlias = virtualHostAliasBuilder
                             .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    remove(virtualHostAlias);
+                    remove(virtualHostAlias, jmsHeaders);
                 });
             }
         } catch (Exception e) {
@@ -168,7 +172,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(VirtualHost virtualHost) {
+    private Properties makeProperties(VirtualHost virtualHost, final Map<String, String> jmsHeaderProperties) {
         String json = "{}";
         try {
             JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);
@@ -176,7 +180,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         } catch (JsonProcessingException e) {
             LOGGER.error(e.getMessage());
         }
-        Properties properties = fromEntity(virtualHost);
+        final Properties properties = fromEntity(virtualHost, jmsHeaderProperties);
         properties.put("json", json);
         properties.put("path", "virtualhost");
         return properties;

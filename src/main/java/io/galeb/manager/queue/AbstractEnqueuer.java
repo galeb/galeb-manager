@@ -24,7 +24,12 @@ import io.galeb.manager.entity.AbstractEntity;
 import org.apache.commons.logging.Log;
 import org.springframework.jms.core.JmsTemplate;
 
+import javax.jms.JMSException;
 import javax.jms.Message;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Properties;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
@@ -124,11 +129,23 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
     }
 
     public void sendToQueue(String queue, T entity) {
+        sendToQueue(queue, entity, Collections.emptyMap());
+
+    }
+
+    public void sendToQueue(String queue, T entity, final Map<String, String> properties) {
         if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
             template().send(queue, session -> {
                 Message message = session.createObjectMessage(entity);
                 String uniqueId = "ID:" + queue + UNIQUE_ID_SEP +
                         entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+                properties.entrySet().stream().forEach(entry -> {
+                    try {
+                        message.setStringProperty(entry.getKey(), entry.getValue());
+                    } catch (JMSException e) {
+                        e.printStackTrace();
+                    }
+                });
                 message.setStringProperty("_HQ_DUPL_ID", uniqueId);
                 message.setJMSMessageID(uniqueId);
                 logger.info(uniqueId + " " + entity.getName());

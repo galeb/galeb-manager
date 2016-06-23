@@ -38,12 +38,16 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+import org.apache.commons.lang.text.StrBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 public class PoolEngine extends AbstractEngine<Pool> {
@@ -61,16 +65,12 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @Autowired private QueueLocator queueLocator;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
-    public void create(Pool pool) {
+    public void create(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        createPool(pool, driver);
-    }
-
-    private void createPool(Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(pool));
+            isOk = driver.create(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -80,16 +80,12 @@ public class PoolEngine extends AbstractEngine<Pool> {
     }
 
     @JmsListener(destination = PoolQueue.QUEUE_UPDATE)
-    public void update(Pool pool) {
+    public void update(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        updatePool(pool, driver);
-    }
-
-    private void updatePool(final Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(pool));
+            isOk = driver.update(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -99,17 +95,13 @@ public class PoolEngine extends AbstractEngine<Pool> {
     }
 
     @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
-    public void remove(Pool pool) {
+    public void remove(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        removePool(pool, driver);
-    }
-
-    private void removePool(final Pool pool, final Driver driver) {
         boolean isOk = false;
 
         try {
-            isOk = driver.remove(makeProperties(pool));
+            isOk = driver.remove(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -145,7 +137,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(Pool pool) {
+    private Properties makeProperties(Pool pool, Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             if (pool.getBalancePolicy() != null) {
@@ -157,7 +149,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         } catch (final JsonProcessingException e) {
             LOGGER.error(e.getMessage());
         }
-        final Properties properties = fromEntity(pool);
+        final Properties properties = fromEntity(pool, jmsHeaders);
         properties.put("json", json);
         properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
         return properties;

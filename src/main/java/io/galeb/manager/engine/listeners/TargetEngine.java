@@ -31,6 +31,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,8 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.Map;
 
 @Component
 public class TargetEngine extends AbstractEngine<Target> {
@@ -62,16 +65,12 @@ public class TargetEngine extends AbstractEngine<Target> {
     @Autowired private QueueLocator queueLocator;
 
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
-    public void create(Target target) {
+    public void create(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        createTarget(target, target.getParent(), driver);
-    }
-
-    private void createTarget(Target target, Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(target, pool));
+            isOk = driver.create(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -81,16 +80,12 @@ public class TargetEngine extends AbstractEngine<Target> {
     }
 
     @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
-    public void update(Target target) {
+    public void update(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + target.getClass().getSimpleName() + " " + target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        updateTarget(target, target.getParent(), driver);
-    }
-
-    private void updateTarget(final Target target, final Pool pool, final Driver driver) {
         boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(target, pool));
+            isOk = driver.update(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -100,17 +95,13 @@ public class TargetEngine extends AbstractEngine<Target> {
     }
 
     @JmsListener(destination = TargetQueue.QUEUE_REMOVE)
-    public void remove(Target target) {
+    public void remove(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
-        removeTarget(target, target.getParent(), driver);
-    }
-
-    private void removeTarget(final Target target, final Pool pool, final Driver driver) {
         boolean isOk = false;
 
         try {
-            isOk = driver.remove(makeProperties(target, pool));
+            isOk = driver.remove(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
         } finally {
@@ -146,7 +137,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(Target target, Pool pool) {
+    private Properties makeProperties(Target target, Pool pool, final Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(target);
@@ -157,7 +148,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (final JsonProcessingException e) {
             LOGGER.error(e.getMessage());
         }
-        final Properties properties = fromEntity(target);
+        final Properties properties = fromEntity(target, jmsHeaders);
         properties.put("json", json);
         properties.put("path", Backend.class.getSimpleName().toLowerCase());
         return properties;

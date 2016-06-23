@@ -33,6 +33,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +49,7 @@ import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -67,19 +69,19 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
-    public void create(Rule rule) {
+    public void create(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             updateRuleSpecialProperties(rule, virtualhost);
             boolean isOk = false;
             try {
-                isOk = driver.create(makeProperties(rule, virtualhost));
+                isOk = driver.create(makeProperties(rule, virtualhost, jmsHeaders));
                 if (isOk) {
                     virtualhost.getAliases().forEach(virtualHostName -> {
                         VirtualHost virtualHostAlias = virtualHostAliasBuilder
                                 .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.create(makeProperties(rule, virtualHostAlias));
+                        driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
                     });
                 }
             } catch (Exception e) {
@@ -92,7 +94,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     @JmsListener(destination = RuleQueue.QUEUE_UPDATE)
-    public void update(Rule rule) {
+    public void update(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
@@ -100,16 +102,16 @@ public class RuleEngine extends AbstractEngine<Rule> {
             boolean isOk = false;
 
             try {
-                if (!driver.exist(makeProperties(rule, virtualhost))) {
+                if (!driver.exist(makeProperties(rule, virtualhost, jmsHeaders))) {
                     ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule);
                     return;
                 }
-                isOk = driver.update(makeProperties(rule, virtualhost));
+                isOk = driver.update(makeProperties(rule, virtualhost, jmsHeaders));
                 if (isOk) {
                     virtualhost.getAliases().forEach(virtualHostName -> {
                         VirtualHost virtualHostAlias = virtualHostAliasBuilder
                                 .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.update(makeProperties(rule, virtualHostAlias));
+                        driver.update(makeProperties(rule, virtualHostAlias, jmsHeaders));
                     });
                 }
             } catch (Exception e) {
@@ -122,19 +124,19 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     @JmsListener(destination = RuleQueue.QUEUE_REMOVE)
-    public void remove(Rule rule) {
+    public void remove(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             boolean isOk = false;
 
             try {
-                isOk = driver.remove(makeProperties(rule, virtualhost));
+                isOk = driver.remove(makeProperties(rule, virtualhost, jmsHeaders));
                 if (isOk) {
                     virtualhost.getAliases().forEach(virtualHostName -> {
                         VirtualHost virtualHostAlias = virtualHostAliasBuilder
                                 .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.remove(makeProperties(rule, virtualHostAlias));
+                        driver.remove(makeProperties(rule, virtualHostAlias, jmsHeaders));
                     });
                 }
             } catch (Exception e) {
@@ -183,7 +185,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         }
     }
 
-    private Properties makeProperties(Rule rule, VirtualHost virtualHost) {
+    private Properties makeProperties(Rule rule, VirtualHost virtualHost, final Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(rule);
@@ -197,7 +199,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         } catch (final JsonProcessingException e) {
             LOGGER.error(e.getMessage());
         }
-        final Properties properties = fromEntity(rule);
+        final Properties properties = fromEntity(rule, jmsHeaders);
         properties.put("json", json);
         properties.put("path", "rule");
         return properties;
