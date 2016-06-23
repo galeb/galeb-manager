@@ -7,7 +7,7 @@ general:
 machine:
   java:
     version: oraclejdk8
-  service:
+  services:
     - redis
 
   environment:
