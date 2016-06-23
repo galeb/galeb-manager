@@ -7,6 +7,8 @@ general:
 machine:
   java:
     version: oraclejdk8
+  service:
+    - redis
 
   environment:
     LOGLEVEL: WARN
