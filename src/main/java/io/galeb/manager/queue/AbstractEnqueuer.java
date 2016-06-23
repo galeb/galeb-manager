@@ -29,7 +29,6 @@ import javax.jms.Message;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Properties;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;

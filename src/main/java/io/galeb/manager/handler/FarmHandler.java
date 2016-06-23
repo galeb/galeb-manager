@@ -37,7 +37,6 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.repository.FarmRepository;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @RepositoryEventHandler(Farm.class)
 public class FarmHandler extends AbstractHandler<Farm> {

@@ -34,9 +34,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Backend;
 import io.galeb.manager.engine.listeners.AbstractEngine;
-import org.springframework.data.annotation.Transient;
-
-import java.util.Map;
 
 @Entity
 @JsonInclude(NON_NULL)

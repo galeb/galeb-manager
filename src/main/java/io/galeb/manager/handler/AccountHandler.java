@@ -19,14 +19,9 @@
 package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-import static io.galeb.manager.entity.Account.Role.ROLE_ADMIN;
 
 import io.galeb.manager.entity.Account;
-import io.galeb.manager.entity.Team;
-import io.galeb.manager.exceptions.ForbiddenException;
 import io.galeb.manager.repository.AccountRepository;
-import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,12 +33,6 @@ import org.springframework.data.rest.core.annotation.HandleBeforeDelete;
 import org.springframework.data.rest.core.annotation.HandleBeforeSave;
 import org.springframework.data.rest.core.annotation.RepositoryEventHandler;
 import org.springframework.security.access.prepost.PreAuthorize;
-
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-
-import java.util.*;
-import java.util.stream.*;
 
 @RepositoryEventHandler(Account.class)
 public class AccountHandler {
