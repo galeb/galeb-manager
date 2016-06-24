@@ -75,11 +75,6 @@ public abstract class AbstractEngine<T> {
         return properties;
     }
 
-    protected String findApi(AbstractEntity<?> entity) {
-        Optional<Farm> farm = findFarm(entity);
-        return farm.isPresent() ? farm.get().getApi() : "UNDEF";
-    }
-
     protected Provisioning getProvisioning(AbstractEntity<?> entity) {
         return new NullProvisioning();
     }
