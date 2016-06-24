@@ -36,4 +36,8 @@ public class LockerManager {
         release(lockId);
         Arrays.stream(apis).forEach(CounterDownLatch::remove);
     }
+
+    public boolean lock(String lockId) {
+        return locker.lock(lockId);
+    }
 }

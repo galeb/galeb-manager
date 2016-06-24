@@ -34,6 +34,7 @@ import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.service.FarmBuilder;
+import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
@@ -80,6 +81,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
     private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
+
+    private final LockerManager lockerManager = new LockerManager();
 
     @Override
     protected Log getLogger() {
@@ -169,7 +172,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         String farmName = farm.getName();
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
-        if (locker.lock(farm.idName())) {
+        if (lockerManager.lock(farm.idName())) {
             long start = currentTimeMillis();
 
             final Driver driver = getDriver(farm);
@@ -290,7 +293,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                     if (entityFromRepository == null && action != REMOVE) {
                         LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
-                        CounterDownLatch.decrementDiffCounter(farm.getApi());
+                        CounterDownLatch.decrementDiffCounter(api);
                     } else {
                         AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
                         if (action == REMOVE) {
@@ -321,7 +324,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
             } catch (Exception e) {
                 LOGGER.error(e);
-                CounterDownLatch.decrementDiffCounter(farm.getApi());
+                CounterDownLatch.decrementDiffCounter(api);
             }
         });
     }

@@ -25,7 +25,7 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 public class UnlockController {
 
     private static final Log LOGGER = LogFactory.getLog(UnlockController.class);
-    private LockerManager lockerManager = new LockerManager();
+    private final LockerManager lockerManager = new LockerManager();
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private FarmQueue farmQueue;

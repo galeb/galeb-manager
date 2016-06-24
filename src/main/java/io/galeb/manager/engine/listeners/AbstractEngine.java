@@ -21,9 +21,7 @@ package io.galeb.manager.engine.listeners;
 import java.util.Map;
 import java.util.Optional;
 
-import io.galeb.core.cluster.ClusterLocker;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
@@ -55,8 +53,6 @@ public abstract class AbstractEngine<T> {
     protected abstract FarmQueue farmQueue();
 
     protected abstract Log getLogger();
-
-    protected ClusterLocker locker = IgniteClusterLocker.getInstance().start();
 
     protected CacheFactory cacheFactory = IgniteCacheFactory.getInstance().start();
 

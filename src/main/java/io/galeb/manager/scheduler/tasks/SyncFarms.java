@@ -62,7 +62,7 @@ public class SyncFarms {
     @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
 
-    private LockerManager lockerManager = new LockerManager();
+    private final LockerManager lockerManager = new LockerManager();
 
     private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
