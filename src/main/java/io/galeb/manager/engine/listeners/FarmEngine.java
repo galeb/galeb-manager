@@ -356,11 +356,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     private void updateEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entityFromRepository, final Map<String, String> jmsHeaders) {
-        queue.sendToQueue(queue.getQueueUpdateName(), entityFromRepository);
+        queue.sendToQueue(queue.getQueueUpdateName(), entityFromRepository, jmsHeaders);
     }
 
     private void createEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entity, final Map<String, String> jmsHeaders) {
-        queue.sendToQueue(queue.getQueueCreateName(), entity);
+        queue.sendToQueue(queue.getQueueCreateName(), entity, jmsHeaders);
     }
 
     @SuppressWarnings("unchecked")
