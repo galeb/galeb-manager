@@ -167,14 +167,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public void sync(Farm farm) {
         long farmId = farm.getId();
         String farmName = farm.getName();
-        String latchId = farm.getApi();
-        String farmFull = farmName + " (" + farmId + ") [ " + latchId + " ]";
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
         if (locker.lock(farm.idName())) {
             long start = currentTimeMillis();
-
-            LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
 
             final Driver driver = getDriver(farm);
             String apiWithSeparator = farm.getApi();
@@ -184,6 +180,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
                 final Properties properties = getPropertiesWithEntities(farm, api);
+                String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
+                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
+
                 Map<String, Map<String, Object>> diff = new HashMap<>();
                 Map<String, Map<String, Map<String, String>>> remoteMultiMap;
 
@@ -197,7 +196,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                             + (currentTimeMillis() - diffStart) + " ms)";
                     LOGGER.info(diffDurationMsg);
 
-                    CounterDownLatch.put(latchId, diffSize);
+                    CounterDownLatch.put(api, diffSize);
 
                     updateStatus(remoteMultiMap);
                     if (diffSize == 0) {
@@ -212,7 +211,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     }
 
                 } catch (Exception e) {
-                    CounterDownLatch.reset(latchId);
+                    CounterDownLatch.reset(api);
                     LOGGER.error(e);
                     LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
                     status.set(ERROR);
@@ -221,7 +220,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             distMap.put(farm.idName(), status.get().toString());
 
         } else {
-            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
+            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmName + " locked by an other process/node. Aborting Check & Sync Task.");
         }
     }
 
