@@ -48,7 +48,6 @@ import io.galeb.manager.repository.PoolRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.scheduler.tasks.SyncFarms;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.StaleObjectStateException;
@@ -172,7 +171,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         String farmFull = farmName + " (" + farmId + ") [ " + latchId + " ]";
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
-        if (locker.lock(SyncFarms.LOCK_PREFIX + farm.getId())) {
+        if (locker.lock(farm.idName())) {
             long start = currentTimeMillis();
 
             LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);

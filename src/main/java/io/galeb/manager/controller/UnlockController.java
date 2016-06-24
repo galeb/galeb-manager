@@ -7,7 +7,6 @@ import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.scheduler.tasks.SyncFarms;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Arrays;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-import static io.galeb.manager.scheduler.tasks.SyncFarms.LOCK_PREFIX;
 
 @RestController
 @RequestMapping(value="/unlock")
@@ -46,10 +44,9 @@ public class UnlockController {
         Farm farm = farmRepository.findOne(id);
         if (farm != null) {
             String[] apis = farm.getApi().split(",");
-            Arrays.asList(apis).stream().forEach(api -> {
-                CounterDownLatch.reset(api);
-            });
-            locker.release(LOCK_PREFIX + farm.getId());
+
+            locker.release(farm.idName());
+            Arrays.asList(apis).stream().forEach(CounterDownLatch::reset);
 
             farm.setStatus(PENDING).setSaveOnly(true);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();

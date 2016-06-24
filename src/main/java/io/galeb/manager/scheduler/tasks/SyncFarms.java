@@ -43,6 +43,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
 import static java.lang.System.currentTimeMillis;
@@ -52,7 +55,6 @@ public class SyncFarms {
 
     private static final Log   LOGGER         = LogFactory.getLog(SyncFarms.class);
     private static final long  SCHED_INTERVAL = 5000; //sec
-    public static final String LOCK_PREFIX    = "lock_";
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
@@ -105,29 +107,39 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
-        String latchId = farm.getApi();
-        final boolean containsKey = CounterDownLatch.refreshAndCheckContainsKey(latchId);
-        final Integer latchCount = CounterDownLatch.refreshAndGet(latchId);
-        long farmId = farm.getId();
-        String farmName = farm.getName();
-        String farmFull = farmName + " (" + farmId + ") [ " + latchId + " ]";
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
-        if (containsKey) {
-            if (latchCount != null && latchCount == 0) {
-                locker.release(LOCK_PREFIX + farm.getId());
-                CounterDownLatch.remove(latchId);
-                LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farmFull);
+        String[] apis = farm.getApi().split(",");
+        final AtomicBoolean needRelease = new AtomicBoolean(true);
+        final AtomicBoolean countDownZeroed = new AtomicBoolean(true);
+        Arrays.stream(apis).forEach(api -> {
+            final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+            countDownZeroed.set(countDownZeroed.get() && (latchCount != null && latchCount == 0));
+            needRelease.set(needRelease.get() && CounterDownLatch.refreshAndCheckContainsKey(api));
+        });
+
+        if (countDownZeroed.get()) {
+            if (needRelease.get()) {
+                releaseLock(farm.idName(), apis);
+                LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farm.getName());
             } else {
-                LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
+                Arrays.stream(apis).forEach(api -> {
+                    final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+                    String farmFull = farm.getName() + " [ " + api + " ] ";
+                    LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
+                });
             }
         } else {
             if (farm.isAutoReload() && !disableQueue) {
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
             } else {
-                LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farmFull);
+                LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
             }
         }
     }
 
+    private void releaseLock(String lockId, final String[] apis) {
+        locker.release(lockId);
+        Arrays.stream(apis).forEach(CounterDownLatch::remove);
+    }
 }
