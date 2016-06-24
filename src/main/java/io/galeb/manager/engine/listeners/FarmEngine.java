@@ -20,9 +20,7 @@ package io.galeb.manager.engine.listeners;
 
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.lang.System.currentTimeMillis;
 
 import io.galeb.core.json.JsonObject;
@@ -181,6 +179,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
             final Driver driver = getDriver(farm);
             String apiWithSeparator = farm.getApi();
+
+            final AtomicReference<AbstractEntity.EntityStatus> status = new AtomicReference<>(UNKNOWN);
+            Cache<String, String> distMap = cacheFactory.getCache(Farm.class.getSimpleName());
+
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
                 final Properties properties = getPropertiesWithEntities(farm, api);
                 Map<String, Map<String, Object>> diff = new HashMap<>();
@@ -202,24 +204,23 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     if (diffSize == 0) {
                         LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
                                 + (currentTimeMillis() - start) + " ms)");
-                        farm.setStatus(AbstractEntity.EntityStatus.OK);
-                        farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+                        status.set(status.get().equals(UNKNOWN) ? OK : status.get());
                     } else {
                         LOGGER.warn(farmStatusMsgPrefix + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
                                 + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
-                        farm.setStatus(AbstractEntity.EntityStatus.PENDING);
-                        farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
                         fixFarm(farm, diff, driver, api);
+                        status.set(!status.get().equals(ERROR) ? PENDING : ERROR);
                     }
 
                 } catch (Exception e) {
                     CounterDownLatch.reset(latchId);
                     LOGGER.error(e);
                     LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
-                    farm.setStatus(AbstractEntity.EntityStatus.ERROR);
-                    farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+                    status.set(ERROR);
                 }
             });
+            distMap.put(farm.idName(), status.get().toString());
+
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
         }

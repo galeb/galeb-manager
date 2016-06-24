@@ -26,6 +26,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -125,5 +126,21 @@ public class Farm extends AbstractEntity<Farm> {
         updateHash();
         this.autoReload = autoReload;
         return this;
+    }
+
+    private String extractStatus() {
+        javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
+        return distMap.get(idName());
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        String aStatus = extractStatus();
+        return (aStatus != null) ? EntityStatus.valueOf(aStatus) : super.getStatus();
+    }
+
+    @JsonIgnore
+    public String idName() {
+        return this.getClass().getSimpleName() + getId();
     }
 }
