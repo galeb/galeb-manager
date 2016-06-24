@@ -21,8 +21,7 @@
 package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.galeb.core.cluster.ClusterLocker;
-import io.galeb.core.cluster.ignite.IgniteClusterLocker;
+import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
@@ -63,7 +62,7 @@ public class SyncFarms {
     @Autowired private PoolRepository        poolRepository;
     @Autowired private FarmQueue             farmQueue;
 
-    private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
+    private LockerManager lockerManager = new LockerManager();
 
     private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
@@ -120,7 +119,7 @@ public class SyncFarms {
 
         if (countDownZeroed.get()) {
             if (needRelease.get()) {
-                releaseLock(farm.idName(), apis);
+                lockerManager.release(farm.idName(),apis);
                 LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farm.getName());
             } else {
                 Arrays.stream(apis).forEach(api -> {
@@ -136,10 +135,5 @@ public class SyncFarms {
                 LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
             }
         }
-    }
-
-    private void releaseLock(String lockId, final String[] apis) {
-        locker.release(lockId);
-        Arrays.stream(apis).forEach(CounterDownLatch::remove);
     }
 }

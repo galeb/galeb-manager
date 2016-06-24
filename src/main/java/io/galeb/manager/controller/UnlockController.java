@@ -1,9 +1,7 @@
 package io.galeb.manager.controller;
 
-import io.galeb.core.cluster.ClusterLocker;
-import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.engine.util.CounterDownLatch;
+import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.FarmRepository;
@@ -20,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 
 @RestController
@@ -29,7 +25,7 @@ import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
 public class UnlockController {
 
     private static final Log LOGGER = LogFactory.getLog(UnlockController.class);
-    private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
+    private LockerManager lockerManager = new LockerManager();
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private FarmQueue farmQueue;
@@ -45,8 +41,7 @@ public class UnlockController {
         if (farm != null) {
             String[] apis = farm.getApi().split(",");
 
-            locker.release(farm.idName());
-            Arrays.asList(apis).stream().forEach(CounterDownLatch::reset);
+            lockerManager.release(farm.idName(),apis);
 
             farm.setStatus(PENDING).setSaveOnly(true);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
