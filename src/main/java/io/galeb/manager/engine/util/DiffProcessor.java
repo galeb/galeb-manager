@@ -140,6 +140,7 @@ public class DiffProcessor {
                 });
 
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
+                !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME) &&
                 ((AbstractEntity<?>)entity).getStatus() != DISABLED)
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, remoteMap));
