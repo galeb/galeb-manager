@@ -61,7 +61,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final long serialVersionUID = 4521414292400791447L;
 
-    protected static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
+    public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
 
     public enum EntityStatus {
         PENDING,

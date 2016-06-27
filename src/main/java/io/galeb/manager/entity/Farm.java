@@ -18,6 +18,7 @@
 
 package io.galeb.manager.entity;
 
+import javax.cache.Cache;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -129,7 +130,7 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     private String extractStatus() {
-        javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
         return distMap.get(idName());
     }
 

@@ -20,6 +20,7 @@ package io.galeb.manager.engine.listeners;
 
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
+import static io.galeb.manager.entity.AbstractEntity.CACHE_FACTORY;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.lang.System.currentTimeMillis;
 
@@ -38,6 +39,7 @@ import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
@@ -51,6 +53,7 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.ignite.internal.util.typedef.PE;
 import org.hibernate.StaleObjectStateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -103,7 +106,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @PostConstruct
     public void init() {
         isReady.set(true);
-        cacheFactory.setFarm(farmBuilder.build());
+        CACHE_FACTORY.setFarm(farmBuilder.build());
     }
 
     private JpaRepositoryWithFindByName getRepository(String entityClass) {
@@ -178,8 +181,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final Driver driver = getDriver(farm);
             String apiWithSeparator = farm.getApi();
 
-            final AtomicReference<AbstractEntity.EntityStatus> status = new AtomicReference<>(UNKNOWN);
-            Cache<String, String> distMap = cacheFactory.getCache(Farm.class.getSimpleName());
+            final Map<String, EntityStatus> statusMap = new HashMap<>();
+            Cache<String, String> distMap = CACHE_FACTORY.getCache(Farm.class.getSimpleName());
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
                 final Properties properties = getPropertiesWithEntities(farm, api);
@@ -205,26 +208,42 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     if (diffSize == 0) {
                         LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
                                 + (currentTimeMillis() - start) + " ms)");
-                        status.set(status.get().equals(UNKNOWN) ? OK : status.get());
+
+                        statusMap.put(api, OK);
                     } else {
                         LOGGER.warn(farmStatusMsgPrefix + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
                                 + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
                         fixFarm(farm, diff, driver, api);
-                        status.set(!status.get().equals(ERROR) ? PENDING : ERROR);
+                        statusMap.put(api, PENDING);
                     }
 
                 } catch (Exception e) {
                     CounterDownLatch.reset(api);
                     LOGGER.error(e);
                     LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
-                    status.set(ERROR);
+                    statusMap.put(api, ERROR);
                 }
             });
-            distMap.put(farm.idName(), status.get().toString());
+            EntityStatus statusConsolidated = getStatusConsolidated(statusMap);
+            distMap.put(farm.idName(), statusConsolidated.toString());
+            statusMap.clear();
 
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmName + " locked by an other process/node. Aborting Check & Sync Task.");
         }
+    }
+
+    private EntityStatus getStatusConsolidated(final Map<String, EntityStatus> statusMap) {
+        if (statusMap.containsValue(PENDING)) {
+            return PENDING;
+        }
+        if (statusMap.entrySet().stream().filter(e -> e.getValue().equals(OK)).count() == statusMap.size()) {
+            return OK;
+        }
+        if (statusMap.containsValue(ERROR)) {
+            return ERROR;
+        }
+        return UNKNOWN;
     }
 
     private void updateStatus(Map<String, Map<String, Map<String, String>>> remoteMultiMap) {
@@ -250,7 +269,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     entityProperties.put("health", health);
                     entity.setProperties(entityProperties);
                 }
-                Cache<String, String> distMap = cacheFactory.getCache(internalEntityTypeClass.getSimpleName());
+                Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName());
                 distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
             });
         });

@@ -54,8 +54,6 @@ public abstract class AbstractEngine<T> {
 
     protected abstract Log getLogger();
 
-    protected CacheFactory cacheFactory = IgniteCacheFactory.getInstance().start();
-
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
             return Optional.of((Farm)entity);
