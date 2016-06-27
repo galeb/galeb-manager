@@ -39,6 +39,7 @@ import static io.galeb.manager.repository.CommonJpaFilters.*;
 public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
                                         FarmIDable<Pool>,
                                         PoolRepositoryCustom {
+    String NO_PARENT_NAME = "NoParent";
 
     String QUERY_PREFIX = "SELECT DISTINCT e FROM Pool e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 

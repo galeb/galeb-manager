@@ -21,6 +21,7 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Pool;
+import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Repository;
@@ -28,10 +29,10 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import static io.galeb.manager.repository.PoolRepository.NO_PARENT_NAME;
+
 @Repository
 public class PoolRepositoryImpl implements PoolRepositoryCustom {
-
-    private static final String NO_PARENT_NAME = "NoParent";
 
     private static final Log LOGGER = LogFactory.getLog(PoolRepositoryImpl.class);
 
@@ -41,9 +42,9 @@ public class PoolRepositoryImpl implements PoolRepositoryCustom {
     @Override
     public Pool getNoParent() {
         Pool noParent = (Pool) em.createQuery(
-                "SELECT p FROM Pool p WHERE p.name = '"+NO_PARENT_NAME+"'").getSingleResult();
+                "SELECT p FROM Pool p WHERE p.name = '"+ NO_PARENT_NAME+"'").getSingleResult();
         if (noParent == null)
-            LOGGER.error("Pool "+NO_PARENT_NAME+" NOT FOUND");
+            LOGGER.error("Pool "+ NO_PARENT_NAME + " NOT FOUND");
         return noParent;
     }
 }

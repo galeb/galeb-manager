@@ -24,6 +24,7 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
+import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -109,7 +110,8 @@ public class DiffProcessor {
                     final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
                     AtomicBoolean hasId = new AtomicBoolean(false);
 
-                    entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
+                    entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
+                                                       !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME))
                             .map(entity -> ((AbstractEntity<?>) entity))
                             .filter(entity -> entity.getName().equals(id))
                             .filter(getAbstractEntityPredicate(parentId))
