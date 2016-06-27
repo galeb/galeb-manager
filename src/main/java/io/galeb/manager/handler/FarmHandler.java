@@ -37,6 +37,9 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.repository.FarmRepository;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @RepositoryEventHandler(Farm.class)
 public class FarmHandler extends AbstractHandler<Farm> {
@@ -73,11 +76,14 @@ public class FarmHandler extends AbstractHandler<Farm> {
     }
 
     private boolean apiIsUnique(final Farm farm) {
-        return farmRepository.findAll().stream()
+        final List<String> listOfapis = Arrays.asList(farm.getApi().split(","));
+        farmRepository.findAll().stream()
                 .filter(otherFarm -> otherFarm != farm)
-                .map(otherFarm -> Arrays.asList(otherFarm.getApi().split(",")))
-                .filter(otherApi -> otherApi.containsAll(Arrays.asList(farm.getApi().split(","))))
-                .count() == 0;
+                .forEach(otherFarm -> {
+                    listOfapis.addAll(Arrays.asList(otherFarm.getApi().split(",")));
+                });
+        final Set<String> setOfApis = new HashSet<>(listOfapis);
+        return listOfapis.size() == setOfApis.size();
     }
 
     @HandleAfterSave
