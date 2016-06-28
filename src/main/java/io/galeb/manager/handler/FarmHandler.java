@@ -20,7 +20,6 @@ package io.galeb.manager.handler;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
 
-import io.galeb.manager.exceptions.ConflictException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +34,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.repository.FarmRepository;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @RepositoryEventHandler(Farm.class)
 public class FarmHandler extends AbstractHandler<Farm> {
@@ -70,20 +64,6 @@ public class FarmHandler extends AbstractHandler<Farm> {
     @HandleBeforeSave
     public void beforeSave(Farm farm) throws Exception {
         beforeSave(farm, farmRepository, LOGGER);
-        if (!apiIsUnique(farm)) {
-            throw new ConflictException("API exist in other farm");
-        }
-    }
-
-    private boolean apiIsUnique(final Farm farm) {
-        final List<String> listOfapis = Arrays.asList(farm.getApi().split(","));
-        farmRepository.findAll().stream()
-                .filter(otherFarm -> otherFarm != farm)
-                .forEach(otherFarm -> {
-                    listOfapis.addAll(Arrays.asList(otherFarm.getApi().split(",")));
-                });
-        final Set<String> setOfApis = new HashSet<>(listOfapis);
-        return listOfapis.size() == setOfApis.size();
     }
 
     @HandleAfterSave
