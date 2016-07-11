@@ -45,6 +45,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
@@ -417,7 +418,9 @@ public class GalebV32Driver implements Driver {
 
     private JsonNode getJson(String path) throws URISyntaxException, IOException {
         JsonNode json = null;
-        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
+        clientHttp.setConnectTimeout(1000);
+        RestTemplate restTemplate = new RestTemplate(clientHttp);
         URI uri = new URI(path);
         RequestEntity<Void> request = RequestEntity.get(uri).build();
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);

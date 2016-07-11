@@ -185,6 +185,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
             Cache<String, String> distMap = CACHE_FACTORY.getCache(Farm.class.getSimpleName());
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
+                CounterDownLatch.put(api, 0);
+                
                 final Properties properties = getPropertiesWithEntities(farm, api);
                 String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
                 LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
