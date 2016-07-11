@@ -419,7 +419,7 @@ public class GalebV32Driver implements Driver {
     private JsonNode getJson(String path) throws URISyntaxException, IOException {
         JsonNode json = null;
         SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
-        clientHttp.setConnectTimeout(1000);
+        clientHttp.setConnectTimeout(5000);
         RestTemplate restTemplate = new RestTemplate(clientHttp);
         URI uri = new URI(path);
         RequestEntity<Void> request = RequestEntity.get(uri).build();
