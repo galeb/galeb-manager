@@ -111,9 +111,11 @@ public class SyncFarms {
         String[] apis = farm.getApi().split(",");
         final AtomicBoolean needRelease = new AtomicBoolean(true);
         final AtomicBoolean countDownZeroed = new AtomicBoolean(true);
+        final AtomicBoolean countDownNotZeroed = new AtomicBoolean(true);
         Arrays.stream(apis).forEach(api -> {
             final Integer latchCount = CounterDownLatch.refreshAndGet(api);
             countDownZeroed.set(countDownZeroed.get() && (latchCount != null && latchCount == 0));
+            countDownNotZeroed.set(countDownNotZeroed.get() && (latchCount != null && latchCount > 0));
             needRelease.set(needRelease.get() && CounterDownLatch.refreshAndCheckContainsKey(api));
         });
 
@@ -122,18 +124,24 @@ public class SyncFarms {
                 lockerManager.release(farm.idName(),apis);
                 LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farm.getName());
             } else {
-                Arrays.stream(apis).forEach(api -> {
-                    final Integer latchCount = CounterDownLatch.refreshAndGet(api);
-                    String farmFull = farm.getName() + " [ " + api + " ] ";
-                    LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
-                });
+                logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
             }
         } else {
-            if (farm.isAutoReload() && !disableQueue) {
+            if (countDownNotZeroed.get()) {
+                logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
+            } else if (farm.isAutoReload() && !disableQueue) {
                 farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
             } else {
                 LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
             }
         }
+    }
+
+    private void logStillSynchronizing(Farm farm, String farmStatusMsgPrefix, String[] apis) {
+        Arrays.stream(apis).forEach(api -> {
+            final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+            String farmFull = farm.getName() + " [ " + api + " ] ";
+            LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
+        });
     }
 }

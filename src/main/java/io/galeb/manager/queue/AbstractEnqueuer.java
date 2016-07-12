@@ -147,7 +147,7 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
                 });
                 message.setStringProperty("_HQ_DUPL_ID", uniqueId);
                 message.setJMSMessageID(uniqueId);
-                logger.info(uniqueId + " " + entity.getName());
+                logger.info("JMSMessageID: " + uniqueId + " - Farm " + entity.getName());
                 return message;
             });
         }
