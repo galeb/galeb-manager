@@ -21,6 +21,7 @@
 package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.galeb.manager.common.CommandCountDown;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
@@ -109,31 +110,25 @@ public class SyncFarms {
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
         String[] apis = farm.getApi().split(",");
-        final AtomicBoolean needRelease = new AtomicBoolean(true);
-        final AtomicBoolean countDownZeroed = new AtomicBoolean(true);
-        final AtomicBoolean countDownNotZeroed = new AtomicBoolean(true);
-        Arrays.stream(apis).forEach(api -> {
-            final Integer latchCount = CounterDownLatch.refreshAndGet(api);
-            countDownZeroed.set(countDownZeroed.get() && (latchCount != null && latchCount == 0));
-            countDownNotZeroed.set(countDownNotZeroed.get() && (latchCount != null && latchCount > 0));
-            needRelease.set(needRelease.get() && CounterDownLatch.refreshAndCheckContainsKey(api));
-        });
-
-        if (countDownZeroed.get()) {
-            if (needRelease.get()) {
+        CommandCountDown comm = CommandCountDown.getCommandApplied(apis);
+        switch (comm) {
+            case SEND_TO_QUEUE:
+                if (farm.isAutoReload() && !disableQueue) {
+                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
+                } else {
+                    LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
+                }
+                break;
+            case RELEASE:
                 lockerManager.release(farm.idName(),apis);
                 LOGGER.info(farmStatusMsgPrefix + "Releasing lock: Farm " + farm.getName());
-            } else {
+                break;
+            case STILL_SYNCHRONIZING:
                 logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
-            }
-        } else {
-            if (countDownNotZeroed.get()) {
-                logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
-            } else if (farm.isAutoReload() && !disableQueue) {
-                farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
-            } else {
-                LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
-            }
+                break;
+            default:
+                LOGGER.warn(farmStatusMsgPrefix + "Without command to execute. Skip the sync farm.");
+
         }
     }
 

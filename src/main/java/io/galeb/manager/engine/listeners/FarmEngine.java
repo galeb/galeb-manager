@@ -29,7 +29,6 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
-import io.galeb.core.model.VirtualHost;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
@@ -38,22 +37,13 @@ import io.galeb.manager.engine.service.FarmBuilder;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
-import io.galeb.manager.entity.AbstractEntity;
+import io.galeb.manager.entity.*;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.WithParent;
-import io.galeb.manager.entity.WithParents;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.JpaRepositoryWithFindByName;
-import io.galeb.manager.repository.PoolRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
+import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.ignite.internal.util.typedef.PE;
 import org.hibernate.StaleObjectStateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -74,6 +64,7 @@ import javax.cache.Cache;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -176,7 +167,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
         if (lockerManager.lock(farm.idName())) {
-            long start = currentTimeMillis();
 
             final Driver driver = getDriver(farm);
             String apiWithSeparator = farm.getApi();
@@ -185,12 +175,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
             Cache<String, String> distMap = CACHE_FACTORY.getCache(Farm.class.getSimpleName());
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
-                CounterDownLatch.put(api, 0);
+                long start = currentTimeMillis();
+                CounterDownLatch.put(api, -1);
 
-                final Properties properties = getPropertiesWithEntities(farm, api);
                 String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
-                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
+                LOGGER.info(farmStatusMsgPrefix + "Retrieving entities from database - " + farmFull);
+                final Properties properties = getPropertiesWithEntities(farm, api);
 
+                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
                 Map<String, Map<String, Object>> diff = new HashMap<>();
                 Map<String, Map<String, Map<String, String>>> remoteMultiMap;
 

@@ -32,9 +32,6 @@ public class CounterDownLatch {
     private static final Map<String, Map.Entry<Long, Integer>> mapOfDiffCounters =
                 Collections.synchronizedMap(new HashMap<>());
 
-    private static final Long IDLE_TIMEOUT =
-            Long.valueOf(System.getProperty("LOCK_IDLE_TIMEOUT", String.valueOf(30000L))); // default: 30 sec
-
     private CounterDownLatch() {
         // singleton?
     }
@@ -54,9 +51,6 @@ public class CounterDownLatch {
     }
 
     public static synchronized Integer refreshAndGet(String key) {
-        if (mapOfDiffCounters.containsKey(key) && isExpired(key)) {
-            return reset(key);
-        }
         final Map.Entry entry = mapOfDiffCounters.get(key);
         if (entry != null) {
             int value = (Integer) entry.getValue();
@@ -77,16 +71,7 @@ public class CounterDownLatch {
     }
 
     public static synchronized boolean refreshAndCheckContainsKey(String key) {
-        final boolean containsKey = mapOfDiffCounters.containsKey(key);
-        if (containsKey && isExpired(key)) {
-            reset(key);
-        }
-        return containsKey;
-    }
-
-    public static synchronized boolean isExpired(String key) {
-        final Map.Entry entry = mapOfDiffCounters.get(key);
-        return entry != null && ((Long) entry.getKey()) < currentTimeMillis() - IDLE_TIMEOUT;
+        return mapOfDiffCounters.containsKey(key);
     }
 
     public static synchronized int reset(String key) {
