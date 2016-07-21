@@ -40,4 +40,6 @@ public class LockerManager {
     public boolean lock(String lockId) {
         return locker.lock(lockId);
     }
+
+    public Boolean contains(String lockId) { return locker.contains(lockId); }
 }

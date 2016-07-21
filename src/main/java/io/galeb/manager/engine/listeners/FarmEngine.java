@@ -42,6 +42,7 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.*;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.StaleObjectStateException;
@@ -168,21 +169,24 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         if (lockerManager.lock(farm.idName())) {
 
-            final Driver driver = getDriver(farm);
             String apiWithSeparator = farm.getApi();
+            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
+                CounterDownLatch.put(api, -1);
+            });
+
+            final Driver driver = getDriver(farm);
 
             final Map<String, EntityStatus> statusMap = new HashMap<>();
             Cache<String, String> distMap = CACHE_FACTORY.getCache(Farm.class.getSimpleName());
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
                 long start = currentTimeMillis();
-                CounterDownLatch.put(api, -1);
 
                 String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
                 LOGGER.info(farmStatusMsgPrefix + "Retrieving entities from database - " + farmFull);
                 final Properties properties = getPropertiesWithEntities(farm, api);
 
-                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
+                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task - " + farmFull);
                 Map<String, Map<String, Object>> diff = new HashMap<>();
                 Map<String, Map<String, Map<String, String>>> remoteMultiMap;
 
@@ -221,7 +225,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
             EntityStatus statusConsolidated = getStatusConsolidated(statusMap);
             distMap.put(farm.idName(), statusConsolidated.toString());
             statusMap.clear();
-
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmName + " locked by an other process/node. Aborting Check & Sync Task.");
         }

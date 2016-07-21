@@ -22,10 +22,10 @@ public enum CommandCountDown {
     },
     STILL_SYNCHRONIZING {
         public boolean applied(String[] apis) {
-            final AtomicBoolean applied = new AtomicBoolean(true);
+            final AtomicBoolean applied = new AtomicBoolean(false);
             Arrays.stream(apis).forEach(api -> {
                 Integer counter = CounterDownLatch.refreshAndGet(api);
-                applied.set(applied.get() && (counter != null && (counter > 0 || counter == -1)));
+                applied.set(applied.get() || (counter != null && (counter > 0 || counter == -1)));
             });
             return applied.get();
         }
@@ -41,6 +41,7 @@ public enum CommandCountDown {
         }
     },
     NONE {
+        @Override
         public boolean applied(String[] apis) {
             return false;
         }
@@ -53,7 +54,7 @@ public enum CommandCountDown {
                 return comm;
             }
         }
-        return null;
+        return NONE;
     }
 
 }
