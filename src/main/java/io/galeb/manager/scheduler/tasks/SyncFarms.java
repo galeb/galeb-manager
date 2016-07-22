@@ -29,10 +29,6 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.PoolRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.scheduler.SchedulerConfiguration;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
@@ -108,12 +104,12 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
-        String farmStatusMsgPrefix = "FARM STATUS - ";
+        String farmStatusMsgPrefix = "FARM STATUS - " + farm.idName() + " - ";
 
         Boolean containsLock = lockerManager.contains(farm.idName());
         String[] apis = apisToSync.getOrDefault(farm.idName(), farm.getApi().split(","));
         if (containsLock != null && !containsLock) {
-            LOGGER.info("Updated apis to sync because the lock is released for this instance.");
+            LOGGER.info(farmStatusMsgPrefix + "Updated apis to sync because the lock is released for this instance.");
             apis = farm.getApi().split(",");
             apisToSync.put(farm.idName(), apis);
         }
@@ -126,15 +122,15 @@ public class SyncFarms {
                 } else {
                     LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
                 }
-                releaseCounterWithoutCommandCounterDown(farm);
+                releaseCounterWithoutCommand(farm);
                 break;
             case RELEASE:
                 lockerManager.release(farm.idName(), apis);
-                releaseCounterWithoutCommandCounterDown(farm);
+                releaseCounterWithoutCommand(farm);
                 break;
             case STILL_SYNCHRONIZING:
                 logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
-                releaseCounterWithoutCommandCounterDown(farm);
+                releaseCounterWithoutCommand(farm);
                 break;
             default:
                 verifyCounterWithoutCommand(farm, apis);
@@ -151,14 +147,14 @@ public class SyncFarms {
         if (count == 6) {
             LOGGER.warn("Force releasing lock: Farm " + farm.getName() + " and removing CountDownLatch of " + Arrays.toString(ArrayUtils.toArray(apis)));
             lockerManager.release(farm.idName(), apis);
-            releaseCounterWithoutCommandCounterDown(farm);
+            releaseCounterWithoutCommand(farm);
         } else {
             ++count;
             counterWithoutCommandCounterDown.put(farm.idName(), count);
         }
     }
 
-    private void releaseCounterWithoutCommandCounterDown(Farm farm) {
+    private void releaseCounterWithoutCommand(Farm farm) {
         counterWithoutCommandCounterDown.remove(farm.idName());
     }
 
