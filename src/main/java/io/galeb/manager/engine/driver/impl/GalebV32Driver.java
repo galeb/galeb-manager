@@ -74,6 +74,7 @@ public class GalebV32Driver implements Driver {
                                                                 .replaceAll("Driver", "");
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
+    private static final int DRIVER_READ_TIMEOUT = Integer.parseInt(System.getProperty("DRIVER_READ_TIMEOUT", "5000"));
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -102,8 +103,9 @@ public class GalebV32Driver implements Driver {
             e.printStackTrace();
         }
         JsonNode parentIdObj = jsonNode != null ? jsonNode.get("parentId") : null;
-        RestTemplate restTemplate = new RestTemplate();
-
+        SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
+        clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
+        RestTemplate restTemplate = new RestTemplate(clientHttp);
         boolean result = false;
 
         try {
@@ -150,7 +152,9 @@ public class GalebV32Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
         String uriPath = api + "/" + path;
-        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
+        clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
+        RestTemplate restTemplate = new RestTemplate(clientHttp);
         boolean result = false;
 
         try {
@@ -174,7 +178,9 @@ public class GalebV32Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
         String uriPath = api + "/" + path;
-        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
+        clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
+        RestTemplate restTemplate = new RestTemplate(clientHttp);
         boolean result = false;
 
         try {
@@ -202,6 +208,7 @@ public class GalebV32Driver implements Driver {
         path = !"".equals(id) ? path + "/" + id : path;
         String uriPath = api + "/" + path;
         CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+
         HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
 
         try {
@@ -419,7 +426,7 @@ public class GalebV32Driver implements Driver {
     private JsonNode getJson(String path) throws URISyntaxException, IOException {
         JsonNode json = null;
         SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
-        clientHttp.setConnectTimeout(5000);
+        clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
         RestTemplate restTemplate = new RestTemplate(clientHttp);
         URI uri = new URI(path);
         RequestEntity<Void> request = RequestEntity.get(uri).build();
