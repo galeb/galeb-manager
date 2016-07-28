@@ -28,22 +28,17 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.PoolRepository;
-import io.galeb.manager.security.user.CurrentUser;
-import io.galeb.manager.security.services.SystemUserService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.messaging.handler.annotation.Headers;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -59,22 +54,16 @@ public class PoolEngine extends AbstractEngine<Pool> {
     }
 
     @Autowired private FarmRepository farmRepository;
-    @Autowired private PoolRepository poolRepository;
-    @Autowired private GenericEntityService genericEntityService;
     @Autowired private QueueLocator queueLocator;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(pool, jmsHeaders));
+            driver.create(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
     }
 
@@ -82,14 +71,10 @@ public class PoolEngine extends AbstractEngine<Pool> {
     public void update(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(pool, jmsHeaders));
+            driver.update(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
         }
     }
 
@@ -97,32 +82,11 @@ public class PoolEngine extends AbstractEngine<Pool> {
     public void remove(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        boolean isOk = false;
 
         try {
-            isOk = driver.remove(makeProperties(pool, jmsHeaders));
+            driver.remove(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
-        }
-    }
-
-    @JmsListener(destination = PoolQueue.QUEUE_CALLBK)
-    public void callBack(Pool pool) {
-        if (genericEntityService.isNew(pool)) {
-            // pool removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            poolRepository.save(pool);
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
         }
     }
 
@@ -153,9 +117,4 @@ public class PoolEngine extends AbstractEngine<Pool> {
         properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
         return properties;
     }
-
-    private AbstractEnqueuer<Pool> poolQueue() {
-        return (PoolQueue)queueLocator.getQueue(Pool.class);
-    }
-
 }

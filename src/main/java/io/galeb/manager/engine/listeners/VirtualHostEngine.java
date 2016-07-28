@@ -18,7 +18,6 @@
 
 package io.galeb.manager.engine.listeners;
 
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Farm;
@@ -30,7 +29,6 @@ import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +43,6 @@ import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
@@ -62,9 +59,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     }
 
     @Autowired private FarmRepository farmRepository;
-    @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository ruleRepository;
-    @Autowired private GenericEntityService genericEntityService;
     @Autowired private QueueLocator queueLocator;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
@@ -73,23 +68,15 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
         try {
-            isOk = driver.create(makeProperties(virtualHost, jmsHeaders));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    create(virtualHostAlias, jmsHeaders);
-                });
-            }
+            driver.create(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                create(virtualHostAlias, jmsHeaders);
+            });
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-            }
         }
     }
 
@@ -97,29 +84,21 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     public void update(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
         try {
-            isOk = driver.update(makeProperties(virtualHost, jmsHeaders));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    if (!driver.exist(makeProperties(virtualHostAlias, jmsHeaders))) {
-                        create(virtualHostAlias, jmsHeaders);
-                        createRules(virtualHostAlias);
-                    } else {
-                        update(virtualHostAlias, jmsHeaders);
-                    }
-                });
-                updateRules(virtualHost);
-            }
+            driver.update(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                if (!driver.exist(makeProperties(virtualHostAlias, jmsHeaders))) {
+                    create(virtualHostAlias, jmsHeaders);
+                    createRules(virtualHostAlias);
+                } else {
+                    update(virtualHostAlias, jmsHeaders);
+                }
+            });
+            updateRules(virtualHost);
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-            }
         }
     }
 
@@ -127,38 +106,15 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     public void remove(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
         try {
-            isOk = driver.remove(makeProperties(virtualHost, jmsHeaders));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    remove(virtualHostAlias, jmsHeaders);
-                });
-            }
+            driver.remove(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                remove(virtualHostAlias, jmsHeaders);
+            });
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-        }
-    }
-
-    @JmsListener(destination = VirtualHostQueue.QUEUE_CALLBK)
-    public void callBack(VirtualHost virtualHost) {
-        if (genericEntityService.isNew(virtualHost)) {
-            // virtualHost removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            virtualHostRepository.save(virtualHost);
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
         }
     }
 
@@ -204,10 +160,6 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 .filter(rule -> rule != null)
                 .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule));
         SystemUserService.runAs(currentUser);
-    }
-
-    private AbstractEnqueuer<VirtualHost> virtualHostQueue() {
-        return (VirtualHostQueue)queueLocator.getQueue(VirtualHost.class);
     }
 
     private AbstractEnqueuer<Rule> ruleQueue() {

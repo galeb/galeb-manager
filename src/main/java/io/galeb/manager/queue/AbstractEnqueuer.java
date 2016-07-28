@@ -49,7 +49,6 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
     private String queueCreateName   = QUEUE_UNDEF;
     private String queueUpdateName   = QUEUE_UNDEF;
     private String queueRemoveName   = QUEUE_UNDEF;
-    private String queueCallBackName = QUEUE_UNDEF;
     private String queueSyncName     = QUEUE_UNDEF;
 
     private final Log logger;
@@ -92,15 +91,6 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     protected AbstractEnqueuer<T> setQueueRemoveName(String queueRemoveName) {
         this.queueRemoveName = queueRemoveName;
-        return this;
-    }
-
-    public String getQueueCallBackName() {
-        return queueCallBackName;
-    }
-
-    protected AbstractEnqueuer<T> setQueueCallBackName(String queueCallBackName) {
-        this.queueCallBackName = queueCallBackName;
         return this;
     }
 

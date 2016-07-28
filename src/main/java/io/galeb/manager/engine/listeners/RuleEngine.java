@@ -19,7 +19,6 @@
 package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Farm;
@@ -34,7 +33,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.messaging.handler.annotation.Headers;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -43,11 +41,7 @@ import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.security.user.CurrentUser;
-import io.galeb.manager.security.services.SystemUserService;
 
 import java.util.Map;
 import java.util.Optional;
@@ -63,9 +57,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     @Autowired private FarmRepository farmRepository;
-    @Autowired private RuleRepository ruleRepository;
     @Autowired private QueueLocator queueLocator;
-    @Autowired private GenericEntityService genericEntityService;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
@@ -74,21 +66,15 @@ public class RuleEngine extends AbstractEngine<Rule> {
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             updateRuleSpecialProperties(rule, virtualhost);
-            boolean isOk = false;
             try {
-                isOk = driver.create(makeProperties(rule, virtualhost, jmsHeaders));
-                if (isOk) {
-                    virtualhost.getAliases().forEach(virtualHostName -> {
-                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                                .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
-                    });
-                }
+                driver.create(makeProperties(rule, virtualhost, jmsHeaders));
+                virtualhost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualhost);
+                    driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
+                });
             } catch (Exception e) {
                 LOGGER.error(e);
-            } finally {
-                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
@@ -99,26 +85,19 @@ public class RuleEngine extends AbstractEngine<Rule> {
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
             updateRuleSpecialProperties(rule, virtualhost);
-            boolean isOk = false;
-
             try {
                 if (!driver.exist(makeProperties(rule, virtualhost, jmsHeaders))) {
                     ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule);
                     return;
                 }
-                isOk = driver.update(makeProperties(rule, virtualhost, jmsHeaders));
-                if (isOk) {
-                    virtualhost.getAliases().forEach(virtualHostName -> {
-                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                                .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.update(makeProperties(rule, virtualHostAlias, jmsHeaders));
-                    });
-                }
+                driver.update(makeProperties(rule, virtualhost, jmsHeaders));
+                virtualhost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualhost);
+                    driver.update(makeProperties(rule, virtualHostAlias, jmsHeaders));
+                });
             } catch (Exception e) {
                 LOGGER.error(e);
-            } finally {
-                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
     }
@@ -128,41 +107,17 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
-            boolean isOk = false;
-
             try {
-                isOk = driver.remove(makeProperties(rule, virtualhost, jmsHeaders));
-                if (isOk) {
-                    virtualhost.getAliases().forEach(virtualHostName -> {
-                        VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                                .buildVirtualHostAlias(virtualHostName, virtualhost);
-                        driver.remove(makeProperties(rule, virtualHostAlias, jmsHeaders));
-                    });
-                }
+                driver.remove(makeProperties(rule, virtualhost, jmsHeaders));
+                virtualhost.getAliases().forEach(virtualHostName -> {
+                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                            .buildVirtualHostAlias(virtualHostName, virtualhost);
+                    driver.remove(makeProperties(rule, virtualHostAlias, jmsHeaders));
+                });
             } catch (Exception e) {
                 LOGGER.error(e);
-            } finally {
-                rule.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                ruleQueue().sendToQueue(RuleQueue.QUEUE_CALLBK, rule);
             }
         });
-    }
-
-    @JmsListener(destination = RuleQueue.QUEUE_CALLBK)
-    public void callBack(Rule rule) {
-        if (genericEntityService.isNew(rule)) {
-            // rule removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            ruleRepository.save(rule);
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
-        }
     }
 
     @Override

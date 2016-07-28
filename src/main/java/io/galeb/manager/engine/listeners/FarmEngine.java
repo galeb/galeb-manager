@@ -44,7 +44,6 @@ import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.hibernate.StaleObjectStateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -82,7 +81,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
         return LOGGER;
     }
 
-    @Autowired private GenericEntityService genericEntityService;
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository ruleRepository;
@@ -127,14 +125,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public void create(Farm farm, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
-        boolean isOk = false;
         try {
-            isOk = provisioning.create(fromEntity(farm, jmsHeaders));
+            provisioning.create(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            farm.setStatus(isOk ? OK : ERROR);
-            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
@@ -142,14 +136,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public void remove(Farm farm, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
-        boolean isOk = false;
         try {
-            isOk = provisioning.remove(fromEntity(farm, jmsHeaders));
+            provisioning.remove(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
             LOGGER.error(e);
-        } finally {
-            farm.setStatus(isOk ? OK : ERROR);
-            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
         }
     }
 
@@ -390,26 +380,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                             ((WithParents<AbstractEntity<?>>) entity).getParents().stream()
                                     .map(AbstractEntity::getName).collect(Collectors.toList()).contains(parentId))
         ).findAny();
-    }
-
-    @SuppressWarnings("unused")
-    @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
-    public void callBack(Farm farm) {
-        if (genericEntityService.isNew(farm)) {
-            // farm removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            farmRepository.save(farm);
-        } catch (StaleObjectStateException e) {
-            LOGGER.debug(e.getMessage());
-        } catch (Exception e2) {
-            LOGGER.error(e2.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
-        }
     }
 
     @Override

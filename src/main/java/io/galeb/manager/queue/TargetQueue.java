@@ -33,7 +33,6 @@ public class TargetQueue extends AbstractEnqueuer<Target> {
     public static final String QUEUE_CREATE = "queue-target-create";
     public static final String QUEUE_UPDATE = "queue-target-update";
     public static final String QUEUE_REMOVE = "queue-target-remove";
-    public static final String QUEUE_CALLBK = "queue-target-callback";
     public static final String QUEUE_RELOAD = "queue-target-reload";
 
     private static final Log LOGGER = LogFactory.getLog(TargetQueue.class);
@@ -46,7 +45,6 @@ public class TargetQueue extends AbstractEnqueuer<Target> {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
-        setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_RELOAD);
     }
 

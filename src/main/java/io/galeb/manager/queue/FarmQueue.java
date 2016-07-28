@@ -34,7 +34,6 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
     public static final String QUEUE_UPDATE = "queue-farm-update";
     public static final String QUEUE_REMOVE = "queue-farm-remove";
     public static final String QUEUE_SYNC   = "queue-farm-sync";
-    public static final String QUEUE_CALLBK = "queue-farm-callback";
     public static final String QUEUE_RELOAD = "queue-farm-reload";
 
     private static final Log LOGGER = LogFactory.getLog(FarmQueue.class);
@@ -47,7 +46,6 @@ public class FarmQueue extends AbstractEnqueuer<Farm> {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
-        setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_SYNC);
     }
 

@@ -33,7 +33,6 @@ public class VirtualHostQueue extends AbstractEnqueuer<VirtualHost> {
     public static final String QUEUE_CREATE = "queue-virtualhost-create";
     public static final String QUEUE_REMOVE = "queue-virtualhost-remove";
     public static final String QUEUE_UPDATE = "queue-virtualhost-update";
-    public static final String QUEUE_CALLBK = "queue-virtualhost-callback";
     public static final String QUEUE_RELOAD = "queue-virtualhost-reload";
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHost.class);
@@ -46,7 +45,6 @@ public class VirtualHostQueue extends AbstractEnqueuer<VirtualHost> {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
-        setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_RELOAD);
     }
 
