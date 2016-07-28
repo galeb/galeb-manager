@@ -293,6 +293,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 final String parentId = String.valueOf(attributes.get("PARENT_ID"));
                 final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
 
+                LOGGER.info("Processing DIFF (Farm " + farm.getId() + ") => " +
+                        "{ ACTION: '" + action.toString()
+                        + "', ID: '" + id
+                        + "', PARENT_ID: '" + parentId
+                        + "', ENTITY_TYPE: '"
+                        + entityType + "' }");
+
                 entityTypes.get().add(entityType);
 
                 final String managerEntityType = getManagerEntityType(entityType);
