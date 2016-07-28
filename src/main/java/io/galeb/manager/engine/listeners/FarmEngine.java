@@ -42,7 +42,6 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.*;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.StaleObjectStateException;
@@ -65,7 +64,6 @@ import javax.cache.Cache;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -333,9 +331,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                                 case UPDATE:
                                     updateEntityOnFarm(queue, entityFromRepository, jmsHeaders);
                                     break;
-                                case CALLBACK:
-                                    resendCallBackWithOK(queue, entityFromRepository);
-                                    break;
                                 default:
                                     LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
                             }
@@ -350,13 +345,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 CounterDownLatch.decrementDiffCounter(api);
             }
         });
-    }
-
-    private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {
-        if (entityFromRepository.getStatus() == PENDING || entityFromRepository.getStatus() == ERROR ) {
-            entityFromRepository.setStatus(OK);
-            queue.sendToQueue(queue.getQueueCallBackName(), entityFromRepository);
-        }
     }
 
     private void executeFullReload(Farm farm, Driver driver, Properties properties) {

@@ -40,13 +40,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CALLBACK;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.UPDATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
 import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
@@ -156,10 +154,6 @@ public class DiffProcessor {
         LOGGER.debug("Check if is necessary UPDATE");
         if (!version.equals(String.valueOf(entity.getHash())) || !pk.equals(String.valueOf(entity.getId()))) {
             changeAction(path, id, parentId);
-        } else {
-            if (entity.getStatus() == ERROR ) {
-                callbackStatusOkAction(path, id, parentId);
-            }
         }
     }
 
@@ -241,19 +235,6 @@ public class DiffProcessor {
         Map<String, Object> attributes = new HashMap<>();
         String key = getApi() + "/" + path + "/" + id + "@" + parentId;
         attributes.put("ACTION", REMOVE);
-        attributes.put("ID", id);
-        attributes.put("PARENT_ID", parentId);
-        attributes.put("ENTITY_TYPE", path);
-        diffMap.put(key, attributes);
-    }
-
-
-    private void callbackStatusOkAction(final String path,
-                                        final String id,
-                                        final String parentId) {
-        Map<String, Object> attributes = new HashMap<>();
-        String key = getApi() + "/" + path + "/" + id + "@" + parentId;
-        attributes.put("ACTION", CALLBACK);
         attributes.put("ID", id);
         attributes.put("PARENT_ID", parentId);
         attributes.put("ENTITY_TYPE", path);

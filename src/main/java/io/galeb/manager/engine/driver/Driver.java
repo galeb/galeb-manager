@@ -30,8 +30,7 @@ public interface Driver {
     enum ActionOnDiff {
         CREATE,
         REMOVE,
-        UPDATE,
-        CALLBACK
+        UPDATE
     }
 
     default EntityFarm info(Properties properties) {
