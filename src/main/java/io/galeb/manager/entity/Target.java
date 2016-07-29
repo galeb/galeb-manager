@@ -126,25 +126,9 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    private Backend extractBackend() {
-        javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        String key = getName() + AbstractEngine.SEPARATOR + getParent().getName();
-        String json = distMap.get(key);
-        if (json != null) {
-            return  (Backend) JsonObject.fromJson(json, Backend.class);
-        }
-        return null;
-    }
-
     @Override
     public EntityStatus getStatus() {
-        Backend backend = extractBackend();
-        if (backend != null) {
-            if (backend.getVersion() == getHash()) {
-                return EntityStatus.OK;
-            }
-        }
-        return super.getStatus();
+        return super.getStatusFromMap();
     }
 
 }

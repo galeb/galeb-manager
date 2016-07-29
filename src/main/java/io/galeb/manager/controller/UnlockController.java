@@ -43,7 +43,6 @@ public class UnlockController {
 
             lockerManager.release(farm.idName(),apis);
 
-            farm.setStatus(PENDING).setSaveOnly(true);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

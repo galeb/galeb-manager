@@ -18,7 +18,6 @@
 
 package io.galeb.manager.entity;
 
-import javax.cache.Cache;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ForeignKey;
@@ -28,6 +27,8 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.galeb.manager.cache.DistMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -37,6 +38,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;
+
+    @Autowired private DistMap distMap;
 
     @Column(nullable = false)
     @JsonProperty(required = true)
@@ -129,15 +132,10 @@ public class Farm extends AbstractEntity<Farm> {
         return this;
     }
 
-    private String extractStatus() {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        return distMap.get(idName());
-    }
-
     @Override
     public EntityStatus getStatus() {
-        String aStatus = extractStatus();
-        return (aStatus != null) ? EntityStatus.valueOf(aStatus) : super.getStatus();
+        String aStatus = distMap.get(this);
+        return (aStatus != null) ? EntityStatus.valueOf(aStatus) : EntityStatus.PENDING;
     }
 
     @JsonIgnore

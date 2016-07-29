@@ -21,8 +21,6 @@ package io.galeb.manager.engine.listeners;
 import java.util.Map;
 import java.util.Optional;
 
-import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.core.jcache.CacheFactory;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;

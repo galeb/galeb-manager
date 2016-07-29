@@ -31,6 +31,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import io.galeb.manager.engine.listeners.AbstractEngine;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -162,5 +163,10 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
             this.rules.addAll(rules);
         }
         return this;
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        return super.getStatusFromMap();
     }
 }

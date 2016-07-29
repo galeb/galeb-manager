@@ -42,7 +42,6 @@ public class TeamHandler {
     @HandleBeforeCreate
     public void beforeCreate(Team team) {
         LOGGER.info("Team: HandleBeforeCreate");
-        team.setStatus(OK);
     }
 
     @HandleAfterCreate

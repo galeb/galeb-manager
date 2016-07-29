@@ -21,7 +21,6 @@
 package io.galeb.manager.handler;
 
 import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.engine.listeners.AbstractEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;

@@ -121,9 +121,4 @@ public class Account extends AbstractEntity<Account> {
         this.password = ENCODER.encode(password);
         return this;
     }
-
-    @Override
-    public EntityStatus getStatus() {
-        return status;
-    }
 }

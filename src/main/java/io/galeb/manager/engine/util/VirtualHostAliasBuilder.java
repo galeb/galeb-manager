@@ -48,7 +48,6 @@ public class VirtualHostAliasBuilder {
         virtualHostAlias.setProperties(virtualHost.getProperties());
         virtualHostAlias.setRuleDefault(virtualHost.getRuleDefault());
         virtualHostAlias.setRulesOrdered(virtualHost.getRulesOrdered());
-        virtualHostAlias.setStatus(AbstractEntity.EntityStatus.DISABLED);
         return virtualHostAlias;
     }
 }

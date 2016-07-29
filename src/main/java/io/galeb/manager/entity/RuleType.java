@@ -55,8 +55,4 @@ public class RuleType extends AbstractEntity<RuleType> {
         return this;
     }
 
-    @Override
-    public EntityStatus getStatus() {
-        return status;
-    }
 }

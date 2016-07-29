@@ -84,7 +84,6 @@ public class SyncFarms {
             SystemUserService.runAs();
 
             farmRepository.findAll().stream()
-                    .filter(farm -> !farm.getStatus().equals(EntityStatus.DISABLED))
                     .parallel()
                     .forEach(farm ->
                     {

@@ -23,6 +23,7 @@ package io.galeb.manager.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.manager.engine.listeners.AbstractEngine;
 import org.springframework.util.*;
 
 import javax.persistence.*;
@@ -153,6 +154,11 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
             this.global = global;
         }
         return this;
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        return super.getStatusFromMap();
     }
 
 }

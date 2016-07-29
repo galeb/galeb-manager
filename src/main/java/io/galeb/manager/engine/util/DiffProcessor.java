@@ -44,7 +44,6 @@ import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.UPDATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
 import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
@@ -138,8 +137,7 @@ public class DiffProcessor {
                 });
 
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
-                !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME) &&
-                ((AbstractEntity<?>)entity).getStatus() != DISABLED)
+                !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME))
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, remoteMap));
     }

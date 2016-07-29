@@ -22,9 +22,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
-import javax.cache.Cache;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -38,12 +36,11 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.common.JsonCustomProperties;
-import io.galeb.manager.engine.listeners.AbstractEngine;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -61,15 +58,13 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final long serialVersionUID = 4521414292400791447L;
 
-    public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
+    @Autowired private DistMap distMap;
 
     public enum EntityStatus {
         PENDING,
         OK,
         ERROR,
-        UNKNOWN,
-        DISABLED,
-        ENABLE
+        UNKNOWN
     }
 
     @Id
@@ -111,6 +106,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @Column(name = "_status", nullable = false)
     @JsonProperty("_status")
+    @Transient
     protected EntityStatus status;
 
     @JsonIgnore
@@ -197,22 +193,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     public EntityStatus getStatus() {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        String key = getName() + AbstractEngine.SEPARATOR;
-        String json = distMap.get(key);
-        if (json != null) {
-            Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
-            if (entity.getVersion() == getHash()) {
-                return EntityStatus.OK;
-            }
-        }
-        return status;
-    }
-
-    @SuppressWarnings("unchecked")
-    public T setStatus(EntityStatus aStatus) {
-        status = Optional.ofNullable(aStatus).orElse(status);
-        return (T) this;
+        return EntityStatus.OK;
     }
 
     public boolean isSaveOnly() {
@@ -279,4 +260,15 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         }
     }
 
+    @JsonIgnore
+    protected EntityStatus getStatusFromMap() {
+        String json = distMap.get(this);
+        if (json != null) {
+            Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
+            if (entity.getVersion() == getHash()) {
+                return EntityStatus.OK;
+            }
+        }
+        return EntityStatus.PENDING;
+    }
 }

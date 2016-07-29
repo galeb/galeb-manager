@@ -30,10 +30,6 @@ import javax.jms.Message;
 import java.util.Collections;
 import java.util.Map;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.DISABLED;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ENABLE;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     private static final String UNIQUE_ID_SEP = ".";
@@ -85,7 +81,8 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
         return this;
     }
 
-    public String getQueueRemoveName() {
+    @SuppressWarnings("unused")
+    protected String getQueueRemoveName() {
         return queueRemoveName;
     }
 
@@ -94,27 +91,14 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
         return this;
     }
 
-    public String getQueueSyncName() {
+    @SuppressWarnings("unused")
+    protected String getQueueSyncName() {
         return queueSyncName;
     }
 
     protected AbstractEnqueuer<T> setQueueSyncName(String queueSyncName) {
         this.queueSyncName = queueSyncName;
         return this;
-    }
-
-    public void sendByStatus(T entity) {
-        final AbstractEntity.EntityStatus status = entity.getStatus();
-        if (DISABLED.equals(status)) {
-            sendToQueue(getQueueRemoveName(), entity);
-        } else {
-            if (ENABLE.equals(status)) {
-                entity.setStatus(PENDING);
-                sendToQueue(getQueueCreateName(), entity);
-            } else {
-                sendToQueue(getQueueUpdateName(), entity);
-            }
-        }
     }
 
     public void sendToQueue(String queue, T entity) {
