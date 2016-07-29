@@ -188,6 +188,6 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     @Override
     public EntityStatus getStatus() {
-        return super.getStatusFromMap();
+        return getStatusFromMap();
     }
 }

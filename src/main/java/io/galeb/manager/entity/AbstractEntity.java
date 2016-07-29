@@ -58,7 +58,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final long serialVersionUID = 4521414292400791447L;
 
-    @Autowired private DistMap distMap;
+    @Transient
+    @Autowired
+    protected DistMap distMap;
 
     public enum EntityStatus {
         PENDING,

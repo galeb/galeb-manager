@@ -167,6 +167,6 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @Override
     public EntityStatus getStatus() {
-        return super.getStatusFromMap();
+        return getStatusFromMap();
     }
 }
