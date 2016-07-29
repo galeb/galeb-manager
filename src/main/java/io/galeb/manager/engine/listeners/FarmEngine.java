@@ -18,9 +18,9 @@
 
 package io.galeb.manager.engine.listeners;
 
+import static io.galeb.manager.cache.DistMap.DIST_MAP_FARM_ID_PROP;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
-import static io.galeb.manager.entity.AbstractEntity.CACHE_FACTORY;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.lang.System.currentTimeMillis;
 
@@ -29,14 +29,12 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
-import io.galeb.manager.engine.service.FarmBuilder;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
-import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.queue.AbstractEnqueuer;
@@ -59,7 +57,6 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import javax.annotation.PostConstruct;
-import javax.cache.Cache;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -76,6 +73,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private final LockerManager lockerManager = new LockerManager();
 
+    @Autowired
+    private DistMap distMap;
+
     @Override
     protected Log getLogger() {
         return LOGGER;
@@ -87,14 +87,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private TargetRepository targetRepository;
     @Autowired private PoolRepository poolRepository;
     @Autowired private QueueLocator queueLocator;
-    @Autowired private FarmBuilder farmBuilder;
 
     private AtomicBoolean isReady = new AtomicBoolean(false);
 
     @PostConstruct
     public void init() {
         isReady.set(true);
-        CACHE_FACTORY.setFarm(farmBuilder.build());
     }
 
     private JpaRepositoryWithFindByName getRepository(String entityClass) {
@@ -165,7 +163,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
             final Driver driver = getDriver(farm);
 
             final Map<String, EntityStatus> statusMap = new HashMap<>();
-            Cache<String, String> distMap = CACHE_FACTORY.getCache(Farm.class.getSimpleName());
 
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
                 long start = currentTimeMillis();
@@ -190,7 +187,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                     CounterDownLatch.put(api, diffSize);
 
-                    updateStatus(remoteMultiMap);
+                    updateStatus(remoteMultiMap, farmId);
                     if (diffSize == 0) {
                         LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
                                 + (currentTimeMillis() - start) + " ms)");
@@ -211,7 +208,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
             });
             EntityStatus statusConsolidated = getStatusConsolidated(statusMap);
-            distMap.put(farm.idName(), statusConsolidated.toString());
+            distMap.put(farm, statusConsolidated.toString());
             statusMap.clear();
         } else {
             LOGGER.info(farmStatusMsgPrefix + "Farm " + farmName + " locked by an other process/node. Aborting Check & Sync Task.");
@@ -231,10 +228,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
         return UNKNOWN;
     }
 
-    private void updateStatus(Map<String, Map<String, Map<String, String>>> remoteMultiMap) {
+    private void updateStatus(final Map<String, Map<String, Map<String, String>>> remoteMultiMap, final Long farmId) {
         remoteMultiMap.entrySet().stream().forEach(entryWithPath -> {
-            final String path = entryWithPath.getKey();
-            final Class<?> internalEntityTypeClass = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(path);
             entryWithPath.getValue().entrySet().forEach(entryWithEntity -> {
                 Entity entity = new Entity();
                 Map<String, String> entityMap = entryWithEntity.getValue();
@@ -249,13 +244,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
                 entity.setEntityType(entityType);
+                entity.getProperties().put(DIST_MAP_FARM_ID_PROP, farmId);
                 if (health != null) {
                     Map<String, Object> entityProperties = new HashMap<>();
                     entityProperties.put("health", health);
                     entity.setProperties(entityProperties);
                 }
-                Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName());
-                distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
+                distMap.put(entity, JsonObject.toJsonString(entity));
             });
         });
     }
