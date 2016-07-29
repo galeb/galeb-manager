@@ -40,7 +40,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -196,7 +195,6 @@ public class GalebV32Driver implements Driver {
         return result;
     }
 
-    @NotNull
     private SimpleClientHttpRequestFactory getSimpleClientHttpRequestFactory() {
         SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
         clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
