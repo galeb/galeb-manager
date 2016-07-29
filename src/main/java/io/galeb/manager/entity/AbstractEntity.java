@@ -40,6 +40,8 @@ import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.common.JsonCustomProperties;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -57,6 +59,8 @@ import io.galeb.manager.security.config.SpringSecurityAuditorAware;
 public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
+
+    private static final Log LOGGER = LogFactory.getLog(AbstractEntity.class);
 
     @Transient
     protected DistMap distMap;
@@ -263,6 +267,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @JsonIgnore
     protected EntityStatus getStatusFromMap() {
+        if (distMap == null) {
+            LOGGER.error("distMap not injected");
+            return EntityStatus.UNKNOWN;
+        }
         String json = distMap.get(this);
         if (json != null) {
             Entity entity = (Entity) JsonObject.fromJson(json, Entity.class);
