@@ -46,7 +46,6 @@ public class AccountHandler {
     @HandleBeforeCreate
     public void beforeCreate(Account account) {
         LOGGER.info("Account: HandleBeforeCreate");
-        account.setStatus(OK);
     }
 
     @HandleAfterCreate

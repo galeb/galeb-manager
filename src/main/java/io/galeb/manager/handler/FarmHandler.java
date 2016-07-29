@@ -52,7 +52,6 @@ public class FarmHandler extends AbstractHandler<Farm> {
     @HandleBeforeCreate
     public void beforeCreate(Farm farm) throws Exception {
         beforeCreate(farm, LOGGER);
-        farm.setStatus(OK);
     }
 
     @HandleAfterCreate

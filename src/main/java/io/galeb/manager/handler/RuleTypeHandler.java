@@ -42,7 +42,6 @@ public class RuleTypeHandler {
     @HandleBeforeCreate
     public void beforeCreate(RuleType ruleType) {
         LOGGER.info("RuleType: HandleBeforeCreate");
-        ruleType.setStatus(OK);
     }
 
     @HandleAfterCreate

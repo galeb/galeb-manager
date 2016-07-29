@@ -46,7 +46,6 @@ public class ProjectHandler {
             LOGGER.error(message);
             throw new BadRequestException(message);
         }
-        project.setStatus(OK);
     }
 
     @HandleAfterCreate

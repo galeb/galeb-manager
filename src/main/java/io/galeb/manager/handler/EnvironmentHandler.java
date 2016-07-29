@@ -43,7 +43,6 @@ public class EnvironmentHandler {
     @HandleBeforeCreate
     public void beforeCreate(Environment environment) {
         LOGGER.info("Environment: HandleBeforeCreate");
-        environment.setStatus(OK);
     }
 
     @HandleAfterCreate

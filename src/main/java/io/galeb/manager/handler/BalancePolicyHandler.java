@@ -43,7 +43,6 @@ public class BalancePolicyHandler {
     @HandleBeforeCreate
     public void beforeCreate(BalancePolicy balancePolicy) {
         LOGGER.info("BalancePolicy: HandleBeforeCreate");
-        balancePolicy.setStatus(OK);
     }
 
     @HandleAfterCreate
