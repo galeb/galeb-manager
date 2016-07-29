@@ -70,12 +70,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     @Transient
-    protected DistMap distMap;
-
-    @PostConstruct
-    protected void init() {
-        distMap = new DistMap();
-    }
+    protected DistMap distMap = new DistMap();
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
