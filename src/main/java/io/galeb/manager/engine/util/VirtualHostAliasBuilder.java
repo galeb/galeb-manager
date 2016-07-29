@@ -18,7 +18,6 @@
 
 package io.galeb.manager.engine.util;
 
-import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.VirtualHostRepository;

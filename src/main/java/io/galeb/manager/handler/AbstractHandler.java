@@ -18,15 +18,12 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.exceptions.ServiceUnavailableException;
 import org.apache.commons.logging.Log;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 

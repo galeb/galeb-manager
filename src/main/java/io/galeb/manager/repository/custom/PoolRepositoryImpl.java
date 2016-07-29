@@ -21,7 +21,6 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Repository;

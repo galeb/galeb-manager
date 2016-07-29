@@ -1,7 +1,5 @@
 package io.galeb.manager.controller;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

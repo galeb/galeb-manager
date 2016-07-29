@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 @RestController
 @RequestMapping(value="/unlock")
 public class UnlockController {

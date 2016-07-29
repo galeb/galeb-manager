@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.repository.AccountRepository;
 import org.apache.commons.logging.Log;

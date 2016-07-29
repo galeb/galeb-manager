@@ -31,9 +31,6 @@ import javax.persistence.UniqueConstraint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.galeb.core.json.JsonObject;
-import io.galeb.core.model.Backend;
-import io.galeb.manager.engine.listeners.AbstractEngine;
 
 @Entity
 @JsonInclude(NON_NULL)

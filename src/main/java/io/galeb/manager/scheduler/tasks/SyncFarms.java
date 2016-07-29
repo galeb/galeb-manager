@@ -24,7 +24,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.CommandCountDown;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
