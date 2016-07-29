@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -40,7 +41,6 @@ import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.common.JsonCustomProperties;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -58,14 +58,19 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final long serialVersionUID = 4521414292400791447L;
 
-    @Transient
-    protected DistMap distMap;
-
     public enum EntityStatus {
         PENDING,
         OK,
         ERROR,
         UNKNOWN
+    }
+
+    @Transient
+    protected DistMap distMap;
+
+    @PostConstruct
+    protected void init() {
+        distMap = new DistMap();
     }
 
     @Id
@@ -271,10 +276,5 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
             }
         }
         return EntityStatus.PENDING;
-    }
-
-    @Autowired
-    protected void defineDistMap(final DistMap distMap) {
-        this.distMap = distMap;
     }
 }
