@@ -21,7 +21,7 @@ package io.galeb.manager.handler;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
@@ -40,8 +40,6 @@ import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
 import io.galeb.manager.repository.RuleRepository;
 
-import javax.cache.Cache;
-
 @RepositoryEventHandler(Rule.class)
 public class RuleHandler extends AbstractHandler<Rule> {
 
@@ -49,8 +47,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @Autowired private RuleRepository ruleRepository;
     @Autowired private PoolRepository poolRepository;
-
-    private Cache<String, String> distMap = CACHE_FACTORY.getCache(Rule.class.getSimpleName());
+    @Autowired private DistMap distMap;
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -84,7 +81,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleBeforeSave
     public void beforeSave(Rule rule) throws Exception {
-        distMap.remove(rule.getName() + AbstractEngine.SEPARATOR);
+        distMap.remove(rule);
         beforeSave(rule, ruleRepository, LOGGER);
         setTargetGlobalIfNecessary(rule);
     }
@@ -96,7 +93,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleBeforeDelete
     public void beforeDelete(Rule rule) throws Exception {
-        distMap.remove(rule.getName() + AbstractEngine.SEPARATOR);
+        distMap.remove(rule);
         beforeDelete(rule, LOGGER);
     }
 
