@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
