@@ -23,18 +23,22 @@ package io.galeb.manager.cache;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Entity;
-import io.galeb.manager.engine.util.ManagerToFarmConverter;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.WithParent;
+import io.galeb.manager.entity.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
 
 import java.io.Serializable;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static io.galeb.manager.engine.listeners.AbstractEngine.SEPARATOR;
+import static io.galeb.manager.engine.util.ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP;
+import static java.util.stream.Collectors.toSet;
 
 @Service
 public class DistMap implements Serializable {
@@ -43,13 +47,15 @@ public class DistMap implements Serializable {
 
     public static final String DIST_MAP_FARM_ID_PROP = "DIST_MAP_FARM_ID_PROP";
 
+    private static final Log LOGGER = LogFactory.getLog(DistMap.class);
+
     public String get(AbstractEntity<?> entity) {
         Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
         return distMap.get(getKey(entity));
     }
 
     public void put(Entity entity, String value) {
-        final Class<?> internalEntityTypeClass = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(entity.getEntityType());
+        final Class<?> internalEntityTypeClass = FARM_TO_MANAGER_ENTITY_MAP.get(entity.getEntityType());
         Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getClass().getSimpleName());
         distMap.put(getKey(entity), value);
     }
@@ -91,5 +97,29 @@ public class DistMap implements Serializable {
             key += entity.getParentId();
         }
         return key;
+    }
+
+    public void resetFarm(Long farmId) {
+        LOGGER.warn(this.getClass().getSimpleName() + ".resetFarm( " + farmId +" ) initialized");
+        removeAll(s -> s.startsWith(farmId.toString() + SEPARATOR));
+        LOGGER.warn(this.getClass().getSimpleName() +".resetFarm( " + farmId + " ) called.");
+    }
+
+    public void removeAll(Predicate<String> predicate) {
+        FARM_TO_MANAGER_ENTITY_MAP.values().stream()
+                .filter(WithFarmID.class::isAssignableFrom)
+                .map(c -> c.getSimpleName().toLowerCase())
+                .map(CACHE_FACTORY::getCache)
+                .filter(Objects::nonNull)
+                .forEach(cache -> {
+
+            try {
+                final Stream<String> keysToRemove = StreamSupport.stream(cache.spliterator(), false).map(Cache.Entry::getKey).filter(predicate);
+                cache.removeAll(keysToRemove.collect(toSet()));
+            } catch (Exception e) {
+                LOGGER.error("DistMap.removeAll FAILED: " + e.getMessage());
+            }
+
+        });
     }
 }
