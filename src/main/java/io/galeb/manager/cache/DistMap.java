@@ -32,10 +32,12 @@ import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
 
+import java.io.Serializable;
+
 import static io.galeb.manager.engine.listeners.AbstractEngine.SEPARATOR;
 
 @Service
-public class DistMap {
+public class DistMap implements Serializable {
 
     public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
 
