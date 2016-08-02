@@ -1,14 +1,14 @@
 package io.galeb.manager.cache;
 
+import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.VirtualHost;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.apache.ignite.Ignite;
+import org.junit.*;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.util.Assert;
 
@@ -22,14 +22,19 @@ public class DistMapTest {
     private long farmIdDefault = 1L;
     private String versionDefault = "1";
 
-    @Rule
-    public final EnvironmentVariables environmentVariables
+    @ClassRule
+    public static final EnvironmentVariables environmentVariables
             = new EnvironmentVariables();
 
-    @Before
-    public void before() {
+    @BeforeClass
+    public static void before() {
         File resourcesDirectory = new File("src/test/resources");
         environmentVariables.set("PWD", resourcesDirectory.getAbsolutePath());
+    }
+
+    @AfterClass
+    public static void after() {
+        ((Ignite)IgniteCacheFactory.getInstance().getClusterInstance()).close();
     }
 
     @Test
@@ -59,7 +64,7 @@ public class DistMapTest {
 
         VirtualHost virtualHost = getVirtualHostDefault();
 
-        mapDistributed.remove(virtualHost);
+        mapDistributed.resetFarm(virtualHost.getFarmId());
 
         String returnValue = mapDistributed.get(virtualHost);
         Assert.isNull(returnValue);
@@ -88,4 +93,5 @@ public class DistMapTest {
         virtualHost.setHash(Integer.parseInt(versionDefault));
         return virtualHost;
     }
+
 }
