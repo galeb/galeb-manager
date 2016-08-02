@@ -23,7 +23,6 @@ package io.galeb.manager.cache;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Entity;
-import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
