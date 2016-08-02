@@ -33,6 +33,7 @@ import javax.cache.Cache;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -50,26 +51,26 @@ public class DistMap implements Serializable {
     private static final Log LOGGER = LogFactory.getLog(DistMap.class);
 
     public String get(AbstractEntity<?> entity) {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName().toLowerCase());
         String key = getKey(entity);
         return distMap.get(key);
     }
 
     public void put(Entity entity, String value) {
         final Class<?> internalEntityTypeClass = FARM_TO_MANAGER_ENTITY_MAP.get(entity.getEntityType());
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName());
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName().toLowerCase());
         String key = getKey(entity);
         distMap.put(key, value);
     }
 
     public void put(AbstractEntity<?> entity, String value) {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName().toLowerCase());
         String key = getKey(entity);
         distMap.put(key, value);
     }
 
     public void remove(AbstractEntity<?> entity) {
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName().toLowerCase());
         String key = getKey(entity);
         distMap.remove(key);
     }
@@ -121,7 +122,8 @@ public class DistMap implements Serializable {
 
             try {
                 final Stream<String> keysToRemove = StreamSupport.stream(cache.spliterator(), false).map(Cache.Entry::getKey).filter(predicate);
-                cache.removeAll(keysToRemove.collect(toSet()));
+                Set<String> keys = keysToRemove.collect(toSet());
+                cache.removeAll(keys);
             } catch (Exception e) {
                 LOGGER.error("DistMap.removeAll FAILED: " + e.getMessage());
             }
