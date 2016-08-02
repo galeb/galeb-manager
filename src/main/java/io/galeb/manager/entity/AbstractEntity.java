@@ -108,6 +108,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     @JoinColumn(nullable = false)
     private final Map<String, String> properties = new HashMap<>();
 
+    @Column(name = "_status")
     @JsonProperty("_status")
     @Transient
     protected EntityStatus status;
