@@ -113,6 +113,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
     public void reload(Farm farm) {
+        distMap.resetFarm(farm.getId());
         String apiWithSeparator = farm.getApi();
         Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
             executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm, api));

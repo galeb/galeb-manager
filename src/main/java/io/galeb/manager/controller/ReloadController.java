@@ -1,5 +1,6 @@
 package io.galeb.manager.controller;
 
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,7 +37,6 @@ public class ReloadController {
         JsonMapper json = new JsonMapper();
         Farm farm = farmRepository.findOne(id);
         if (farm != null) {
-            farmRepository.save(farm);
             farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, farm);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {
