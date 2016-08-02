@@ -8,7 +8,6 @@ ALTER TABLE `provider` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `rule` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `ruletype` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `target` MODIFY COLUMN `_status` int(11);
-ALTER TABLE `targettype` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `team` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `virtualhost` MODIFY COLUMN `_status` int(11);
 ALTER TABLE `pool` MODIFY COLUMN `_status` int(11);
