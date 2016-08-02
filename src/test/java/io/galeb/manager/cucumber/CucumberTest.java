@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager;
+package io.galeb.manager.cucumber;
 
 import org.junit.runner.RunWith;
 
