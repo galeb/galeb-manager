@@ -237,7 +237,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 String id = entityMap.get("id");
                 String version = entityMap.get("version");
                 version = version != null ? version : "0";
-                String health = entityMap.get("health");
                 String entityType = entityMap.get("_entity_type");
                 String parentId = entityMap.get("parentId");
                 parentId = parentId != null && !Rule.class.getSimpleName().toLowerCase().equals(entityType) ? parentId : "";
@@ -246,11 +245,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 entity.setVersion(Integer.parseInt(version));
                 entity.setEntityType(entityType);
                 entity.getProperties().put(DIST_MAP_FARM_ID_PROP, farmId);
-                if (health != null) {
-                    Map<String, Object> entityProperties = new HashMap<>();
-                    entityProperties.put("health", health);
-                    entity.setProperties(entityProperties);
-                }
                 distMap.put(entity, JsonObject.toJsonString(entity));
             });
         });

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="cacheConfiguration">
+       <list>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
+            <property name="name" value="Farm"/>
+         </bean>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
+            <property name="name" value="VirtualHost"/>
+         </bean>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
+            <property name="name" value="Pool"/>
+         </bean>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
+            <property name="name" value="Target"/>
+         </bean>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
+            <property name="name" value="Rule"/>
+         </bean>
+       </list>
+    </property>
+  </bean>
+
+  <bean id="replicated-offheap" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
+    <property name="cacheMode" value="REPLICATED"/>
+    <property name="memoryMode" value="OFFHEAP_TIERED"/>
+    <property name="offHeapMaxMemory" value="0"/>
+  </bean>
+
+</beans>

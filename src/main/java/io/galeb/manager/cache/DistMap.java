@@ -23,6 +23,7 @@ package io.galeb.manager.cache;
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Entity;
+import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -46,28 +47,31 @@ public class DistMap implements Serializable {
     public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
 
     public static final String DIST_MAP_FARM_ID_PROP = "DIST_MAP_FARM_ID_PROP";
-
     private static final Log LOGGER = LogFactory.getLog(DistMap.class);
 
     public String get(AbstractEntity<?> entity) {
         Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
-        return distMap.get(getKey(entity));
+        String key = getKey(entity);
+        return distMap.get(key);
     }
 
     public void put(Entity entity, String value) {
         final Class<?> internalEntityTypeClass = FARM_TO_MANAGER_ENTITY_MAP.get(entity.getEntityType());
-        Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getClass().getSimpleName());
-        distMap.put(getKey(entity), value);
+        Cache<String, String> distMap = CACHE_FACTORY.getCache(internalEntityTypeClass.getSimpleName());
+        String key = getKey(entity);
+        distMap.put(key, value);
     }
 
     public void put(AbstractEntity<?> entity, String value) {
         Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
-        distMap.put(getKey(entity), value);
+        String key = getKey(entity);
+        distMap.put(key, value);
     }
 
     public void remove(AbstractEntity<?> entity) {
         Cache<String, String> distMap = CACHE_FACTORY.getCache(entity.getClass().getSimpleName());
-        distMap.remove(getKey(entity));
+        String key = getKey(entity);
+        distMap.remove(key);
     }
 
     public String getKey(AbstractEntity<?> entity) {
@@ -77,11 +81,13 @@ public class DistMap implements Serializable {
         Long farmId = -1L;
         if (entity instanceof Rule) {
             farmId = ((Rule)entity).getPool().getFarmId();
+        } else if (entity instanceof WithFarmID) {
+            farmId = ((WithFarmID)entity).getFarmId();
         }
         String key = farmId.toString() + SEPARATOR;
         key += entity.getName() + SEPARATOR;
         if  (entity instanceof WithParent) {
-            key += ((WithParent) entity).getParent();
+            key += ((WithParent) entity).getParent().getName();
         }
         return key;
     }
