@@ -18,6 +18,7 @@
 
 package io.galeb.manager.handler;
 
+import io.galeb.manager.cache.DistMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,8 @@ public class FarmHandler extends AbstractHandler<Farm> {
     @Autowired
     private FarmRepository farmRepository;
 
+    @Autowired private DistMap distMap;
+
     @Override
     protected void setBestFarm(Farm entity) {
         // its me !!!
@@ -61,6 +64,7 @@ public class FarmHandler extends AbstractHandler<Farm> {
     @HandleBeforeSave
     public void beforeSave(Farm farm) throws Exception {
         beforeSave(farm, farmRepository, LOGGER);
+        distMap.remove(farm);
     }
 
     @HandleAfterSave
