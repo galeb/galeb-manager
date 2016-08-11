@@ -32,11 +32,6 @@ public class DistMapTest {
         environmentVariables.set("PWD", resourcesDirectory.getAbsolutePath());
     }
 
-    @AfterClass
-    public static void after() {
-        ((Ignite)IgniteCacheFactory.getInstance().getClusterInstance()).close();
-    }
-
     @Test
     public void putAndGetValues() {
 

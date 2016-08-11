@@ -253,6 +253,9 @@
                       -DIGNITE_JETTY_PORT=50001
                       -Dmanagement.port=9001
                     </argLine>
+                    <includes>
+                        <include>**/suites/*</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>

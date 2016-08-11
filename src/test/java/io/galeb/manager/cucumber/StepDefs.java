@@ -16,7 +16,7 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager;
+package io.galeb.manager.cucumber;
 
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.Matchers.*;
@@ -33,6 +33,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import io.galeb.manager.Application;
 import io.galeb.manager.queue.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
