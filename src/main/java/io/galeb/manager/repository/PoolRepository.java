@@ -55,7 +55,8 @@ public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
                         "WHERE (e.name LIKE concat('%', :name, '%')) AND " +
-                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")"
+                        + " ORDER BY e.name LIMIT 10";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
