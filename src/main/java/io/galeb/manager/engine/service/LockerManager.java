@@ -42,4 +42,8 @@ public class LockerManager {
     }
 
     public Boolean contains(String lockId) { return locker.contains(lockId); }
+
+    public String name() {
+        return locker.name();
+    }
 }

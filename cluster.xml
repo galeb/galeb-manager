@@ -24,6 +24,9 @@
          <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="replicated-offheap">
             <property name="name" value="Rule"/>
          </bean>
+         <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="partitioned-offheap">
+            <property name="name" value="LockStatus*"/>
+         </bean>
        </list>
     </property>
     <property name="discoverySpi">
@@ -41,6 +44,14 @@
     <property name="cacheMode" value="REPLICATED"/>
     <property name="memoryMode" value="OFFHEAP_TIERED"/>
     <property name="offHeapMaxMemory" value="0"/>
+    <property name="backups" value="0"/>
   </bean>
+
+    <bean id="partitioned-offheap" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
+        <property name="cacheMode" value="PARTITIONED"/>
+        <property name="memoryMode" value="OFFHEAP_TIERED"/>
+        <property name="offHeapMaxMemory" value="0"/>
+        <property name="backups" value="0"/>
+    </bean>
 
 </beans>
