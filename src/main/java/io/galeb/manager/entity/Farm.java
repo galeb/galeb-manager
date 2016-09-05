@@ -22,7 +22,6 @@ import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.galeb.manager.common.StatusDistributed;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,8 +34,8 @@ public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;
 
-    @Autowired
-    private StatusDistributed statusDist;
+    @Transient
+    private StatusDistributed statusDist = new StatusDistributed();
 
     @Column(nullable = false)
     @JsonProperty(required = true)
