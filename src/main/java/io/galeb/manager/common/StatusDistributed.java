@@ -39,9 +39,9 @@ import java.util.stream.StreamSupport;
 public final class StatusDistributed implements Serializable {
 
     @Autowired
-    private DistMap distMap;
+    public DistMap distMap;
 
-    private final LockerManager lockerManager = new LockerManager();
+    public LockerManager lockerManager = new LockerManager();
 
     public List<LockStatus> getLockStatus(String farmIdName) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
