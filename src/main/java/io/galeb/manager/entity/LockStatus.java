@@ -20,10 +20,11 @@ package io.galeb.manager.entity;
 
 import com.google.gson.annotations.Expose;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
 
-public class LockStatus {
+public class LockStatus implements Serializable {
 
     @Expose
     private String name;

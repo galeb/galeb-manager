@@ -58,7 +58,8 @@ public class SyncFarms {
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private FarmQueue             farmQueue;
-    @Autowired private StatusDistributed     statusDist;
+
+    private StatusDistributed     statusDist = new StatusDistributed();
 
     private final LockerManager lockerManager = new LockerManager();
 

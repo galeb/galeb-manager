@@ -35,7 +35,7 @@ public class Farm extends AbstractEntity<Farm> {
     private static final long serialVersionUID = 5596582746795373017L;
 
     @Transient
-    private StatusDistributed statusDist = new StatusDistributed();
+    protected StatusDistributed statusDist = new StatusDistributed();
 
     @Column(nullable = false)
     @JsonProperty(required = true)
