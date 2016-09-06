@@ -18,8 +18,11 @@
 
 package io.galeb.manager.entity;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -35,6 +38,8 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import static java.util.stream.Collectors.toSet;
 
 @Entity
 @Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
@@ -129,7 +134,13 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     public Set<RuleOrder> getRulesOrdered() {
-        return rulesOrdered;
+        final Set<Long> rulesOrderedIds = rulesOrdered.stream().map(RuleOrder::getRuleId).collect(toSet());
+        final Set<RuleOrder> allRulesOrdered = rulesOrdered;
+        allRulesOrdered.addAll(rules.stream()
+                                    .filter(r -> !rulesOrderedIds.contains(r.getId()))
+                                    .map(r -> new RuleOrder(r.getId(), Integer.MAX_VALUE))
+                                    .collect(toSet()));
+        return allRulesOrdered;
     }
 
     public VirtualHost setRulesOrdered(Set<RuleOrder> rulesOrdered) {
