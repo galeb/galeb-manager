@@ -44,7 +44,7 @@ import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter
 
 public class GalebV32Driver implements Driver {
 
-    public static final String DRIVER_NAME = GalebV32Driver.class.getSimpleName().replaceAll(DRIVER_PREFIX, "");
+    public static final String DRIVER_NAME = GalebV32Driver.class.getSimpleName().replaceAll(DRIVER_SUFFIX, "");
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
