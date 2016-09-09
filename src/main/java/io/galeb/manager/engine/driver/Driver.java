@@ -26,6 +26,7 @@ import io.galeb.manager.common.Properties;
 public interface Driver {
 
     String DEFAULT_DRIVER_NAME = "NULL";
+    String DRIVER_PREFIX       = "Driver";
 
     enum ActionOnDiff {
         CREATE,
