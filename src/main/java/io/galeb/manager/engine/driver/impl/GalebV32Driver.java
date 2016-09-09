@@ -62,11 +62,10 @@ public class GalebV32Driver implements Driver {
 
     @Override
     public boolean exist(Properties properties) {
-        String api = properties.getOrDefault("api", "NULL").toString();
-        api = !api.startsWith("http") ? "http://" + api : api;
-        String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" + getIdEncoded(json);
-        String uriPath = api + "/" + path;
+        String api = extractApiFromProperties(properties);
+        String json = extractBodyFromProperties(properties);
+        String path = pathWithId(extractPathFromProperties(properties), json);
+        String uriPath = fullUriPath(api, path);
 
         boolean result = false;
         try {
@@ -75,7 +74,7 @@ public class GalebV32Driver implements Driver {
             final HttpClient httpClient = new HttpClient();
             final ResponseEntity<String> response = httpClient.get(uriPath);
             result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
-            result = result && hasExpectedParent(response, parentIdObj.asText());
+            result = result && hasExpectedParent(response.getBody(), parentIdObj.asText());
         } catch (IOException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
@@ -84,12 +83,10 @@ public class GalebV32Driver implements Driver {
 
     @Override
     public boolean create(Properties properties) {
-        String api = properties.getOrDefault("api", "NULL").toString();
-        String keyInProgress = api;
-        api = !api.startsWith("http") ? "http://" + api : api;
-        String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString();
-        String uriPath = api + "/" + path;
+        String api = extractApiFromProperties(properties);
+        String json = extractBodyFromProperties(properties);
+        String path = extractPathFromProperties(properties);
+        String uriPath = fullUriPath(api, path);
 
         boolean result = false;
         try {
@@ -99,19 +96,17 @@ public class GalebV32Driver implements Driver {
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(keyInProgress);
+            decrementDiffCounter(api);
         }
         return result;
     }
 
     @Override
     public boolean update(Properties properties) {
-        String api = properties.getOrDefault("api", "NULL").toString();
-        String keyInProgress = api;
-        api = !api.startsWith("http") ? "http://" + api : api;
-        String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
-        String uriPath = api + "/" + path;
+        String api = extractApiFromProperties(properties);
+        String json = extractBodyFromProperties(properties);
+        String path = pathWithId(extractPathFromProperties(properties),json);
+        String uriPath = fullUriPath(api, path);
 
         boolean result = false;
         try {
@@ -121,32 +116,28 @@ public class GalebV32Driver implements Driver {
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(keyInProgress);
+            decrementDiffCounter(api);
         }
         return result;
     }
 
     @Override
     public boolean remove(Properties properties) {
-        String api = properties.getOrDefault("api", "NULL").toString();
-        String keyInProgress = api;
-        api = !api.startsWith("http") ? "http://" + api : api;
-        String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString();
-        String id = getIdEncoded(json);
-        path = !"".equals(id) ? path + "/" + id : path;
-        String uriPath = api + "/" + path;
+        String api = extractApiFromProperties(properties);
+        String json = extractBodyFromProperties(properties);
+        String path = pathWithId(extractPathFromProperties(properties), json);
+        String uriPath = fullUriPath(api, path);
 
         boolean result = false;
         try {
             final HttpClient httpClient = new HttpClient();
-            final String body = !"".equals(id) ? json : "{\"id\":\"\",\"version\":0}";
+            final String body = path.endsWith("/") ? "{\"id\":\"\",\"version\":0}" : json;
             final ResponseEntity<String> response = httpClient.delete(uriPath, body);
             result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(keyInProgress);
+            decrementDiffCounter(api);
         }
         return result;
     }
@@ -161,8 +152,7 @@ public class GalebV32Driver implements Driver {
     public Map<String,Map<String,Map<String,String>>> getAll(Properties properties) throws Exception {
         final Map<String,Map<String,Map<String,String>>> remoteMultiMap = new HashMap<>();
         final AtomicReference<Exception> exception = new AtomicReference<>(null);
-        final String apiFromProperties = properties.getOrDefault("api", "NULL").toString();
-        final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
+        final String api = extractApiFromProperties(properties);
         Constants.ENTITY_CLASSES.stream().map(clazz -> clazz.getSimpleName().toLowerCase())
                 .forEach(path -> {
                     try {
@@ -179,11 +169,32 @@ public class GalebV32Driver implements Driver {
         return remoteMultiMap;
     }
 
-    private boolean hasExpectedParent(ResponseEntity<String> response, String expectedParent) {
+    private String fullUriPath(String api, String path) {
+        return api + "/" + path;
+    }
+
+    private String extractPathFromProperties(Properties properties) {
+        return properties.getOrDefault("path", "").toString();
+    }
+
+    private String pathWithId(String path, String json) {
+        String id = getIdEncoded(json);
+        return path + "/" + id;
+    }
+
+    private String extractBodyFromProperties(final Properties properties) {
+        return properties.getOrDefault("json", "{}").toString();
+    }
+
+    private String extractApiFromProperties(final Properties properties) {
+        return properties.getOrDefault("api", "NULL").toString();
+    }
+
+    private boolean hasExpectedParent(String body, String expectedParent) {
         final AtomicBoolean parentFound = new AtomicBoolean(false);
 
         try {
-            final JsonNode json = mapper.readTree(response.getBody());
+            final JsonNode json = mapper.readTree(body);
             if (json.isArray()) {
                 json.forEach(jsonNode -> {
                     JsonNode parentIdObj = jsonNode.get("parentId");
@@ -222,8 +233,8 @@ public class GalebV32Driver implements Driver {
     }
 
     private Map<String, Map<String, String>> extractRemoteMap(String path, String api) throws Exception {
-        final Map<String, Map<String, String>> fullMap = new HashMap<>();
-        String fullPath = api + "/" + path;
+        final Map<String, Map<String, String>> remoteMap = new HashMap<>();
+        String fullPath = fullUriPath(api, path);
 
         JsonNode json = getJson(fullPath);
         if (json != null && json.isArray()) {
@@ -246,17 +257,17 @@ public class GalebV32Driver implements Driver {
                 entityProperties.put("_entity_type", entityType);
                 entityProperties.put("_etag", etag);
                 entityProperties.put("health", health);
-                fullMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
+                remoteMap.put(fullPath + "/" + id + "@" + parentId, entityProperties);
             });
         }
 
-        return fullMap;
+        return remoteMap;
     }
 
-    private JsonNode getJson(String path) throws URISyntaxException, IOException {
+    private JsonNode getJson(String fullPath) throws URISyntaxException, IOException {
         final HttpClient httpClient = new HttpClient();
-        ResponseEntity<String> response = httpClient.get(path);
-        boolean result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+        ResponseEntity<String> response = httpClient.get(fullPath);
+        boolean result = httpClient.isStatusCodeEqualOrLessThan(response, 200);
         return result ? mapper.readTree(response.getBody()) : null;
     }
 }

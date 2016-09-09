@@ -79,7 +79,7 @@ public class HttpClient {
     }
 
     public ResponseEntity<String> get(String uriPath) throws URISyntaxException {
-        final URI uri = new URI(uriPath);
+        final URI uri = new URI(uriWithProto(uriPath));
         final RequestEntity<Void> request = RequestEntity.get(uri).build();
         final ResponseEntity<String> response = restTemplate.exchange(request, String.class);
         logFormatted(request, response);
@@ -87,7 +87,7 @@ public class HttpClient {
     }
 
     public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
-        final URI uri = new URI(uriPath);
+        final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.post(uri).contentType(MediaType.APPLICATION_JSON).body(body);
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);
         logFormatted(request, response);
@@ -95,7 +95,7 @@ public class HttpClient {
     }
 
     public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
-        final URI uri = new URI(uriPath);
+        final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.put(uri).contentType(MediaType.APPLICATION_JSON).body(body);
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);
         logFormatted(request, response);
@@ -103,9 +103,10 @@ public class HttpClient {
     }
 
     public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
-        final HttpEntityEnclosingRequest httpRequest = httpDeleteRequestWithBodyFactory(uriPath, new StringEntity(body));
+        final URI uri = new URI(uriWithProto(uriPath));
+        final HttpEntityEnclosingRequest httpRequest = httpDeleteRequestWithBodyFactory(uri, new StringEntity(body));
         final CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(defaultRequestConfig).build();
-        final HttpResponse httpResponse = httpClient.execute(new HttpHost(getHost(uriPath), getPort(uriPath)), httpRequest);
+        final HttpResponse httpResponse = httpClient.execute(new HttpHost(getHost(uri), getPort(uri)), httpRequest);
         httpClient.close();
 
         final ResponseEntity<String> response = convertResponse(httpResponse);
@@ -113,21 +114,23 @@ public class HttpClient {
         return response;
     }
 
-    private HttpEntityEnclosingRequest httpDeleteRequestWithBodyFactory(String uriPath, StringEntity entity) {
-        final HttpEntityEnclosingRequest httpRequest = new HttpDeleteWithBody("/" + uriPath);
+    private String uriWithProto(String uriPath) {
+        return !uriPath.startsWith("http") ? "http://" + uriPath : uriPath;
+    }
+
+    private HttpEntityEnclosingRequest httpDeleteRequestWithBodyFactory(final URI uri, StringEntity entity) {
+        final HttpEntityEnclosingRequest httpRequest = new HttpDeleteWithBody(uri);
         httpRequest.setEntity(entity);
         httpRequest.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
         return httpRequest;
     }
 
-    private String getHost(String uriPath) throws URISyntaxException {
-        final URI uri = new URI(uriPath);
+    private String getHost(final URI uri) {
         String host = uri.getHost();
         return host != null ? host : "";
     }
 
-    private int getPort(String uriPath) throws URISyntaxException {
-        final URI uri = new URI(uriPath);
+    private int getPort(final URI uri) {
         int port = uri.getPort();
         return port > 0 ? port : 80;
     }
@@ -234,9 +237,9 @@ public class HttpClient {
             return "DELETE";
         }
 
-        HttpDeleteWithBody(String uri) {
+        HttpDeleteWithBody(final URI uri) {
             super();
-            setURI(URI.create(uri));
+            setURI(uri);
         }
     }
 }
