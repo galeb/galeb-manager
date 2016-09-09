@@ -22,61 +22,31 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Backend;
 import io.galeb.core.util.Constants;
-import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.util.DiffProcessor;
+import io.galeb.manager.httpclient.HttpClient;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.Header;
-import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.annotation.NotThreadSafe;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.springframework.boot.logging.LogLevel;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter;
 
 public class GalebV32Driver implements Driver {
 
-    public static final String DRIVER_NAME = GalebV32Driver.class.getSimpleName()
-                                                                .replaceAll("Driver", "");
+    public static final String DRIVER_NAME = GalebV32Driver.class.getSimpleName().replaceAll(DRIVER_PREFIX, "");
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
-    private static final int DRIVER_READ_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.read.timeout", "60000"));
-    private static final int DRIVER_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.connect.timeout", "5000"));
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -95,54 +65,21 @@ public class GalebV32Driver implements Driver {
         String api = properties.getOrDefault("api", "NULL").toString();
         api = !api.startsWith("http") ? "http://" + api : api;
         String json = properties.getOrDefault("json", "{}").toString();
-        String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
+        String path = properties.getOrDefault("path", "").toString() + "/" + getIdEncoded(json);
         String uriPath = api + "/" + path;
 
-        JsonNode jsonNode = null;
-        try {
-            jsonNode = mapper.readTree(json);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        JsonNode parentIdObj = jsonNode != null ? jsonNode.get("parentId") : null;
-        SimpleClientHttpRequestFactory clientHttp = getSimpleClientHttpRequestFactory();
-        RestTemplate restTemplate = new RestTemplate(clientHttp);
         boolean result = false;
-
         try {
-            URI uri = new URI(uriPath);
-            RequestEntity<Void> request = RequestEntity.get(uri).build();
-            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = getResultFromStatusCode(request, response);
-            if (parentIdObj != null) {
-                result = result && getResultFromParent(response, parentIdObj.asText());
-            }
-        } catch (RuntimeException|URISyntaxException e) {
-            LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+            final JsonNode jsonNode = mapper.readTree(json);
+            final JsonNode parentIdObj = jsonNode.get("parentId");
+            final HttpClient httpClient = new HttpClient();
+            final ResponseEntity<String> response = httpClient.get(uriPath);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+            result = result && hasExpectedParent(response, parentIdObj.asText());
+        } catch (IOException|URISyntaxException e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
-
         return result;
-    }
-
-    private boolean getResultFromParent(ResponseEntity<String> response, String expectedParent) {
-        AtomicBoolean parentFound = new AtomicBoolean(false);
-
-        try {
-            JsonNode json = mapper.readTree(response.getBody());
-            if (json.isArray()) {
-                json.forEach(jsonNode -> {
-                    JsonNode parentIdObj = jsonNode.get("parentId");
-                    if (parentIdObj != null && parentIdObj.isTextual() && parentIdObj.asText().equals(expectedParent)) {
-                        parentFound.set(true);
-                    }
-                });
-            }
-        } catch (IOException e) {
-            LOGGER.error(e);
-            return false;
-        }
-
-        return parentFound.get();
     }
 
     @Override
@@ -153,17 +90,14 @@ public class GalebV32Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString();
         String uriPath = api + "/" + path;
-        SimpleClientHttpRequestFactory clientHttp = getSimpleClientHttpRequestFactory();
-        RestTemplate restTemplate = new RestTemplate(clientHttp);
-        boolean result = false;
 
+        boolean result = false;
         try {
-            URI uri = new URI(uriPath);
-            RequestEntity<String> request = RequestEntity.post(uri).contentType(MediaType.APPLICATION_JSON).body(json);
-            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = getResultFromStatusCode(request, response);
+            final HttpClient httpClient = new HttpClient();
+            final ResponseEntity<String> response = httpClient.post(uriPath, json);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
         } catch (RuntimeException|URISyntaxException e) {
-            LOGGER.error("POST "+uriPath+" ("+e.getMessage()+")");
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
             decrementDiffCounter(keyInProgress);
         }
@@ -178,33 +112,22 @@ public class GalebV32Driver implements Driver {
         String json = properties.getOrDefault("json", "{}").toString();
         String path = properties.getOrDefault("path", "").toString() + "/" +getIdEncoded(json);
         String uriPath = api + "/" + path;
-        SimpleClientHttpRequestFactory clientHttp = getSimpleClientHttpRequestFactory();
-        RestTemplate restTemplate = new RestTemplate(clientHttp);
-        boolean result = false;
 
+        boolean result = false;
         try {
-            URI uri = new URI(uriPath);
-            RequestEntity<String> request = RequestEntity.put(uri).contentType(MediaType.APPLICATION_JSON).body(json);
-            ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-            result = getResultFromStatusCode(request, response);
+            final HttpClient httpClient = new HttpClient();
+            final ResponseEntity<String> response = httpClient.put(uriPath, json);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
         } catch (RuntimeException|URISyntaxException e) {
-            LOGGER.error("PUT "+uriPath+" ("+e.getMessage()+")");
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
             decrementDiffCounter(keyInProgress);
         }
         return result;
     }
 
-    private SimpleClientHttpRequestFactory getSimpleClientHttpRequestFactory() {
-        SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
-        clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
-        clientHttp.setConnectTimeout(DRIVER_CONNECT_TIMEOUT);
-        return clientHttp;
-    }
-
     @Override
     public boolean remove(Properties properties) {
-        boolean result = false;
         String api = properties.getOrDefault("api", "NULL").toString();
         String keyInProgress = api;
         api = !api.startsWith("http") ? "http://" + api : api;
@@ -214,66 +137,18 @@ public class GalebV32Driver implements Driver {
         path = !"".equals(id) ? path + "/" + id : path;
         String uriPath = api + "/" + path;
 
-        RequestConfig defaultRequestConfig = RequestConfig.custom()
-                .setSocketTimeout(DRIVER_READ_TIMEOUT)
-                .setConnectTimeout(DRIVER_CONNECT_TIMEOUT)
-                .setConnectionRequestTimeout(DRIVER_CONNECT_TIMEOUT)
-                .build();
-
-        CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(defaultRequestConfig).build();
-        HttpEntityEnclosingRequest delete = new HttpDeleteWithBody("/"+path);
-
+        boolean result = false;
         try {
-            delete.setHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString());
-            api = api.startsWith("http") ? api.replaceAll("http.?://", "") : api;
-            String[] apiWithPort = api.split(":");
-            String hostName = apiWithPort[0];
-            int port =  apiWithPort.length > 1 ? Integer.valueOf(apiWithPort[1]) : 80;
-            delete.setEntity(new StringEntity(!"".equals(id) ? json : "{\"id\":\"\",\"version\":0}"));
-            HttpResponse response = httpClient.execute(new HttpHost(hostName, port), delete);
-            httpClient.close();
-            result = getResultFromStatusCode(delete, response);
+            final HttpClient httpClient = new HttpClient();
+            final String body = !"".equals(id) ? json : "{\"id\":\"\",\"version\":0}";
+            final ResponseEntity<String> response = httpClient.delete(uriPath, body);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
         } catch (Exception e) {
-            LOGGER.error("DELETE "+uriPath+" ("+e.getMessage()+")");
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
             decrementDiffCounter(keyInProgress);
         }
         return result;
-    }
-
-    @NotThreadSafe
-    private static class HttpDeleteWithBody extends HttpEntityEnclosingRequestBase {
-
-        @Override
-        public String getMethod() {
-            return "DELETE";
-        }
-
-        public HttpDeleteWithBody(String uri) {
-            super();
-            setURI(URI.create(uri));
-        }
-    }
-
-    private String getIdEncoded(String json) {
-        if (json == null) {
-            return "";
-        }
-        try {
-            JsonNode idObj = mapper.readTree(json).get("id");
-            if (idObj == null) {
-                return "";
-            }
-            String id = idObj.asText();
-            if (id!=null) {
-                id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
-            } else {
-                id = "";
-            }
-            return id;
-        } catch (IOException e) {
-            return "";
-        }
     }
 
     @Override
@@ -284,9 +159,9 @@ public class GalebV32Driver implements Driver {
 
     @Override
     public Map<String,Map<String,Map<String,String>>> getAll(Properties properties) throws Exception {
-        Map<String,Map<String,Map<String,String>>> remoteMultiMap = new HashMap<>();
-        AtomicReference<Exception> exception = new AtomicReference<>(null);
-        String apiFromProperties = properties.getOrDefault("api", "NULL").toString();
+        final Map<String,Map<String,Map<String,String>>> remoteMultiMap = new HashMap<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>(null);
+        final String apiFromProperties = properties.getOrDefault("api", "NULL").toString();
         final String api = !apiFromProperties.startsWith("http") ? "http://" + apiFromProperties : apiFromProperties;
         Constants.ENTITY_CLASSES.stream().map(clazz -> clazz.getSimpleName().toLowerCase())
                 .forEach(path -> {
@@ -304,103 +179,46 @@ public class GalebV32Driver implements Driver {
         return remoteMultiMap;
     }
 
-    private boolean getResultFromStatusCode(HttpEntityEnclosingRequest request, HttpResponse response) {
-        InputStream content = null;
+    private boolean hasExpectedParent(ResponseEntity<String> response, String expectedParent) {
+        final AtomicBoolean parentFound = new AtomicBoolean(false);
+
         try {
-            content = request.getEntity().getContent();
+            final JsonNode json = mapper.readTree(response.getBody());
+            if (json.isArray()) {
+                json.forEach(jsonNode -> {
+                    JsonNode parentIdObj = jsonNode.get("parentId");
+                    if (parentIdObj != null && parentIdObj.isTextual() && parentIdObj.asText().equals(expectedParent)) {
+                        parentFound.set(true);
+                    }
+                });
+            }
         } catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
-        String body = inputStreamToString(content);
 
-        MultiValueMap<String, String> headers = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        headers.putAll(newMapOfHeaders);
-        HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class).stream()
-                .filter(method -> method.toString().equals(request.getRequestLine().getMethod())).findFirst().get();
-
-        RequestEntity<String> newRequest = new RequestEntity<>(body, headers, httpMethod, URI.create(request.getRequestLine().getUri()));
-        InputStream responseContent = null;
-        try {
-            responseContent = response.getEntity().getContent();
-        } catch (IOException e) {
-            LOGGER.error(e);
-        }
-        String responseBody = inputStreamToString(responseContent);
-
-        MultiValueMap<String, String> responseHeaders = new org.springframework.http.HttpHeaders();
-        Map<String, List<String>> newResponseMapOfHeaders =
-                Arrays.asList(request.getAllHeaders()).stream().collect(
-                        Collectors.toMap(Header::getName, header -> Arrays.asList(header.getValue().split(","))));
-        responseHeaders.putAll(newResponseMapOfHeaders);
-        HttpStatus responseStatusCode = EnumSet.allOf(HttpStatus.class).stream()
-                .filter(status -> status.value() == response.getStatusLine().getStatusCode()).findFirst().get();
-
-        ResponseEntity<String> newResponse = new ResponseEntity<>(responseBody,
-                responseHeaders,
-                responseStatusCode);
-
-        return getResultFromStatusCode(newRequest, newResponse);
+        return parentFound.get();
     }
 
-    private String inputStreamToString(InputStream content) {
-        StringBuilder stringBuilder = new StringBuilder();
-        BufferedReader bufferedReader = null;
-        String line;
+    private String getIdEncoded(String json) {
+        String id = "";
+        if (json == null) {
+            return "";
+        }
         try {
-            if (content != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
+            JsonNode idObj = mapper.readTree(json).get("id");
+            if (idObj == null) {
+                return "";
+            }
+            id = idObj.asText();
+            if (id != null) {
+                id = URLEncoder.encode(id, StandardCharsets.UTF_8.toString());
             } else {
-                LOGGER.warn("Content is null.");
+                id = "";
             }
         } catch (IOException e) {
-            LOGGER.error(e);
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
-        return stringBuilder.toString();
-    }
-
-    private boolean getResultFromStatusCode(RequestEntity<?> request, ResponseEntity<String> response) {
-        if (response.getStatusCode().value() < 400) {
-            logRequestResponse(request, response, LogLevel.INFO);
-            return true;
-        } else {
-            logRequestResponse(request, response, LogLevel.ERROR);
-            return false;
-        }
-    }
-
-    private void logRequestResponse(RequestEntity<?> request, ResponseEntity<String> response, LogLevel logLevel) {
-        HttpStatus statusCode = response.getStatusCode();
-        String status = "HTTP/1.? " + statusCode.value()+" " + statusCode.getReasonPhrase();
-
-        LoggerUtils.logger(LOGGER, logLevel, request.getMethod().toString() + " " + request.getUrl().toString());
-        request.getHeaders().entrySet().forEach(entry ->
-                LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
-        Object requestBody = request.getBody();
-        if (requestBody instanceof String) {
-            LoggerUtils.logger(LOGGER, logLevel, requestBody);
-        }
-        LoggerUtils.logger(LOGGER, logLevel, "---");
-        LoggerUtils.logger(LOGGER, logLevel, status);
-        response.getHeaders().entrySet().forEach(entry ->
-                LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
-        String responseBody = response.getBody();
-        if (responseBody != null) {
-            LoggerUtils.logger(LOGGER, logLevel, response.getBody());
-        }
+        return id;
     }
 
     private Map<String, Map<String, String>> extractRemoteMap(String path, String api) throws Exception {
@@ -408,7 +226,7 @@ public class GalebV32Driver implements Driver {
         String fullPath = api + "/" + path;
 
         JsonNode json = getJson(fullPath);
-        if (json.isArray()) {
+        if (json != null && json.isArray()) {
             json.forEach(element -> {
                 Map<String, String> entityProperties = new HashMap<>();
                 String id = element.get("id").asText();
@@ -436,17 +254,9 @@ public class GalebV32Driver implements Driver {
     }
 
     private JsonNode getJson(String path) throws URISyntaxException, IOException {
-        JsonNode json = null;
-        SimpleClientHttpRequestFactory clientHttp = getSimpleClientHttpRequestFactory();
-        RestTemplate restTemplate = new RestTemplate(clientHttp);
-        URI uri = new URI(path);
-        RequestEntity<Void> request = RequestEntity.get(uri).build();
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
-        boolean result = response.getStatusCode().value() < 400;
-
-        if (result) {
-            json = mapper.readTree(response.getBody());
-        }
-        return json;
+        final HttpClient httpClient = new HttpClient();
+        ResponseEntity<String> response = httpClient.get(path);
+        boolean result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+        return result ? mapper.readTree(response.getBody()) : null;
     }
 }
