@@ -46,6 +46,7 @@
         <info-cukes.version>1.2.4</info-cukes.version>
         <com.jayway.restassured.version>2.5.0</com.jayway.restassured.version>
         <jackson-module-jsonSchema.version>2.6.1</jackson-module-jsonSchema.version>
+        <mockito.version>1.10.19</mockito.version>
     </properties>
 
     <parent>
@@ -219,6 +220,12 @@
             <groupId>com.jayway.restassured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>${com.jayway.restassured.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

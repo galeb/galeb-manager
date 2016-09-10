@@ -58,7 +58,7 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class HttpClient {
+public class HttpClient implements CommonHttpRequester {
 
     private static final Log LOGGER = LogFactory.getLog(HttpClient.class);
     private static final int DRIVER_READ_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.read.timeout", "60000"));
@@ -78,6 +78,7 @@ public class HttpClient {
                                                           .build();
     }
 
+    @Override
     public ResponseEntity<String> get(String uriPath) throws URISyntaxException {
         final URI uri = new URI(uriWithProto(uriPath));
         final RequestEntity<Void> request = RequestEntity.get(uri).build();
@@ -86,6 +87,7 @@ public class HttpClient {
         return response;
     }
 
+    @Override
     public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
         final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.post(uri).contentType(MediaType.APPLICATION_JSON).body(body);
@@ -94,6 +96,7 @@ public class HttpClient {
         return response;
     }
 
+    @Override
     public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
         final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.put(uri).contentType(MediaType.APPLICATION_JSON).body(body);
@@ -102,6 +105,7 @@ public class HttpClient {
         return response;
     }
 
+    @Override
     public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
         final URI uri = new URI(uriWithProto(uriPath));
         final HttpEntityEnclosingRequest httpRequest = httpDeleteRequestWithBodyFactory(uri, new StringEntity(body));
@@ -112,6 +116,11 @@ public class HttpClient {
         final ResponseEntity<String> response = convertResponse(httpResponse);
         logFormatted(convertRequest(httpRequest), response);
         return response;
+    }
+
+    @Override
+    public boolean isStatusCodeEqualOrLessThan(final ResponseEntity<String> response, int status) {
+        return response.getStatusCode().value() <= status;
     }
 
     private String uriWithProto(String uriPath) {
@@ -174,10 +183,6 @@ public class HttpClient {
 
     private MultiValueMap<String, String> getHeaders(final HttpResponse response) {
         return getHeaders(response.getAllHeaders());
-    }
-
-    public boolean isStatusCodeEqualOrLessThan(final ResponseEntity<String> response, int status) {
-        return response.getStatusCode().value() <= status;
     }
 
     private void logFormatted(final RequestEntity<?> request, final ResponseEntity<String> response) {
