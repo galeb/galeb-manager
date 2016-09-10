@@ -21,6 +21,9 @@ package io.galeb.manager.httpclient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Entity;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -31,17 +34,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FakeHttpClient implements CommonHttpRequester {
+
+    private static final Log LOGGER = LogFactory.getLog(FakeHttpClient.class);
 
     private final Map<String, ConcurrentHashMap<String, String>> mapOfmaps = new HashMap<>();
     private final ObjectMapper mapper = new ObjectMapper();
 
     public FakeHttpClient() {
-        mapOfmaps.put("virtualhost", new ConcurrentHashMap<>());
-        mapOfmaps.put("rule", new ConcurrentHashMap<>());
-        mapOfmaps.put("backendpool", new ConcurrentHashMap<>());
-        mapOfmaps.put("backend", new ConcurrentHashMap<>());
+        Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> mapOfmaps.put(e, new ConcurrentHashMap<>()));
     }
 
     @Override
@@ -50,6 +53,9 @@ public class FakeHttpClient implements CommonHttpRequester {
         String result = null;
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        if ("farm".equals(entityPath)) {
+            return ResponseEntity.ok("{ \"info\" : \"'GET /farm' was removed\" }");
+        }
         String entityId = paths.length > 2 ? paths[2] : "";
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
@@ -67,9 +73,15 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
+        if (body == null || "".equals(body)) {
+            return ResponseEntity.badRequest().body("");
+        }
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        if ("farm".equals(entityPath)) {
+            return ResponseEntity.badRequest().body("");
+        }
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
             try {
@@ -78,7 +90,7 @@ public class FakeHttpClient implements CommonHttpRequester {
                 String parentId = jsonNode.get("parentId").asText("");
                 map.putIfAbsent(id + Entity.SEP_COMPOUND_ID + parentId, body);
             } catch (IOException e) {
-                // ignore
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
         return ResponseEntity.accepted().body("");
@@ -86,9 +98,16 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
+        if (body == null || "".equals(body)) {
+            return ResponseEntity.badRequest().body("");
+        }
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        if ("farm".equals(entityPath)) {
+            // TODO: Galeb.API ignore update Farm.
+            return ResponseEntity.badRequest().body("");
+        }
         String entityId = paths.length > 2 ? paths[2] : "";
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
@@ -100,7 +119,7 @@ public class FakeHttpClient implements CommonHttpRequester {
                     map.replace(id + Entity.SEP_COMPOUND_ID + parentId, body);
                 }
             } catch (IOException e) {
-                // ignore
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
         return ResponseEntity.accepted().body("");
@@ -111,18 +130,37 @@ public class FakeHttpClient implements CommonHttpRequester {
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        if ("farm".equals(entityPath)) {
+            Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> {
+                try {
+                    delete(uri.getHost() + "/" + e, "");
+                } catch (URISyntaxException | IOException e1) {
+                    LOGGER.error(ExceptionUtils.getStackTrace(e1));
+                }
+            });
+            return ResponseEntity.accepted().body("");
+        }
         String entityId = paths.length > 2 ? paths[2] : "";
+        if (!"".equals(entityId)) {
+            if (body == null || "".equals(body)) {
+                return ResponseEntity.badRequest().body("");
+            }
+        }
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
-            try {
-                JsonNode jsonNode = mapper.readTree(body);
-                String id = jsonNode.get("id").asText();
-                if (entityId.equals(id)) {
-                    String parentId = jsonNode.get("parentId").asText("");
-                    map.remove(id + Entity.SEP_COMPOUND_ID + parentId, body);
+            if ("".equals(entityId)) {
+                map.clear();
+            } else {
+                try {
+                    JsonNode jsonNode = mapper.readTree(body);
+                    String id = jsonNode.get("id").asText();
+                    if (entityId.equals(id)) {
+                        String parentId = jsonNode.get("parentId").asText("");
+                        map.remove(id + Entity.SEP_COMPOUND_ID + parentId, body);
+                    }
+                } catch (IOException e) {
+                    LOGGER.error(ExceptionUtils.getStackTrace(e));
                 }
-            } catch (IOException e) {
-                // ignore
             }
         }
         return ResponseEntity.accepted().body("");

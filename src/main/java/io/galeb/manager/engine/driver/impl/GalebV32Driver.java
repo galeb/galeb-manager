@@ -30,6 +30,7 @@ import io.galeb.manager.httpclient.HttpClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
@@ -75,10 +76,11 @@ public class GalebV32Driver implements Driver {
         try {
             final JsonNode jsonNode = mapper.readTree(json);
             final JsonNode parentIdObj = jsonNode.get("parentId");
+            final String parentId = parentIdObj != null ? parentIdObj.asText() : "";
             final CommonHttpRequester httpClient = getHttpClient();
             final ResponseEntity<String> response = httpClient.get(uriPath);
-            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
-            result = result && hasExpectedParent(response.getBody(), parentIdObj.asText());
+            result = httpClient.isStatusCodeEqualOrLessThan(response, HttpStatus.OK.value());
+            result = result && hasExpectedParent(response.getBody(), parentId);
         } catch (IOException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
@@ -96,7 +98,7 @@ public class GalebV32Driver implements Driver {
         try {
             final CommonHttpRequester httpClient = getHttpClient();
             final ResponseEntity<String> response = httpClient.post(uriPath, json);
-            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, HttpStatus.ACCEPTED.value());
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
@@ -116,7 +118,7 @@ public class GalebV32Driver implements Driver {
         try {
             final CommonHttpRequester httpClient = getHttpClient();
             final ResponseEntity<String> response = httpClient.put(uriPath, json);
-            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, HttpStatus.ACCEPTED.value());
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
@@ -137,7 +139,7 @@ public class GalebV32Driver implements Driver {
             final CommonHttpRequester httpClient = getHttpClient();
             final String body = path.endsWith("/") ? "{\"id\":\"\",\"version\":0}" : json;
             final ResponseEntity<String> response = httpClient.delete(uriPath, body);
-            result = httpClient.isStatusCodeEqualOrLessThan(response, 399);
+            result = httpClient.isStatusCodeEqualOrLessThan(response, HttpStatus.ACCEPTED.value());
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
@@ -195,8 +197,11 @@ public class GalebV32Driver implements Driver {
     }
 
     private boolean hasExpectedParent(String body, String expectedParent) {
-        final AtomicBoolean parentFound = new AtomicBoolean(false);
+        if (expectedParent == null || "".equals(expectedParent)) {
+            return true;
+        }
 
+        final AtomicBoolean parentFound = new AtomicBoolean(false);
         try {
             final JsonNode json = mapper.readTree(body);
             if (json.isArray()) {
