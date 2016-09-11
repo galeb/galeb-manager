@@ -56,7 +56,7 @@ public class FakeHttpClient implements CommonHttpRequester {
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
             String response = "{ \"info\" : \"'GET /farm' was removed\" }";
-            LOGGER.info("Result: " + response);
+            LOGGER.info("Result: OK \n" + response);
             return ResponseEntity.ok(response);
         }
         String entityId = paths.length > 2 ? paths[2] : "";
@@ -71,7 +71,7 @@ public class FakeHttpClient implements CommonHttpRequester {
             LOGGER.info("Result: NOT FOUND");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         } else {
-            LOGGER.info("Result: " + result);
+            LOGGER.info("Result: OK \n" + result);
             return ResponseEntity.ok(result);
         }
     }
