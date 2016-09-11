@@ -95,7 +95,11 @@ public class FakeHttpClient implements CommonHttpRequester {
             try {
                 JsonNode jsonNode = mapper.readTree(body);
                 String id = jsonNode.get("id").asText();
-                String parentId = jsonNode.get("parentId").asText("");
+                JsonNode parentIdObj = jsonNode.get("parentId");
+                String parentId = "";
+                if (parentIdObj != null) {
+                    parentId = parentIdObj.asText("");
+                }
                 map.putIfAbsent(id + Entity.SEP_COMPOUND_ID + parentId, body);
             } catch (IOException e) {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
@@ -127,7 +131,11 @@ public class FakeHttpClient implements CommonHttpRequester {
                 JsonNode jsonNode = mapper.readTree(body);
                 String id = jsonNode.get("id").asText();
                 if (entityId.equals(id)) {
-                    String parentId = jsonNode.get("parentId").asText("");
+                    JsonNode parentIdObj = jsonNode.get("parentId");
+                    String parentId = "";
+                    if (parentIdObj != null) {
+                        parentId = parentIdObj.asText("");
+                    }
                     map.replace(id + Entity.SEP_COMPOUND_ID + parentId, body);
                 }
             } catch (IOException e) {
@@ -165,7 +173,11 @@ public class FakeHttpClient implements CommonHttpRequester {
                     JsonNode jsonNode = mapper.readTree(body);
                     String id = jsonNode.get("id").asText();
                     if (entityId.equals(id)) {
-                        String parentId = jsonNode.get("parentId").asText("");
+                        JsonNode parentIdObj = jsonNode.get("parentId");
+                        String parentId = "";
+                        if (parentIdObj != null) {
+                            parentId = parentIdObj.asText("");
+                        }
                         map.remove(id + Entity.SEP_COMPOUND_ID + parentId, body);
                     }
                 } catch (IOException e) {
