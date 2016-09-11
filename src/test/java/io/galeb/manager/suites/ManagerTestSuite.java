@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({DistMapTest.class, GalebV32DriverTest.class, CucumberTest.class})
+@Suite.SuiteClasses({GalebV32DriverTest.class, DistMapTest.class, CucumberTest.class})
 public class ManagerTestSuite {
 
     @AfterClass
