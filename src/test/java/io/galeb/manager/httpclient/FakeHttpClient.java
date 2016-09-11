@@ -21,6 +21,7 @@ package io.galeb.manager.httpclient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.galeb.core.model.Entity;
+import io.galeb.core.util.Constants;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,7 +35,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class FakeHttpClient implements CommonHttpRequester {
 
@@ -44,7 +44,9 @@ public class FakeHttpClient implements CommonHttpRequester {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public FakeHttpClient() {
-        Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> mapOfmaps.put(e, new ConcurrentHashMap<>()));
+        Constants.ENTITY_CLASSES.stream()
+                                .map(c -> c.getSimpleName().toLowerCase())
+                                .forEach(e -> mapOfmaps.put(e, new ConcurrentHashMap<>()));
     }
 
     @Override
@@ -195,6 +197,8 @@ public class FakeHttpClient implements CommonHttpRequester {
     }
 
     public void deleteAll() {
-        Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> mapOfmaps.get(e).clear());
+        Constants.ENTITY_CLASSES.stream()
+                                .map(c -> c.getSimpleName().toLowerCase())
+                                .forEach(e -> mapOfmaps.get(e).clear());
     }
 }
