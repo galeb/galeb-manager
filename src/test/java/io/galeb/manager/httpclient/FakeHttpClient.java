@@ -80,7 +80,7 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
-        LOGGER.info("POST " + uriPath);
+        LOGGER.info("POST " + uriPath + " \n" + body);
         if (body == null || "".equals(body)) {
             LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
@@ -113,7 +113,7 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
-        LOGGER.info("PUT " + uriPath);
+        LOGGER.info("PUT " + uriPath + " \n" + body);
         if (body == null || "".equals(body)) {
             LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
@@ -150,7 +150,7 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
-        LOGGER.info("DELETE " + uriPath);
+        LOGGER.info("DELETE " + uriPath + " \n" + body);
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
