@@ -130,8 +130,7 @@ public class Farm extends AbstractEntity<Farm> {
 
     @Override
     public EntityStatus getStatus() {
-        String aStatus = distMap.get(this);
-        return (aStatus != null) ? EntityStatus.valueOf(aStatus) : EntityStatus.PENDING;
+        return getStatusFromMap();
     }
 
     @JsonIgnore
