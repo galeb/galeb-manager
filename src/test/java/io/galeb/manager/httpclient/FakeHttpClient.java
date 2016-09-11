@@ -49,12 +49,15 @@ public class FakeHttpClient implements CommonHttpRequester {
 
     @Override
     public ResponseEntity<String> get(String uriPath) throws URISyntaxException {
+        LOGGER.info("GET " + uriPath);
         URI uri = new URI(uriPath);
         String result = null;
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
-            return ResponseEntity.ok("{ \"info\" : \"'GET /farm' was removed\" }");
+            String response = "{ \"info\" : \"'GET /farm' was removed\" }";
+            LOGGER.info("Result: " + response);
+            return ResponseEntity.ok(response);
         }
         String entityId = paths.length > 2 ? paths[2] : "";
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
@@ -64,22 +67,27 @@ public class FakeHttpClient implements CommonHttpRequester {
                     .map(Map.Entry::getValue)
                     .collect(Collectors.joining(",")) + "]";
         }
-        if (result == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("[]");
+        if (result == null || "[]".equals(result)) {
+            LOGGER.info("Result: NOT FOUND");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         } else {
+            LOGGER.info("Result: " + result);
             return ResponseEntity.ok(result);
         }
     }
 
     @Override
     public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
+        LOGGER.info("POST " + uriPath);
         if (body == null || "".equals(body)) {
+            LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
+            LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
@@ -93,12 +101,15 @@ public class FakeHttpClient implements CommonHttpRequester {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
+        LOGGER.info("Result: ACCEPTED");
         return ResponseEntity.accepted().body("");
     }
 
     @Override
     public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
+        LOGGER.info("PUT " + uriPath);
         if (body == null || "".equals(body)) {
+            LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
         URI uri = new URI(uriPath);
@@ -106,6 +117,7 @@ public class FakeHttpClient implements CommonHttpRequester {
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
             // TODO: Galeb.API ignore update Farm.
+            LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
         String entityId = paths.length > 2 ? paths[2] : "";
@@ -122,21 +134,25 @@ public class FakeHttpClient implements CommonHttpRequester {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
+        LOGGER.info("Result: ACCEPTED");
         return ResponseEntity.accepted().body("");
     }
 
     @Override
     public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
+        LOGGER.info("DELETE " + uriPath);
         URI uri = new URI(uriPath);
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
             deleteAll();
+            LOGGER.info("Result: ACCEPTED");
             return ResponseEntity.accepted().body("");
         }
         String entityId = paths.length > 2 ? paths[2] : "";
         if (!"".equals(entityId)) {
             if (body == null || "".equals(body)) {
+                LOGGER.info("Result: BAD REQUEST");
                 return ResponseEntity.badRequest().body("");
             }
         }
@@ -157,6 +173,7 @@ public class FakeHttpClient implements CommonHttpRequester {
                 }
             }
         }
+        LOGGER.info("Result: ACCEPTED");
         return ResponseEntity.accepted().body("");
     }
 
