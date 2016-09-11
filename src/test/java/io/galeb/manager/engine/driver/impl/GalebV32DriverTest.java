@@ -30,9 +30,8 @@ import io.galeb.manager.httpclient.FakeHttpClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.FixMethodOrder;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 import org.springframework.util.Assert;
 
 import java.util.Collections;
@@ -40,14 +39,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GalebV32DriverTest {
 
-    private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(new FakeHttpClient());
+    private FakeHttpClient fakeHttpClient = new FakeHttpClient();
+    private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeHttpClient);
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
+    @Before
+    public void setUp() {
+        fakeHttpClient.deleteAll();
+    }
+
     @Test
-    public void t00notExist() {
+    public void notExist() {
         logTestedMethod();
         Properties properties = new Properties();
         boolean result = driver.exist(properties);
@@ -55,21 +59,21 @@ public class GalebV32DriverTest {
     }
 
     @Test
-    public void t01getFarmAlwaysReturnOK() throws JsonProcessingException {
+    public void getFarmAlwaysReturnOK() throws JsonProcessingException {
         logTestedMethod();
         boolean result = driver.exist(farmPropertiesBuild());
         Assert.isTrue(result);
     }
 
     @Test
-    public void t02removeFarmAlwaysReturnAccept() throws JsonProcessingException {
+    public void removeFarmAlwaysReturnAccept() throws JsonProcessingException {
         logTestedMethod();
         boolean result = driver.remove(farmPropertiesBuild());
         Assert.isTrue(result);
     }
 
     @Test
-    public void t03createAndUpdateFarmIsNotPossible() {
+    public void createAndUpdateFarmIsNotPossible() {
         logTestedMethod();
         boolean resultCreate = driver.create(farmPropertiesBuild());
         boolean resultUpdate = driver.update(farmPropertiesBuild());

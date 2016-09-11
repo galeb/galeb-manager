@@ -131,13 +131,7 @@ public class FakeHttpClient implements CommonHttpRequester {
         String[] paths = uri.getPath().split("/");
         String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
         if ("farm".equals(entityPath)) {
-            Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> {
-                try {
-                    delete(uri.getHost() + "/" + e, "");
-                } catch (URISyntaxException | IOException e1) {
-                    LOGGER.error(ExceptionUtils.getStackTrace(e1));
-                }
-            });
+            deleteAll();
             return ResponseEntity.accepted().body("");
         }
         String entityId = paths.length > 2 ? paths[2] : "";
@@ -169,5 +163,9 @@ public class FakeHttpClient implements CommonHttpRequester {
     @Override
     public boolean isStatusCodeEqualOrLessThan(ResponseEntity<String> response, int status) {
         return response.getStatusCode().value() <= status;
+    }
+
+    public void deleteAll() {
+        Stream.of("backend", "backendpool", "rule", "virtualhost").forEach(e -> mapOfmaps.get(e).clear());
     }
 }
