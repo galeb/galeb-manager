@@ -30,13 +30,9 @@ import io.galeb.manager.httpclient.FakeHttpClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.util.Assert;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +42,6 @@ public class GalebV32DriverTest {
 
     private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(new FakeHttpClient());
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
-
-    @ClassRule
-    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables();
-
-    @BeforeClass
-    public static void before() {
-        File resourcesDirectory = new File("src/test/resources");
-        environmentVariables.set("PWD", resourcesDirectory.getAbsolutePath());
-    }
 
     @Test
     public void notExist() {
