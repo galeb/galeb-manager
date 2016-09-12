@@ -19,12 +19,9 @@
 package io.galeb.manager.engine.driver;
 
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.GalebV32Driver;
-import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
+import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.httpclient.FakeFarmClient;
-import io.galeb.manager.test.factory.FarmFactory;
 import io.galeb.manager.test.factory.PoolFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,7 +35,6 @@ public class PoolDriverTest {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
-    private final FarmFactory farmFactory = new FarmFactory();
     private final PoolFactory poolFactory = new PoolFactory();
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
