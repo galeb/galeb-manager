@@ -21,7 +21,7 @@ package io.galeb.manager.test.factory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.GalebV32Driver;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Provider;

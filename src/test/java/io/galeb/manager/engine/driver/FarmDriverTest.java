@@ -16,10 +16,11 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.driver.impl;
+package io.galeb.manager.engine.driver;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.GalebV32Driver;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.httpclient.FakeFarmClient;
