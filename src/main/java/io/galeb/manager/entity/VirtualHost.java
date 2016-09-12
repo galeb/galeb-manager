@@ -134,13 +134,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     public Set<RuleOrder> getRulesOrdered() {
-        final Set<Long> rulesOrderedIds = rulesOrdered.stream().map(RuleOrder::getRuleId).collect(toSet());
-        final Set<RuleOrder> allRulesOrdered = rulesOrdered;
-        allRulesOrdered.addAll(rules.stream()
-                                    .filter(r -> !rulesOrderedIds.contains(r.getId()))
-                                    .map(r -> new RuleOrder(r.getId(), Integer.MAX_VALUE))
-                                    .collect(toSet()));
-        return allRulesOrdered;
+        return rulesOrdered;
     }
 
     public VirtualHost setRulesOrdered(Set<RuleOrder> rulesOrdered) {
