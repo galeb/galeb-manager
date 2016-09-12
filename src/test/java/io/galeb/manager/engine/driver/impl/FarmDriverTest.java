@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.entity.Pool;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.FarmFactory;
 import io.galeb.manager.test.factory.PoolFactory;
@@ -32,9 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
-import java.util.Map;
-
-public class GalebV32DriverTest {
+public class FarmDriverTest {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
@@ -83,54 +80,6 @@ public class GalebV32DriverTest {
 
         Assert.isTrue(!resultCreate, "Create Farm is possible?");
         Assert.isTrue(!resultUpdate, "Update Farm is possible?");
-    }
-
-    @Test
-    public void poolNotExist() {
-        logTestedMethod();
-        boolean result = driver.exist(poolFactory.makeProperties(poolFactory.build()));
-        Assert.isTrue(!result);
-    }
-
-    @Test
-    public void createPool() {
-        logTestedMethod();
-        Properties properties = poolFactory.makeProperties(poolFactory.build());
-        boolean resultCreate = driver.create(properties);
-        boolean resultExist = driver.exist(properties);
-        Assert.isTrue(resultCreate && resultExist);
-    }
-
-    @Test
-    public void updatePool() throws Exception {
-        logTestedMethod();
-        Pool pool = poolFactory.build();
-        Properties properties = poolFactory.makeProperties(pool);
-        String api = properties.getOrDefault("api", "UNDEF").toString();
-        String poolName = pool.getName();
-        boolean resultCreate = driver.create(properties);
-        Map<String, String> map = driver.getAll(properties).get("backendpool").get(api + "/backendpool/" + poolName + "@");
-        String versionStr = map.get("version");
-        int versionOrig = Integer.parseInt(versionStr);
-        boolean resultExist = driver.exist(properties);
-        pool.updateHash();
-        boolean resultUpdate = driver.update(poolFactory.makeProperties(pool));
-        map = driver.getAll(properties).get("backendpool").get(api + "/backendpool/" + poolName + "@");
-        versionStr = map.get("version");
-        int versionNew = Integer.parseInt(versionStr);
-        Assert.isTrue(resultCreate && resultExist && resultUpdate && versionNew > versionOrig);
-    }
-
-    @Test
-    public void removePool() {
-        logTestedMethod();
-        Properties properties = poolFactory.makeProperties(poolFactory.build());
-        boolean resultCreate = driver.create(properties);
-        boolean resultExist = driver.exist(properties);
-        boolean resultRemove = driver.remove(properties);
-        boolean resultNotExist = !driver.exist(properties);
-
-        Assert.isTrue(resultCreate && resultExist && resultRemove && resultNotExist);
     }
 
 }
