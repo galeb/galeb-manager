@@ -58,16 +58,16 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class HttpClient implements CommonHttpRequester {
+public class FarmClient implements CommonHttpRequester {
 
-    private static final Log LOGGER = LogFactory.getLog(HttpClient.class);
+    private static final Log LOGGER = LogFactory.getLog(FarmClient.class);
     private static final int DRIVER_READ_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.read.timeout", "60000"));
     private static final int DRIVER_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.connect.timeout", "5000"));
 
     private final RestTemplate restTemplate;
     private final RequestConfig defaultRequestConfig;
 
-    public HttpClient() {
+    public FarmClient() {
         SimpleClientHttpRequestFactory clientHttp = new SimpleClientHttpRequestFactory();
         clientHttp.setReadTimeout(DRIVER_READ_TIMEOUT);
         clientHttp.setConnectTimeout(DRIVER_CONNECT_TIMEOUT);
