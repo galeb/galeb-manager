@@ -19,32 +19,34 @@
 package io.galeb.manager.engine.driver.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.entity.Provider;
 import io.galeb.manager.httpclient.FakeFarmClient;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import io.galeb.manager.test.factory.FarmFactory;
+import io.galeb.manager.test.factory.PoolFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class GalebV32DriverTest {
 
-    private FakeFarmClient fakeFarmClient = new FakeFarmClient();
-    private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
+
+    private final FarmFactory farmFactory = new FarmFactory();
+    private final PoolFactory poolFactory = new PoolFactory();
+    private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
+    private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
+
+    private void logTestedMethod() {
+        LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
+                    Thread.currentThread().getStackTrace()[2].getMethodName());
+    }
 
     @Before
     public void setUp() {
@@ -62,22 +64,22 @@ public class GalebV32DriverTest {
     @Test
     public void getFarmAlwaysReturnOK() throws JsonProcessingException {
         logTestedMethod();
-        boolean result = driver.exist(farmPropertiesBuild());
+        boolean result = driver.exist(farmFactory.makeProperties());
         Assert.isTrue(result);
     }
 
     @Test
     public void removeFarmAlwaysReturnAccept() throws JsonProcessingException {
         logTestedMethod();
-        boolean result = driver.remove(farmPropertiesBuild());
+        boolean result = driver.remove(farmFactory.makeProperties());
         Assert.isTrue(result);
     }
 
     @Test
     public void createAndUpdateFarmIsNotPossible() {
         logTestedMethod();
-        boolean resultCreate = driver.create(farmPropertiesBuild());
-        boolean resultUpdate = driver.update(farmPropertiesBuild());
+        boolean resultCreate = driver.create(farmFactory.makeProperties());
+        boolean resultUpdate = driver.update(farmFactory.makeProperties());
 
         Assert.isTrue(!resultCreate, "Create Farm is possible?");
         Assert.isTrue(!resultUpdate, "Update Farm is possible?");
@@ -86,14 +88,14 @@ public class GalebV32DriverTest {
     @Test
     public void poolNotExist() {
         logTestedMethod();
-        boolean result = driver.exist(poolPropertiesBuild(newPool()));
+        boolean result = driver.exist(poolFactory.makeProperties(poolFactory.build()));
         Assert.isTrue(!result);
     }
 
     @Test
     public void createPool() {
         logTestedMethod();
-        Properties properties = poolPropertiesBuild(newPool());
+        Properties properties = poolFactory.makeProperties(poolFactory.build());
         boolean resultCreate = driver.create(properties);
         boolean resultExist = driver.exist(properties);
         Assert.isTrue(resultCreate && resultExist);
@@ -102,8 +104,8 @@ public class GalebV32DriverTest {
     @Test
     public void updatePool() throws Exception {
         logTestedMethod();
-        Pool pool = newPool();
-        Properties properties = poolPropertiesBuild(pool);
+        Pool pool = poolFactory.build();
+        Properties properties = poolFactory.makeProperties(pool);
         String api = properties.getOrDefault("api", "UNDEF").toString();
         String poolName = pool.getName();
         boolean resultCreate = driver.create(properties);
@@ -112,7 +114,7 @@ public class GalebV32DriverTest {
         int versionOrig = Integer.parseInt(versionStr);
         boolean resultExist = driver.exist(properties);
         pool.updateHash();
-        boolean resultUpdate = driver.update(poolPropertiesBuild(pool));
+        boolean resultUpdate = driver.update(poolFactory.makeProperties(pool));
         map = driver.getAll(properties).get("backendpool").get(api + "/backendpool/" + poolName + "@");
         versionStr = map.get("version");
         int versionNew = Integer.parseInt(versionStr);
@@ -122,66 +124,13 @@ public class GalebV32DriverTest {
     @Test
     public void removePool() {
         logTestedMethod();
-        Properties properties = poolPropertiesBuild(newPool());
+        Properties properties = poolFactory.makeProperties(poolFactory.build());
         boolean resultCreate = driver.create(properties);
         boolean resultExist = driver.exist(properties);
         boolean resultRemove = driver.remove(properties);
         boolean resultNotExist = !driver.exist(properties);
 
         Assert.isTrue(resultCreate && resultExist && resultRemove && resultNotExist);
-    }
-
-    private Farm newFarm(String api) {
-        Environment environment = new Environment("NULL");
-        Provider provider = new Provider(GalebV32Driver.class.getSimpleName());
-        String name = UUID.randomUUID().toString();
-        String domain = UUID.randomUUID().toString();
-        return new Farm(name, domain, api, environment, provider);
-    }
-
-    private Properties farmPropertiesBuild() {
-        String api = "api";
-        Map<String, List<?>> entitiesMap = Collections.emptyMap();
-        Properties properties = new Properties();
-        properties.put("api", api);
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("lockName", "lock_0");
-        properties.put("path", "farm");
-        try {
-            properties.put("json", new JsonMapper().makeJson(newFarm(api)).toString());
-        } catch (JsonProcessingException e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        }
-
-        return properties;
-    }
-
-    private Pool newPool() {
-        final Pool pool= new Pool(UUID.randomUUID().toString());
-        pool.getProperties().put(io.galeb.core.model.BackendPool.PROP_LOADBALANCE_POLICY, "DEFAULT");
-        pool.updateHash();
-        return pool;
-    }
-
-    private Properties poolPropertiesBuild(Pool pool) {
-        String api = "api";
-        Map<String, List<?>> entitiesMap = Collections.emptyMap();
-        Properties properties = new Properties();
-        properties.put("api", api);
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("path", io.galeb.core.model.BackendPool.class.getSimpleName().toLowerCase());
-        try {
-            properties.put("json", new JsonMapper().makeJson(pool).toString());
-        } catch (JsonProcessingException e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        }
-
-        return properties;
-    }
-
-
-    private void logTestedMethod() {
-        LOGGER.info("Testing " + this.getClass().getSimpleName() + "." + Thread.currentThread().getStackTrace()[2].getMethodName());
     }
 
 }
