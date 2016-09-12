@@ -37,14 +37,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class FakeHttpClient implements CommonHttpRequester {
+public class FakeFarmClient implements CommonHttpRequester {
 
-    private static final Log LOGGER = LogFactory.getLog(FakeHttpClient.class);
+    private static final Log LOGGER = LogFactory.getLog(FakeFarmClient.class);
 
     private final Map<String, ConcurrentHashMap<String, String>> mapOfmaps = new HashMap<>();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public FakeHttpClient() {
+    public FakeFarmClient() {
         Constants.ENTITY_CLASSES.stream()
                                 .map(c -> c.getSimpleName().toLowerCase())
                                 .forEach(e -> mapOfmaps.put(e, new ConcurrentHashMap<>()));

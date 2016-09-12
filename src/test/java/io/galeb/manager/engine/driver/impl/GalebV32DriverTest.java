@@ -28,7 +28,7 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Provider;
-import io.galeb.manager.httpclient.FakeHttpClient;
+import io.galeb.manager.httpclient.FakeFarmClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,13 +43,13 @@ import java.util.UUID;
 
 public class GalebV32DriverTest {
 
-    private FakeHttpClient fakeHttpClient = new FakeHttpClient();
-    private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeHttpClient);
+    private FakeFarmClient fakeFarmClient = new FakeFarmClient();
+    private Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
     @Before
     public void setUp() {
-        fakeHttpClient.deleteAll();
+        fakeFarmClient.deleteAll();
     }
 
     @Test
