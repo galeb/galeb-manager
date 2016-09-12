@@ -187,7 +187,7 @@ public class FakeHttpClient implements CommonHttpRequester {
                         if (parentIdObj != null) {
                             parentId = parentIdObj.asText("");
                         }
-                        map.remove(id + Entity.SEP_COMPOUND_ID + parentId, body);
+                        map.remove(id + Entity.SEP_COMPOUND_ID + parentId);
                     }
                 } catch (IOException e) {
                     LOGGER.error(ExceptionUtils.getStackTrace(e));
