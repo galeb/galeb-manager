@@ -19,7 +19,6 @@
 package io.galeb.manager.engine.driver.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
@@ -159,7 +158,7 @@ public class GalebV32DriverTest {
 
     private Pool newPool() {
         final Pool pool= new Pool(UUID.randomUUID().toString());
-        pool.getProperties().put(BackendPool.PROP_LOADBALANCE_POLICY, "DEFAULT");
+        pool.getProperties().put(io.galeb.core.model.BackendPool.PROP_LOADBALANCE_POLICY, "DEFAULT");
         pool.updateHash();
         return pool;
     }
@@ -170,7 +169,7 @@ public class GalebV32DriverTest {
         Properties properties = new Properties();
         properties.put("api", api);
         properties.put("entitiesMap", entitiesMap);
-        properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
+        properties.put("path", io.galeb.core.model.BackendPool.class.getSimpleName().toLowerCase());
         try {
             properties.put("json", new JsonMapper().makeJson(pool).toString());
         } catch (JsonProcessingException e) {
