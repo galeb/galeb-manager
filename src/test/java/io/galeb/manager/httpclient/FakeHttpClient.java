@@ -20,6 +20,7 @@ package io.galeb.manager.httpclient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.core.util.Constants;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -65,7 +66,7 @@ public class FakeHttpClient implements CommonHttpRequester {
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
             result = "[" + map.entrySet().stream()
-                    .filter(entry -> entry.getKey().startsWith(entityId + Entity.SEP_COMPOUND_ID))
+                    .filter(entry -> (!"".equals(entityId) && entry.getKey().startsWith(entityId + Entity.SEP_COMPOUND_ID)) || ("".equals(entityId)))
                     .map(Map.Entry::getValue)
                     .collect(Collectors.joining(",")) + "]";
         }
@@ -102,6 +103,9 @@ public class FakeHttpClient implements CommonHttpRequester {
                 if (parentIdObj != null) {
                     parentId = parentIdObj.asText("");
                 }
+                Entity entity = (Entity) JsonObject.fromJson(body, Entity.class);
+                entity.setEntityType(entityPath);
+                body = JsonObject.toJsonString(entity);
                 map.putIfAbsent(id + Entity.SEP_COMPOUND_ID + parentId, body);
             } catch (IOException e) {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
@@ -138,6 +142,9 @@ public class FakeHttpClient implements CommonHttpRequester {
                     if (parentIdObj != null) {
                         parentId = parentIdObj.asText("");
                     }
+                    Entity entity = (Entity) JsonObject.fromJson(body, Entity.class);
+                    entity.setEntityType(entityPath);
+                    body = JsonObject.toJsonString(entity);
                     map.replace(id + Entity.SEP_COMPOUND_ID + parentId, body);
                 }
             } catch (IOException e) {
