@@ -35,6 +35,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class FakeFarmClient implements CommonHttpRequester {
@@ -53,24 +54,16 @@ public class FakeFarmClient implements CommonHttpRequester {
     @Override
     public ResponseEntity<String> get(String uriPath) throws URISyntaxException {
         LOGGER.info("GET " + uriPath);
-        URI uri = new URI(uriPath);
-        String result = null;
-        String[] paths = uri.getPath().split("/");
-        String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        String[] paths = getPathsWithSlash(uriPath);
+        String entityPath = getEntityPath(paths);
         if ("farm".equals(entityPath)) {
             String response = "{ \"info\" : \"'GET /farm' was removed\" }";
             LOGGER.info("Result: OK \n" + response);
             return ResponseEntity.ok(response);
         }
-        String entityId = paths.length > 2 ? paths[2] : "";
-        ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
-        if (map != null) {
-            result = "[" + map.entrySet().stream()
-                    .filter(entry -> (!"".equals(entityId) && entry.getKey().startsWith(entityId + Entity.SEP_COMPOUND_ID)) || ("".equals(entityId)))
-                    .map(Map.Entry::getValue)
-                    .collect(Collectors.joining(",")) + "]";
-        }
-        if (result == null || "[]".equals(result)) {
+        String entityId = getEntityId(paths);
+        String result = getArrayOfEntities(entityPath, entityId);
+        if ("[]".equals(result)) {
             LOGGER.info("Result: NOT FOUND");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("");
         } else {
@@ -86,13 +79,101 @@ public class FakeFarmClient implements CommonHttpRequester {
             LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
-        URI uri = new URI(uriPath);
-        String[] paths = uri.getPath().split("/");
-        String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
+        String[] paths = getPathsWithSlash(uriPath);
+        String entityPath = getEntityPath(paths);
         if ("farm".equals(entityPath)) {
             LOGGER.info("Result: BAD REQUEST");
             return ResponseEntity.badRequest().body("");
         }
+        putIfAbsentToMap(entityPath, body);
+        LOGGER.info("Result: ACCEPTED");
+        return ResponseEntity.accepted().body("");
+    }
+
+    @Override
+    public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
+        LOGGER.info("PUT " + uriPath + " \n" + body);
+        if (body == null || "".equals(body)) {
+            LOGGER.info("Result: BAD REQUEST");
+            return ResponseEntity.badRequest().body("");
+        }
+        String[] paths = getPathsWithSlash(uriPath);
+        String entityPath = getEntityPath(paths);
+        if ("farm".equals(entityPath)) {
+            // TODO: Galeb.API ignore update Farm.
+            LOGGER.info("Result: BAD REQUEST");
+            return ResponseEntity.badRequest().body("");
+        }
+        String entityId = getEntityId(paths);
+        replaceIntoMap(entityPath, entityId, body);
+        LOGGER.info("Result: ACCEPTED");
+        return ResponseEntity.accepted().body("");
+    }
+
+    @Override
+    public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
+        LOGGER.info("DELETE " + uriPath + " \n" + body);
+        String[] paths = getPathsWithSlash(uriPath);
+        String entityPath = getEntityPath(paths);
+        if ("farm".equals(entityPath)) {
+            deleteAll();
+            LOGGER.info("Result: ACCEPTED");
+            return ResponseEntity.accepted().body("");
+        }
+        String entityId = getEntityId(paths);
+        if (!"".equals(entityId)) {
+            if (body == null || "".equals(body)) {
+                LOGGER.info("Result: BAD REQUEST");
+                return ResponseEntity.badRequest().body("");
+            }
+        }
+        removeFromMap(entityPath, entityId, body);
+        LOGGER.info("Result: ACCEPTED");
+        return ResponseEntity.accepted().body("");
+    }
+
+    @Override
+    public boolean isStatusCodeEqualOrLessThan(ResponseEntity<String> response, int status) {
+        return response.getStatusCode().value() <= status;
+    }
+
+    public void deleteAll() {
+        Constants.ENTITY_CLASSES.stream()
+                                .map(c -> c.getSimpleName().toLowerCase())
+                                .forEach(e -> mapOfmaps.get(e).clear());
+    }
+
+    private String getEntityPath(final String[] paths) {
+        return paths.length > 1 ? paths[1] : "UNDEF";
+    }
+
+    private String getEntityId(final String[] paths) {
+        return paths.length > 2 ? paths[2] : "";
+    }
+
+    private String[] getPathsWithSlash(String uriPath) throws URISyntaxException {
+        URI uri = new URI(uriPath);
+        return uri.getPath().split("/");
+    }
+
+    private Predicate<? super Map.Entry<String, String>> hasIdAndExistOrNotHasId(String entityId) {
+        return entry -> (!"".equals(entityId) && entry.getKey().startsWith(entityId + Entity.SEP_COMPOUND_ID)) ||
+                ("".equals(entityId));
+    }
+
+    private String getArrayOfEntities(String entityPath, String entityId) {
+        String result = "[]";
+        ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
+        if (map != null) {
+            result = "[" + map.entrySet().stream()
+                    .filter(hasIdAndExistOrNotHasId(entityId))
+                    .map(Map.Entry::getValue)
+                    .collect(Collectors.joining(",")) + "]";
+        }
+        return result;
+    }
+
+    private void putIfAbsentToMap(String entityPath, String body) {
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
             try {
@@ -111,26 +192,9 @@ public class FakeFarmClient implements CommonHttpRequester {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
-        LOGGER.info("Result: ACCEPTED");
-        return ResponseEntity.accepted().body("");
     }
 
-    @Override
-    public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
-        LOGGER.info("PUT " + uriPath + " \n" + body);
-        if (body == null || "".equals(body)) {
-            LOGGER.info("Result: BAD REQUEST");
-            return ResponseEntity.badRequest().body("");
-        }
-        URI uri = new URI(uriPath);
-        String[] paths = uri.getPath().split("/");
-        String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
-        if ("farm".equals(entityPath)) {
-            // TODO: Galeb.API ignore update Farm.
-            LOGGER.info("Result: BAD REQUEST");
-            return ResponseEntity.badRequest().body("");
-        }
-        String entityId = paths.length > 2 ? paths[2] : "";
+    private void replaceIntoMap(String entityPath, String entityId, String body) {
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
             try {
@@ -151,28 +215,9 @@ public class FakeFarmClient implements CommonHttpRequester {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
-        LOGGER.info("Result: ACCEPTED");
-        return ResponseEntity.accepted().body("");
     }
 
-    @Override
-    public ResponseEntity<String> delete(String uriPath, String body) throws URISyntaxException, IOException {
-        LOGGER.info("DELETE " + uriPath + " \n" + body);
-        URI uri = new URI(uriPath);
-        String[] paths = uri.getPath().split("/");
-        String entityPath = paths.length > 1 ? paths[1] : "UNDEF";
-        if ("farm".equals(entityPath)) {
-            deleteAll();
-            LOGGER.info("Result: ACCEPTED");
-            return ResponseEntity.accepted().body("");
-        }
-        String entityId = paths.length > 2 ? paths[2] : "";
-        if (!"".equals(entityId)) {
-            if (body == null || "".equals(body)) {
-                LOGGER.info("Result: BAD REQUEST");
-                return ResponseEntity.badRequest().body("");
-            }
-        }
+    private void removeFromMap(String entityPath, String entityId, String body) {
         ConcurrentHashMap<String, String> map = mapOfmaps.get(entityPath);
         if (map != null) {
             if ("".equals(entityId)) {
@@ -194,18 +239,6 @@ public class FakeFarmClient implements CommonHttpRequester {
                 }
             }
         }
-        LOGGER.info("Result: ACCEPTED");
-        return ResponseEntity.accepted().body("");
     }
 
-    @Override
-    public boolean isStatusCodeEqualOrLessThan(ResponseEntity<String> response, int status) {
-        return response.getStatusCode().value() <= status;
-    }
-
-    public void deleteAll() {
-        Constants.ENTITY_CLASSES.stream()
-                                .map(c -> c.getSimpleName().toLowerCase())
-                                .forEach(e -> mapOfmaps.get(e).clear());
-    }
 }
