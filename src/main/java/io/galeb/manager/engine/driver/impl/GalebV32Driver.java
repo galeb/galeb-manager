@@ -26,7 +26,7 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.util.DiffProcessor;
 import io.galeb.manager.httpclient.CommonHttpRequester;
-import io.galeb.manager.httpclient.HttpClient;
+import io.galeb.manager.httpclient.FarmClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -281,7 +281,7 @@ public class GalebV32Driver implements Driver {
     }
 
     private CommonHttpRequester getHttpClient() {
-        return (resource instanceof CommonHttpRequester) ? (CommonHttpRequester)resource : new HttpClient();
+        return (resource instanceof CommonHttpRequester) ? (CommonHttpRequester)resource : new FarmClient();
     }
 
 }
