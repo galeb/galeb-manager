@@ -21,15 +21,15 @@ package io.galeb.manager.test.factory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.listeners.PoolEngine;
+import io.galeb.manager.entity.BalancePolicy;
+import io.galeb.manager.entity.BalancePolicyType;
 import io.galeb.manager.entity.Pool;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class PoolFactory {
 
@@ -37,25 +37,17 @@ public class PoolFactory {
 
     public Pool build() {
         final Pool pool= new Pool(UUID.randomUUID().toString());
-        pool.getProperties().put(io.galeb.core.model.BackendPool.PROP_LOADBALANCE_POLICY, "DEFAULT");
+        final BalancePolicyType balancePolicyType = new BalancePolicyType("DEFAULT");
+        final BalancePolicy balancePolicy = new BalancePolicy("DEFAULT", balancePolicyType);
+        pool.setBalancePolicy(balancePolicy);
         pool.updateHash();
         return pool;
     }
 
     public Properties makeProperties(Pool pool) {
-        String api = "api";
-        Map<String, List<?>> entitiesMap = Collections.emptyMap();
-        Properties properties = new Properties();
-        properties.put("api", api);
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("path", io.galeb.core.model.BackendPool.class.getSimpleName().toLowerCase());
-        try {
-            properties.put("json", new JsonMapper().makeJson(pool).toString());
-        } catch (JsonProcessingException e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        }
-
-        return properties;
+        Map<String, String> jmsHeaderProperties = new HashMap<>();
+        jmsHeaderProperties.put("api", "api");
+        return new PoolEngine().makeProperties(pool, jmsHeaderProperties);
     }
 
 }

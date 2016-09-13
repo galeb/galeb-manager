@@ -18,21 +18,16 @@
 
 package io.galeb.manager.test.factory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.listeners.FarmEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Provider;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class FarmFactory {
 
@@ -46,20 +41,11 @@ public class FarmFactory {
         return new Farm(name, domain, api, environment, provider);
     }
 
-    public Properties makeProperties() {
-        String api = "api";
-        Map<String, List<?>> entitiesMap = Collections.emptyMap();
-        Properties properties = new Properties();
-        properties.put("api", api);
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("lockName", "lock_0");
-        properties.put("path", "farm");
-        try {
-            properties.put("json", new JsonMapper().makeJson(build(api)).toString());
-        } catch (JsonProcessingException e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        }
+    public Properties makeProperties(Farm farm) {
+        return makeProperties(farm, Collections.emptyMap());
+    }
 
-        return properties;
+    public Properties makeProperties(Farm farm, final Map<String, List<?>> entitiesMap) {
+        return new FarmEngine().getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
     }
 }
