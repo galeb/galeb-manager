@@ -25,6 +25,7 @@ import io.galeb.manager.security.services.SystemUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,8 +38,7 @@ public class VirtualHostAliasBuilder {
         VirtualHost virtualHostAlias = new VirtualHost(virtualHostName, virtualHost.getEnvironment(), virtualHost.getProject());
 
         SystemUserService.runAs();
-        Set<Rule> rulesOfVirtualhost = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
-                .stream().collect(Collectors.toSet());
+        Set<Rule> rulesOfVirtualhost = getRulesOfVirtualhost(virtualHost);
         SystemUserService.clearContext();
         virtualHostAlias.setRules(rulesOfVirtualhost);
         virtualHostAlias.setId(virtualHost.getId());
@@ -49,4 +49,13 @@ public class VirtualHostAliasBuilder {
         virtualHostAlias.setRulesOrdered(virtualHost.getRulesOrdered());
         return virtualHostAlias;
     }
+
+    private Set<Rule> getRulesOfVirtualhost(VirtualHost virtualHost) {
+        if (virtualHostRepository != null) {
+            return virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
+                    .stream().collect(Collectors.toSet());
+        }
+        return virtualHost.getRules();
+    }
+
 }
