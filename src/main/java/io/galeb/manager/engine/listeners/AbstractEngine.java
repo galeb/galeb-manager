@@ -21,6 +21,7 @@ package io.galeb.manager.engine.listeners;
 import java.util.Map;
 import java.util.Optional;
 
+import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
@@ -40,11 +41,18 @@ public abstract class AbstractEngine<T> {
 
     public static final String SEPARATOR = "__";
 
-    protected abstract void create(T entity, final Map<String, String> jmsHeaders);
+    protected Driver driver = null;
 
-    protected abstract void remove(T entity, final Map<String, String> jmsHeaders);
+    public AbstractEngine<T> setDriver(Driver driver) {
+        this.driver = driver;
+        return this;
+    }
 
-    protected abstract void update(T entity, final Map<String, String> jmsHeaders);
+    public abstract void create(T entity, final Map<String, String> jmsHeaders);
+
+    public abstract void remove(T entity, final Map<String, String> jmsHeaders);
+
+    public abstract void update(T entity, final Map<String, String> jmsHeaders);
 
     protected abstract FarmRepository getFarmRepository();
 
@@ -65,7 +73,7 @@ public abstract class AbstractEngine<T> {
 
     protected Properties fromEntity(AbstractEntity<?> entity, final Map<String, String> jmsHeaders) {
         Properties properties = new Properties();
-        jmsHeaders.entrySet().stream().forEach(entry -> {
+        jmsHeaders.entrySet().forEach(entry -> {
             properties.put(entry.getKey(), entry.getValue());
         });
         return properties;
