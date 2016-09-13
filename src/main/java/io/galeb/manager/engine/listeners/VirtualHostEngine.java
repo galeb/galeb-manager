@@ -128,7 +128,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(VirtualHost virtualHost, final Map<String, String> jmsHeaderProperties) {
+    public Properties makeProperties(VirtualHost virtualHost, final Map<String, String> jmsHeaderProperties) {
         String json = "{}";
         try {
             JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);

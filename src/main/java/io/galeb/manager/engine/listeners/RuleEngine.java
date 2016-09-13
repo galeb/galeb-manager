@@ -140,7 +140,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         }
     }
 
-    private Properties makeProperties(Rule rule, VirtualHost virtualHost, final Map<String, String> jmsHeaders) {
+    public Properties makeProperties(Rule rule, VirtualHost virtualHost, final Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(rule);
