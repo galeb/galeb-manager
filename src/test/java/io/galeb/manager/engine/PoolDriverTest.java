@@ -16,9 +16,11 @@
  *   limitations under the License.
  */
 
-package io.galeb.manager.engine.driver;
+package io.galeb.manager.engine;
 
 import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.httpclient.FakeFarmClient;
