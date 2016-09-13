@@ -142,7 +142,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     @Override
-    protected void update(Farm entity, @Headers final Map<String, String> jmsHeaders) {
+    public void update(Farm entity, @Headers final Map<String, String> jmsHeaders) {
         //
     }
 
