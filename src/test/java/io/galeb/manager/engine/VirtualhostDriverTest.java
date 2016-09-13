@@ -22,6 +22,9 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.engine.listeners.VirtualHostEngine;
+import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.VirtualhostFactory;
@@ -41,6 +44,8 @@ public class VirtualhostDriverTest {
     private final VirtualhostFactory virtualhostFactory = new VirtualhostFactory();
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
+    private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
+    private final AbstractEngine<VirtualHost> virtuahostEngine = new VirtualHostEngine().setVirtualHostAliasBuilder(virtualHostAliasBuilder).setDriver(driver);
 
     private void logTestedMethod() {
         LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
@@ -64,10 +69,10 @@ public class VirtualhostDriverTest {
     public void createVirtualhost() {
         logTestedMethod();
         VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
-        boolean resultCreate = driver.create(virtualhostFactory.makeProperties(virtualHost));
+        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
         boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
 
-        Assert.isTrue(resultCreate && resultExist);
+        Assert.isTrue(resultExist);
     }
 
     @Test
@@ -77,18 +82,18 @@ public class VirtualhostDriverTest {
         Properties properties = virtualhostFactory.makeProperties(virtualHost);
         String api = properties.getOrDefault("api", "UNDEF").toString();
         String virtualHostName = virtualHost.getName();
-        boolean resultCreate = driver.create(properties);
+        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
         Map<String, String> map = driver.getAll(properties).get("virtualhost").get(api + "/virtualhost/" + virtualHostName + "@");
         String versionStr = map.get("version");
         int versionOrig = Integer.parseInt(versionStr);
         boolean resultExist = driver.exist(properties);
         virtualHost.updateHash();
-        boolean resultUpdate = driver.update(virtualhostFactory.makeProperties(virtualHost));
+        virtuahostEngine.update(virtualHost, virtualhostFactory.jmsHeaderProperties());
         map = driver.getAll(properties).get("virtualhost").get(api + "/virtualhost/" + virtualHostName + "@");
         versionStr = map.get("version");
         int versionNew = Integer.parseInt(versionStr);
 
-        Assert.isTrue(resultCreate && resultExist && resultUpdate && versionNew > versionOrig);
+        Assert.isTrue(resultExist && versionNew > versionOrig);
     }
 
     @Test
@@ -96,12 +101,55 @@ public class VirtualhostDriverTest {
         logTestedMethod();
         VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
         Properties properties = virtualhostFactory.makeProperties(virtualHost);
-        boolean resultCreate = driver.create(properties);
+        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
         boolean resultExist = driver.exist(properties);
-        boolean resultRemove = driver.remove(properties);
+        virtuahostEngine.remove(virtualHost, virtualhostFactory.jmsHeaderProperties());
         boolean resultNotExist = !driver.exist(properties);
 
-        Assert.isTrue(resultCreate && resultExist && resultRemove && resultNotExist);
+        Assert.isTrue(resultExist && resultNotExist);
+    }
+
+    @Test
+    public void createAliasesWithNewVirtualhost() {
+        logTestedMethod();
+        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
+        String anAlias = UUID.randomUUID().toString();
+        String otherAlias = UUID.randomUUID().toString();
+        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAlias);
+        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAlias);
+        virtualHost.getAliases().add(anAlias);
+        virtualHost.getAliases().add(otherAlias);
+
+        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
+
+        boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
+        boolean resultExistAnAlias = driver.exist(virtualhostFactory.makeProperties(anAliasVirtualHost));
+        boolean resultExistOtherAlias = driver.exist(virtualhostFactory.makeProperties(otherAliasVirtualHost));
+
+        Assert.isTrue(resultExist && resultExistAnAlias && resultExistOtherAlias);
+    }
+
+    @Test
+    public void createAliasesWithSavedVirtualhost() {
+        logTestedMethod();
+        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
+        String anAlias = UUID.randomUUID().toString();
+        String otherAlias = UUID.randomUUID().toString();
+        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAlias);
+        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAlias);
+        virtualHost.getAliases().add(anAlias);
+
+        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
+
+        virtualHost.getAliases().add(otherAlias);
+
+        virtuahostEngine.update(virtualHost, virtualhostFactory.jmsHeaderProperties());
+
+        boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
+        boolean resultExistAnAlias = driver.exist(virtualhostFactory.makeProperties(anAliasVirtualHost));
+        boolean resultExistOtherAlias = driver.exist(virtualhostFactory.makeProperties(otherAliasVirtualHost));
+
+        Assert.isTrue(resultExist && resultExistAnAlias && resultExistOtherAlias);
     }
 
 }

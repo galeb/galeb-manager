@@ -39,9 +39,13 @@ public class VirtualhostFactory {
     }
 
     public Properties makeProperties(VirtualHost virtualHost) {
+        return new VirtualHostEngine().makeProperties(virtualHost, jmsHeaderProperties());
+    }
+
+    public Map<String, String> jmsHeaderProperties() {
         Map<String, String> jmsHeaderProperties = new HashMap<>();
         jmsHeaderProperties.put("api", "api");
-        return new VirtualHostEngine().makeProperties(virtualHost, jmsHeaderProperties);
+        return jmsHeaderProperties;
     }
 
 }
