@@ -18,14 +18,11 @@
 
 package io.galeb.manager.test.factory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.listeners.PoolEngine;
 import io.galeb.manager.entity.BalancePolicy;
 import io.galeb.manager.entity.BalancePolicyType;
 import io.galeb.manager.entity.Pool;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
