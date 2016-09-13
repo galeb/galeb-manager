@@ -67,7 +67,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     public void create(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
 
         LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
+        final Driver driver = getDriver(virtualHost);
         try {
             driver.create(makeProperties(virtualHost, jmsHeaders));
             virtualHost.getAliases().forEach(virtualHostName -> {
@@ -83,7 +83,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @JmsListener(destination = VirtualHostQueue.QUEUE_UPDATE)
     public void update(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
+        final Driver driver = getDriver(virtualHost);
         try {
             driver.update(makeProperties(virtualHost, jmsHeaders));
             virtualHost.getAliases().forEach(virtualHostName -> {
@@ -105,7 +105,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @JmsListener(destination = VirtualHostQueue.QUEUE_REMOVE)
     public void remove(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
+        final Driver driver = getDriver(virtualHost);
         try {
             driver.remove(makeProperties(virtualHost, jmsHeaders));
             virtualHost.getAliases().forEach(virtualHostName -> {
@@ -164,6 +164,19 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     private AbstractEnqueuer<Rule> ruleQueue() {
         return (RuleQueue)queueLocator.getQueue(Rule.class);
+    }
+
+
+    private Driver getDriver(VirtualHost virtualHost) {
+        if (driver == null) {
+            driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
+        }
+        return driver;
+    }
+
+    public VirtualHostEngine setVirtualHostAliasBuilder(VirtualHostAliasBuilder aVirtualHostAliasBuilder) {
+        virtualHostAliasBuilder = aVirtualHostAliasBuilder;
+        return this;
     }
 
 }
