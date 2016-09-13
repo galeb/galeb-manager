@@ -98,7 +98,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(Pool pool, Map<String, String> jmsHeaders) {
+    public Properties makeProperties(Pool pool, Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             if (pool.getBalancePolicy() != null) {

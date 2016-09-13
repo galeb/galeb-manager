@@ -99,7 +99,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties makeProperties(Target target, Pool pool, final Map<String, String> jmsHeaders) {
+    public Properties makeProperties(Target target, Pool pool, final Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(target);

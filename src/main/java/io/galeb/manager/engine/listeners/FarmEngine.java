@@ -71,10 +71,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
 
-    private final LockerManager lockerManager = new LockerManager();
+    private LockerManager lockerManager = null;
 
-    @Autowired
-    private DistMap distMap;
+    @Autowired private DistMap distMap;
 
     @Override
     protected Log getLogger() {
@@ -154,6 +153,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
         String farmName = farm.getName();
         String farmStatusMsgPrefix = "FARM STATUS - ";
 
+        if (lockerManager == null) {
+            lockerManager = new LockerManager();
+        }
         if (lockerManager.lock(farm.idName())) {
 
             String apiWithSeparator = farm.getApi();
@@ -230,7 +232,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     private void updateStatus(final Map<String, Map<String, Map<String, String>>> remoteMultiMap, final Long farmId) {
-        remoteMultiMap.entrySet().stream().forEach(entryWithPath -> {
+        remoteMultiMap.entrySet().forEach(entryWithPath -> {
             entryWithPath.getValue().entrySet().forEach(entryWithEntity -> {
                 Entity entity = new Entity();
                 Map<String, String> entityMap = entryWithEntity.getValue();
@@ -260,7 +262,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         final AtomicReference<Set<String>> entityTypes = new AtomicReference<>(new HashSet<>());
 
-        diff.entrySet().stream().forEach(diffEntrySet -> {
+        diff.entrySet().forEach(diffEntrySet -> {
 
             try {
 
@@ -382,10 +384,15 @@ public class FarmEngine extends AbstractEngine<Farm> {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
 
-    private Properties getPropertiesWithEntities(Farm farm, String api) {
-        final Map<String, List<?>> entitiesMap = getEntitiesMap(farm);
+    public Properties getPropertiesWithEntities(Farm farm, String api) {
+        return getPropertiesWithEntities(farm, api, null);
+    }
+
+    public Properties getPropertiesWithEntities(Farm farm, String api, Map<String, List<?>> anEntitiesMap) {
+        final Map<String, List<?>> entitiesMap = anEntitiesMap == null ? getEntitiesMap(farm) : anEntitiesMap;
         final Properties properties = new Properties();
         properties.put("api", api);
+        properties.put("path", Farm.class.getSimpleName().toLowerCase());
         properties.put("entitiesMap", entitiesMap);
         properties.put("lockName", "lock_" + farm.getId());
         return properties;
