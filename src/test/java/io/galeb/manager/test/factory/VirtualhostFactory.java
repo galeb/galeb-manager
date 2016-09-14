@@ -18,34 +18,21 @@
 
 package io.galeb.manager.test.factory;
 
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.listeners.VirtualHostEngine;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.VirtualHost;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.util.*;
-
-public class VirtualhostFactory {
+public class VirtualhostFactory extends AbstractFactory<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualhostFactory.class);
 
+    @Override
     public VirtualHost build(String name) {
         Environment environment = new Environment("NULL");
         Project project = new Project("NULL");
         return new VirtualHost(name, environment, project);
-    }
-
-    public Properties makeProperties(VirtualHost virtualHost) {
-        return new VirtualHostEngine().makeProperties(virtualHost, jmsHeaderProperties());
-    }
-
-    public Map<String, String> jmsHeaderProperties() {
-        Map<String, String> jmsHeaderProperties = new HashMap<>();
-        jmsHeaderProperties.put("api", "api");
-        return jmsHeaderProperties;
     }
 
 }

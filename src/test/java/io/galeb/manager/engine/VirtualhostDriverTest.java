@@ -22,7 +22,6 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
-import io.galeb.manager.engine.listeners.AbstractEngine;
 import io.galeb.manager.engine.listeners.VirtualHostEngine;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.VirtualHost;
@@ -47,9 +46,9 @@ public class VirtualhostDriverTest {
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
     private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
-    private final AbstractEngine<VirtualHost> virtuahostEngine = new VirtualHostEngine()
-                                                                        .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
-                                                                        .setDriver(driver);
+    private final VirtualHostEngine virtuahostEngine = (VirtualHostEngine) new VirtualHostEngine()
+                                                                                            .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
+                                                                                            .setDriver(driver);
     private final Map<String, String> jmsHeaders = virtualhostFactory.jmsHeaderProperties();
 
     private void logTestedMethod() {
@@ -68,7 +67,7 @@ public class VirtualhostDriverTest {
 
         // given
         String virtualhostName = UUID.randomUUID().toString();
-        Properties properties = virtualhostFactory.makeProperties(virtualhostFactory.build(virtualhostName));
+        Properties properties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
 
         // when
         boolean result = driver.exist(properties);
@@ -84,7 +83,7 @@ public class VirtualhostDriverTest {
         // given
         String virtualhostName = UUID.randomUUID().toString();
         VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
-        Properties properties = virtualhostFactory.makeProperties(virtualHost);
+        Properties properties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
 
         // when
         virtuahostEngine.create(virtualHost, jmsHeaders);
@@ -101,7 +100,7 @@ public class VirtualhostDriverTest {
         // given
         String virtualhostName = UUID.randomUUID().toString();
         VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
-        Properties properties = virtualhostFactory.makeProperties(virtualHost);
+        Properties properties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
         String api = properties.getOrDefault("api", "UNDEF").toString();
         String virtualHostName = virtualHost.getName();
 
@@ -130,7 +129,7 @@ public class VirtualhostDriverTest {
         // given
         String virtualhostName = UUID.randomUUID().toString();
         VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
-        Properties properties = virtualhostFactory.makeProperties(virtualHost);
+        Properties properties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
 
         // when
         virtuahostEngine.create(virtualHost, jmsHeaders);
@@ -152,12 +151,10 @@ public class VirtualhostDriverTest {
         String otherAliasName = UUID.randomUUID().toString();
 
         VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
-        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAliasName);
-        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAliasName);
 
-        Properties virtualhostProperties = virtualhostFactory.makeProperties(virtualHost);
-        Properties anAliasProperties = virtualhostFactory.makeProperties(anAliasVirtualHost);
-        Properties otherAliasProperties = virtualhostFactory.makeProperties(otherAliasVirtualHost);
+        Properties virtualhostProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
+        Properties anAliasProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(anAliasName), jmsHeaders);
+        Properties otherAliasProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(otherAliasName), jmsHeaders);
         Set<String> aliases = new HashSet<>();
 
         // when
@@ -184,12 +181,10 @@ public class VirtualhostDriverTest {
         String otherAliasName = UUID.randomUUID().toString();
 
         VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
-        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAliasName);
-        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAliasName);
 
-        Properties virtualhostProperties = virtualhostFactory.makeProperties(virtualHost);
-        Properties anAliasProperties = virtualhostFactory.makeProperties(anAliasVirtualHost);
-        Properties otherAliasProperties = virtualhostFactory.makeProperties(otherAliasVirtualHost);
+        Properties virtualhostProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
+        Properties anAliasProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(anAliasName), jmsHeaders);
+        Properties otherAliasProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(otherAliasName), jmsHeaders);
         Set<String> aliases = new HashSet<>();
 
         // when

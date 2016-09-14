@@ -22,6 +22,7 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.listeners.PoolEngine;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.PoolFactory;
@@ -31,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class PoolDriverTest {
@@ -38,8 +40,10 @@ public class PoolDriverTest {
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
     private final PoolFactory poolFactory = new PoolFactory();
+    private final PoolEngine poolEngine = new PoolEngine();
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
+    private Map<String, String> jmsHeaders = poolFactory.jmsHeaderProperties();
 
     private void logTestedMethod() {
         LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
@@ -54,14 +58,16 @@ public class PoolDriverTest {
     @Test
     public void poolNotExist() {
         logTestedMethod();
-        boolean result = driver.exist(poolFactory.makeProperties(poolFactory.build()));
+        Pool pool = poolFactory.build(null);
+        boolean result = driver.exist(poolEngine.makeProperties(pool, jmsHeaders));
         Assert.isTrue(!result);
     }
 
     @Test
     public void createPool() {
         logTestedMethod();
-        Properties properties = poolFactory.makeProperties(poolFactory.build());
+        Pool pool = poolFactory.build(null);
+        Properties properties = poolEngine.makeProperties(pool, jmsHeaders);
         boolean resultCreate = driver.create(properties);
         boolean resultExist = driver.exist(properties);
         Assert.isTrue(resultCreate && resultExist);
@@ -70,8 +76,8 @@ public class PoolDriverTest {
     @Test
     public void updatePool() throws Exception {
         logTestedMethod();
-        Pool pool = poolFactory.build();
-        Properties properties = poolFactory.makeProperties(pool);
+        Pool pool = poolFactory.build(null);
+        Properties properties = poolEngine.makeProperties(pool, jmsHeaders);
         String api = properties.getOrDefault("api", "UNDEF").toString();
         String poolName = pool.getName();
         boolean resultCreate = driver.create(properties);
@@ -80,8 +86,9 @@ public class PoolDriverTest {
         int versionOrig = Integer.parseInt(versionStr);
         boolean resultExist = driver.exist(properties);
         pool.updateHash();
-        boolean resultUpdate = driver.update(poolFactory.makeProperties(pool));
-        map = driver.getAll(properties).get("backendpool").get(api + "/backendpool/" + poolName + "@");
+        Properties propertiesUpdated = poolEngine.makeProperties(pool, jmsHeaders);
+        boolean resultUpdate = driver.update(propertiesUpdated);
+        map = driver.getAll(propertiesUpdated).get("backendpool").get(api + "/backendpool/" + poolName + "@");
         versionStr = map.get("version");
         int versionNew = Integer.parseInt(versionStr);
         Assert.isTrue(resultCreate && resultExist && resultUpdate && versionNew > versionOrig);
@@ -90,7 +97,9 @@ public class PoolDriverTest {
     @Test
     public void removePool() {
         logTestedMethod();
-        Properties properties = poolFactory.makeProperties(poolFactory.build());
+
+        Pool pool = poolFactory.build(null);
+        Properties properties = poolEngine.makeProperties(pool, jmsHeaders);
         boolean resultCreate = driver.create(properties);
         boolean resultExist = driver.exist(properties);
         boolean resultRemove = driver.remove(properties);

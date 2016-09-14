@@ -18,21 +18,18 @@
 
 package io.galeb.manager.test.factory;
 
-import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
-import io.galeb.manager.engine.listeners.FarmEngine;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Provider;
+import io.galeb.manager.entity.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.*;
 
-public class FarmFactory {
+public class FarmFactory extends AbstractFactory<Farm> {
 
     private static final Log LOGGER = LogFactory.getLog(FarmFactory.class);
 
+    @Override
     public Farm build(String api) {
         Environment environment = new Environment("NULL");
         Provider provider = new Provider(GalebV32Driver.class.getSimpleName());
@@ -41,11 +38,12 @@ public class FarmFactory {
         return new Farm(name, domain, api, environment, provider);
     }
 
-    public Properties makeProperties(Farm farm) {
-        return makeProperties(farm, Collections.emptyMap());
-    }
-
-    public Properties makeProperties(Farm farm, final Map<String, List<?>> entitiesMap) {
-        return new FarmEngine().getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
+    public Map<String, List<?>> entitiesMap() {
+        final Map<String, List<?>> entitiesMap = new HashMap<>();
+        entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(), new ArrayList<VirtualHost>());
+        entitiesMap.put(Pool.class.getSimpleName().toLowerCase(), new ArrayList<Pool>());
+        entitiesMap.put(Target.class.getSimpleName().toLowerCase(), new ArrayList<Target>());
+        entitiesMap.put(Rule.class.getSimpleName().toLowerCase(), new ArrayList<Rule>());
+        return entitiesMap;
     }
 }

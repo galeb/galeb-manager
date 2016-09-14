@@ -23,21 +23,34 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.listeners.FarmEngine;
+import io.galeb.manager.engine.listeners.VirtualHostEngine;
+import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.*;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.FarmFactory;
+import io.galeb.manager.test.factory.VirtualhostFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
+import java.util.*;
+
 public class FarmDriverTest {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
 
     private final FarmFactory farmFactory = new FarmFactory();
+    private final VirtualhostFactory virtualhostFactory = new VirtualhostFactory();
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
+    private final FarmEngine farmEngine = (FarmEngine) new FarmEngine().setDriver(driver);
+    private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
+    private final VirtualHostEngine virtuahostEngine = (VirtualHostEngine) new VirtualHostEngine()
+                                                                                .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
+                                                                                .setDriver(driver);
 
     private void logTestedMethod() {
         LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
@@ -60,25 +73,67 @@ public class FarmDriverTest {
     @Test
     public void getFarmAlwaysReturnOK() throws JsonProcessingException {
         logTestedMethod();
-        boolean result = driver.exist(farmFactory.makeProperties(farmFactory.build("api")));
+
+        Farm farm = farmFactory.build("api");
+        boolean result = driver.exist(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
         Assert.isTrue(result);
     }
 
     @Test
     public void removeFarmAlwaysReturnAccept() throws JsonProcessingException {
         logTestedMethod();
-        boolean result = driver.remove(farmFactory.makeProperties(farmFactory.build("api")));
+
+        Farm farm = farmFactory.build("api");
+        boolean result = driver.remove(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
         Assert.isTrue(result);
     }
 
     @Test
     public void createAndUpdateFarmIsNotPossible() {
         logTestedMethod();
-        boolean resultCreate = driver.create(farmFactory.makeProperties(farmFactory.build("api")));
-        boolean resultUpdate = driver.update(farmFactory.makeProperties(farmFactory.build("api")));
+
+        Farm farm = farmFactory.build("api");
+        boolean resultCreate = driver.create(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
+        boolean resultUpdate = driver.update(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
 
         Assert.isTrue(!resultCreate, "Create Farm is possible?");
         Assert.isTrue(!resultUpdate, "Update Farm is possible?");
+    }
+
+    @Test
+    public void diffEmpty() throws Exception {
+        logTestedMethod();
+
+        final Map<String, List<?>> entitiesMap = farmFactory.entitiesMap();
+        Farm farm = farmFactory.build("api");
+        Properties properties = farmEngine.getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
+
+        Map<String, Map<String, Object>> diff = new HashMap<>();
+        Map<String, Map<String, Map<String, String>>> remoteMultiMap = driver.getAll(properties);
+        diff.putAll(driver.diff(properties, remoteMultiMap));
+        int diffSize = diff.size();
+
+        Assert.isTrue(diffSize == 0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void diffNotEmpty() throws Exception {
+        logTestedMethod();
+
+        final Map<String, List<?>> entitiesMap = farmFactory.entitiesMap();
+        VirtualHost virtualhost = virtualhostFactory.build(UUID.randomUUID().toString());
+        List<VirtualHost> virtualhosts = (List<VirtualHost>) entitiesMap.get(VirtualHost.class.getSimpleName().toLowerCase());
+        virtualhosts.add(virtualhost);
+        Farm farm = farmFactory.build("api");
+        Properties farmProperties = farmEngine.getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
+        virtuahostEngine.create(virtualhost, virtualhostFactory.jmsHeaderProperties());
+
+        final Map<String, Map<String, Map<String, String>>> remoteMultiMap = driver.getAll(farmProperties);
+        final Map<String, Map<String, Object>> diffMap = driver.diff(farmProperties, remoteMultiMap);
+        int diffSize = diffMap.size();
+
+        Assert.isTrue(diffSize == 0);
     }
 
 }

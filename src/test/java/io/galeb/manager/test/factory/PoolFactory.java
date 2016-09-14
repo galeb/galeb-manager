@@ -18,8 +18,6 @@
 
 package io.galeb.manager.test.factory;
 
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.listeners.PoolEngine;
 import io.galeb.manager.entity.BalancePolicy;
 import io.galeb.manager.entity.BalancePolicyType;
 import io.galeb.manager.entity.Pool;
@@ -28,23 +26,18 @@ import org.apache.commons.logging.LogFactory;
 
 import java.util.*;
 
-public class PoolFactory {
+public class PoolFactory extends AbstractFactory<Pool> {
 
     private static final Log LOGGER = LogFactory.getLog(PoolFactory.class);
 
-    public Pool build() {
+    @Override
+    public Pool build(String arg) {
         final Pool pool= new Pool(UUID.randomUUID().toString());
         final BalancePolicyType balancePolicyType = new BalancePolicyType("DEFAULT");
         final BalancePolicy balancePolicy = new BalancePolicy("DEFAULT", balancePolicyType);
         pool.setBalancePolicy(balancePolicy);
         pool.updateHash();
         return pool;
-    }
-
-    public Properties makeProperties(Pool pool) {
-        Map<String, String> jmsHeaderProperties = new HashMap<>();
-        jmsHeaderProperties.put("api", "api");
-        return new PoolEngine().makeProperties(pool, jmsHeaderProperties);
     }
 
 }
