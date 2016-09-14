@@ -76,8 +76,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @Autowired private DistMap distMap;
 
-    @Autowired
-    private StatusDistributed statusDist;
+    @Autowired private StatusDistributed statusDist;
 
     @Override
     protected Log getLogger() {
@@ -159,6 +158,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         if (lockerManager == null) {
             lockerManager = new LockerManager();
+        }
+        if (statusDist == null) {
+            statusDist = new StatusDistributed();
         }
         if (lockerManager.lock(farm.idName())) {
 
