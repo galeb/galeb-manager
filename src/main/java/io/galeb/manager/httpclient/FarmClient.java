@@ -41,6 +41,7 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
@@ -63,6 +64,7 @@ public class FarmClient implements CommonHttpRequester {
     private static final Log LOGGER = LogFactory.getLog(FarmClient.class);
     private static final int DRIVER_READ_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.read.timeout", "60000"));
     private static final int DRIVER_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty("io.galeb.connect.timeout", "5000"));
+    private static final int LOG_RESPONSE_BODY_LIMIT = 1000;
 
     private final RestTemplate restTemplate;
     private final RequestConfig defaultRequestConfig;
@@ -201,9 +203,9 @@ public class FarmClient implements CommonHttpRequester {
         LoggerUtils.logger(LOGGER, logLevel, status);
         response.getHeaders().entrySet().forEach(entry ->
                 LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
-        String responseBody = response.getBody();
-        if (responseBody != null) {
-            LoggerUtils.logger(LOGGER, logLevel, response.getBody());
+        String responseBody = response.getBody().substring(0, LOG_RESPONSE_BODY_LIMIT);
+        if (StringUtils.countOccurrencesOf(responseBody, "},{") == 0) {
+            LoggerUtils.logger(LOGGER, logLevel, responseBody);
         }
     }
 
