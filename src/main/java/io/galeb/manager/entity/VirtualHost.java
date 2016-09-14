@@ -124,7 +124,6 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
             this.aliases.clear();
             this.aliases.addAll(aliases);
         }
-        this.aliases = aliases;
         return this;
     }
 
