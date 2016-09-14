@@ -80,7 +80,6 @@ public class DiffProcessor {
     private String getApi() {
         if ("".equals(api) && properties != null) {
             api = properties.getOrDefault("api", "localhost:9090").toString();
-            api = !api.startsWith("http") ? "http://" + api : api;
         }
         return api;
     }
