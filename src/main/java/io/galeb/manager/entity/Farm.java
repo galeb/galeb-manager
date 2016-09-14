@@ -18,24 +18,24 @@
 
 package io.galeb.manager.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.galeb.manager.common.StatusDistributed;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
 
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_farm", columnNames = { "name" }) })
 public class Farm extends AbstractEntity<Farm> {
 
     private static final long serialVersionUID = 5596582746795373017L;
+
+    @Transient
+    protected StatusDistributed statusDist = new StatusDistributed();
 
     @Column(nullable = false)
     @JsonProperty(required = true)
@@ -57,6 +57,9 @@ public class Farm extends AbstractEntity<Farm> {
 
     @Column
     private boolean autoReload = true;
+
+    @Transient
+    private List<LockStatus> lockStatus;
 
     public Farm(String name,String domain, String api, Environment environment, Provider provider) {
         Assert.hasText(domain);
@@ -136,5 +139,13 @@ public class Farm extends AbstractEntity<Farm> {
     @JsonIgnore
     public String idName() {
         return this.getClass().getSimpleName() + getId();
+    }
+
+    public List<LockStatus> getLockStatus() {
+        return statusDist.getLockStatus(idName());
+    }
+
+    public void setLockStatus(List<LockStatus> lockStatus) {
+        this.lockStatus = lockStatus;
     }
 }

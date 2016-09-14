@@ -22,9 +22,10 @@ import io.galeb.core.cluster.ClusterLocker;
 import io.galeb.core.cluster.ignite.IgniteClusterLocker;
 import io.galeb.manager.engine.util.CounterDownLatch;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class LockerManager {
+public class LockerManager implements Serializable {
 
     private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
 
@@ -42,4 +43,8 @@ public class LockerManager {
     }
 
     public Boolean contains(String lockId) { return locker.contains(lockId); }
+
+    public String name() {
+        return locker.name();
+    }
 }

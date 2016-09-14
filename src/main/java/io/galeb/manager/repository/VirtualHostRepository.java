@@ -52,7 +52,8 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_PROJECT_TO_ACCOUNT
-            + "where (e.name like concat('%', :name, '%')) and " + SECURITY_FILTER;
+            + "where (e.name like concat('%', :name, '%')) and " + SECURITY_FILTER
+            + " ORDER BY e.name LIMIT 10";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)

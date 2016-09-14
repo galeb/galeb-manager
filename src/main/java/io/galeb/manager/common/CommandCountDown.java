@@ -5,9 +5,6 @@ import io.galeb.manager.engine.util.CounterDownLatch;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Created by tiago.machado on 19/07/16.
- */
 public enum CommandCountDown {
 
     SEND_TO_QUEUE {

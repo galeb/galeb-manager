@@ -30,6 +30,7 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
 import io.galeb.manager.cache.DistMap;
+import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
@@ -74,6 +75,9 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private LockerManager lockerManager = null;
 
     @Autowired private DistMap distMap;
+
+    @Autowired
+    private StatusDistributed statusDist;
 
     @Override
     protected Log getLogger() {
@@ -157,6 +161,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
             lockerManager = new LockerManager();
         }
         if (lockerManager.lock(farm.idName())) {
+
+            statusDist.updateNewStatus(farm.idName(), true);
 
             String apiWithSeparator = farm.getApi();
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {

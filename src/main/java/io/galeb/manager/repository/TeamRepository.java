@@ -55,7 +55,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_TEAM_TO_ACCOUNT +
                         "where (e.name like concat('%', :name, '%')) and " +
-                        SECURITY_FILTER;
+                        SECURITY_FILTER + " ORDER BY e.name LIMIT 10";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)

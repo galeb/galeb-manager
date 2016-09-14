@@ -22,9 +22,11 @@ package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.CommandCountDown;
+import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
+
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.repository.FarmRepository;
@@ -40,6 +42,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,6 +58,8 @@ public class SyncFarms {
 
     @Autowired private FarmRepository        farmRepository;
     @Autowired private FarmQueue             farmQueue;
+
+    private StatusDistributed     statusDist = new StatusDistributed();
 
     private final LockerManager lockerManager = new LockerManager();
 
@@ -123,11 +128,12 @@ public class SyncFarms {
                 releaseCounterWithoutCommand(farm);
                 break;
             case RELEASE:
+                statusDist.updateNewStatus(farm.idName(), false);
                 lockerManager.release(farm.idName(), apis);
                 releaseCounterWithoutCommand(farm);
                 break;
             case STILL_SYNCHRONIZING:
-                logStillSynchronizing(farm, farmStatusMsgPrefix, apis);
+                updateStatusDistributed(farm, farmStatusMsgPrefix, apis);
                 releaseCounterWithoutCommand(farm);
                 break;
             default:
@@ -156,11 +162,16 @@ public class SyncFarms {
         counterWithoutCommandCounterDown.remove(farm.idName());
     }
 
-    private void logStillSynchronizing(Farm farm, String farmStatusMsgPrefix, String[] apis) {
+    private void updateStatusDistributed(Farm farm, String farmStatusMsgPrefix, String[] apis) {
+        final Map<String, Integer> countDownLatchOfApis = new HashMap<>();
         Arrays.stream(apis).forEach(api -> {
             final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+            if (latchCount != null) {
+                countDownLatchOfApis.put(api, latchCount);
+            }
             String farmFull = farm.getName() + " [ " + api + " ] ";
             LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
         });
+        statusDist.updateCountDownLatch(farm.idName(), countDownLatchOfApis);
     }
 }

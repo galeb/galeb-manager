@@ -45,7 +45,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                         + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + "a.name LIKE CONCAT('%',:name,'%') AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+                        + CommonJpaFilters.SECURITY_FILTER + " ORDER BY a.name LIMIT 10";
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)

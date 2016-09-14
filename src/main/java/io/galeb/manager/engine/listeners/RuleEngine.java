@@ -65,8 +65,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
-            updateRuleSpecialProperties(rule, virtualhost);
             try {
+                updateRuleSpecialProperties(rule, virtualhost);
                 driver.create(makeProperties(rule, virtualhost, jmsHeaders));
                 virtualhost.getAliases().forEach(virtualHostName -> {
                     VirtualHost virtualHostAlias = virtualHostAliasBuilder
@@ -84,8 +84,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
         rule.getParents().stream().forEach(virtualhost -> {
-            updateRuleSpecialProperties(rule, virtualhost);
             try {
+                updateRuleSpecialProperties(rule, virtualhost);
                 if (!driver.exist(makeProperties(rule, virtualhost, jmsHeaders))) {
                     ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule);
                     return;
