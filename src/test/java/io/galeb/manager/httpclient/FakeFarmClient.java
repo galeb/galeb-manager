@@ -73,7 +73,8 @@ public class FakeFarmClient implements CommonHttpRequester {
         String result = getArrayOfEntities(entityPath, entityId);
         if ("[]".equals(result)) {
             LOGGER.info(RESULT_NOT_FOUND);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(EMPTY_STR);
+            // TODO: Galeb.API not return HttpStatus.NOT_FOUND
+            return ResponseEntity.ok(result);
         } else {
             LOGGER.info(RESULT_OK + result);
             return ResponseEntity.ok(result);
@@ -143,6 +144,11 @@ public class FakeFarmClient implements CommonHttpRequester {
     @Override
     public boolean isStatusCodeEqualOrLessThan(ResponseEntity<String> response, int status) {
         return response.getStatusCode().value() <= status;
+    }
+
+    @Override
+    public boolean bodyIsEmptyOrEmptyArray(ResponseEntity<String> response) {
+        return !response.hasBody() || "".equals(response.getBody()) || "[]".equals(response.getBody());
     }
 
     public void deleteAll() {

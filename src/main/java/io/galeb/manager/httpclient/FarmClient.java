@@ -124,6 +124,11 @@ public class FarmClient implements CommonHttpRequester {
         return response.getStatusCode().value() <= status;
     }
 
+    @Override
+    public boolean bodyIsEmptyOrEmptyArray(ResponseEntity<String> response) {
+        return !response.hasBody() || "".equals(response.getBody()) || "[]".equals(response.getBody());
+    }
+
     private String uriWithProto(String uriPath) {
         return !uriPath.startsWith("http") ? "http://" + uriPath : uriPath;
     }

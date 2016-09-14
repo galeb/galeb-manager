@@ -35,4 +35,6 @@ public interface CommonHttpRequester {
 
     boolean isStatusCodeEqualOrLessThan(final ResponseEntity<String> response, int status);
 
+    boolean bodyIsEmptyOrEmptyArray(final ResponseEntity<String> response);
+
 }

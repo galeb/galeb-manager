@@ -80,6 +80,7 @@ public class GalebV32Driver implements Driver {
             final CommonHttpRequester httpClient = getHttpClient();
             final ResponseEntity<String> response = httpClient.get(uriPath);
             result = httpClient.isStatusCodeEqualOrLessThan(response, HttpStatus.OK.value());
+            result = result && !httpClient.bodyIsEmptyOrEmptyArray(response);
             result = result && hasExpectedParent(response.getBody(), parentId);
         } catch (IOException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
