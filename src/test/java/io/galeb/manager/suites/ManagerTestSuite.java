@@ -19,7 +19,6 @@
 package io.galeb.manager.suites;
 
 import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.manager.commons.StatusDistributedTest;
 import io.galeb.manager.cucumber.CucumberTest;
 import io.galeb.manager.cache.DistMapTest;
 import io.galeb.manager.engine.FarmDriverTest;
