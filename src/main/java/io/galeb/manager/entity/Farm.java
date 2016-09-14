@@ -35,7 +35,7 @@ public class Farm extends AbstractEntity<Farm> {
     private static final long serialVersionUID = 5596582746795373017L;
 
     @Transient
-    protected StatusDistributed statusDist = new StatusDistributed();
+    protected StatusDistributed statusDist = null;
 
     @Column(nullable = false)
     @JsonProperty(required = true)
@@ -142,6 +142,9 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     public List<LockStatus> getLockStatus() {
+        if (statusDist == null) {
+            statusDist = new StatusDistributed();
+        }
         return statusDist.getLockStatus(idName());
     }
 
