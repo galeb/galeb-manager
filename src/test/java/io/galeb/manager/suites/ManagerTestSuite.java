@@ -29,7 +29,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({FarmDriverTest.class, PoolDriverTest.class, DistMapTest.class, CucumberTest.class})
+@Suite.SuiteClasses({
+        FarmDriverTest.class,
+        PoolDriverTest.class,
+        DistMapTest.class,
+        CucumberTest.class
+})
 public class ManagerTestSuite {
 
     @AfterClass
