@@ -45,7 +45,10 @@ public class VirtualhostDriverTest {
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
     private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
-    private final AbstractEngine<VirtualHost> virtuahostEngine = new VirtualHostEngine().setVirtualHostAliasBuilder(virtualHostAliasBuilder).setDriver(driver);
+    private final AbstractEngine<VirtualHost> virtuahostEngine = new VirtualHostEngine()
+                                                                        .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
+                                                                        .setDriver(driver);
+    private final Map<String, String> jmsHeaders = virtualhostFactory.jmsHeaderProperties();
 
     private void logTestedMethod() {
         LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
@@ -60,96 +63,142 @@ public class VirtualhostDriverTest {
     @Test
     public void virtualhostNotExist() {
         logTestedMethod();
-        boolean result = driver.exist(virtualhostFactory.makeProperties(virtualhostFactory.build(UUID.randomUUID().toString())));
 
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        Properties properties = virtualhostFactory.makeProperties(virtualhostFactory.build(virtualhostName));
+
+        // when
+        boolean result = driver.exist(properties);
+
+        // then
         Assert.isTrue(!result);
     }
 
     @Test
     public void createVirtualhost() {
         logTestedMethod();
-        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
-        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
-        boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
 
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
+        Properties properties = virtualhostFactory.makeProperties(virtualHost);
+
+        // when
+        virtuahostEngine.create(virtualHost, jmsHeaders);
+        boolean resultExist = driver.exist(properties);
+
+        // then
         Assert.isTrue(resultExist);
     }
 
     @Test
     public void updateVirtualhost() throws Exception {
         logTestedMethod();
-        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
+
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
         Properties properties = virtualhostFactory.makeProperties(virtualHost);
         String api = properties.getOrDefault("api", "UNDEF").toString();
         String virtualHostName = virtualHost.getName();
-        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
-        Map<String, String> map = driver.getAll(properties).get("virtualhost").get(api + "/virtualhost/" + virtualHostName + "@");
+
+        // when
+        virtuahostEngine.create(virtualHost, jmsHeaders);
+        String multiMapKey = api + "/virtualhost/" + virtualHostName + "@";
+        Map<String, String> map = driver.getAll(properties).get("virtualhost").get(multiMapKey);
         String versionStr = map.get("version");
         int versionOrig = Integer.parseInt(versionStr);
         boolean resultExist = driver.exist(properties);
         virtualHost.updateHash();
-        virtuahostEngine.update(virtualHost, virtualhostFactory.jmsHeaderProperties());
-        map = driver.getAll(properties).get("virtualhost").get(api + "/virtualhost/" + virtualHostName + "@");
+        virtuahostEngine.update(virtualHost, jmsHeaders);
+        map = driver.getAll(properties).get("virtualhost").get(multiMapKey);
         versionStr = map.get("version");
         int versionNew = Integer.parseInt(versionStr);
 
-        Assert.isTrue(resultExist && versionNew > versionOrig);
+        // then
+        boolean isNewVersionGreaterThenOldVersion = versionNew > versionOrig;
+        Assert.isTrue(resultExist && isNewVersionGreaterThenOldVersion);
     }
 
     @Test
     public void removeVirtualhost() {
         logTestedMethod();
-        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
+
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
         Properties properties = virtualhostFactory.makeProperties(virtualHost);
-        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
+
+        // when
+        virtuahostEngine.create(virtualHost, jmsHeaders);
         boolean resultExist = driver.exist(properties);
-        virtuahostEngine.remove(virtualHost, virtualhostFactory.jmsHeaderProperties());
+        virtuahostEngine.remove(virtualHost, jmsHeaders);
         boolean resultNotExist = !driver.exist(properties);
 
+        // then
         Assert.isTrue(resultExist && resultNotExist);
     }
 
     @Test
     public void createAliasesWithNewVirtualhost() {
         logTestedMethod();
-        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
-        String anAlias = UUID.randomUUID().toString();
-        String otherAlias = UUID.randomUUID().toString();
-        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAlias);
-        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAlias);
-        virtualHost.getAliases().add(anAlias);
-        virtualHost.getAliases().add(otherAlias);
 
-        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        String anAliasName = UUID.randomUUID().toString();
+        String otherAliasName = UUID.randomUUID().toString();
 
-        boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
-        boolean resultExistAnAlias = driver.exist(virtualhostFactory.makeProperties(anAliasVirtualHost));
-        boolean resultExistOtherAlias = driver.exist(virtualhostFactory.makeProperties(otherAliasVirtualHost));
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
+        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAliasName);
+        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAliasName);
 
-        Assert.isTrue(resultExist && resultExistAnAlias && resultExistOtherAlias);
+        Properties virtualhostProperties = virtualhostFactory.makeProperties(virtualHost);
+        Properties anAliasProperties = virtualhostFactory.makeProperties(anAliasVirtualHost);
+        Properties otherAliasProperties = virtualhostFactory.makeProperties(otherAliasVirtualHost);
+
+        // when
+        virtualHost.getAliases().add(anAliasName); // add an alias
+        virtualHost.getAliases().add(otherAliasName); // add an other alias
+        virtuahostEngine.create(virtualHost, jmsHeaders); // create virtualhost with two alias
+
+        boolean resultExistVirtualhost = driver.exist(virtualhostProperties);
+        boolean resultExistAnAlias     = driver.exist(anAliasProperties);
+        boolean resultExistOtherAlias  = driver.exist(otherAliasProperties);
+
+        // then
+        Assert.isTrue(resultExistVirtualhost && resultExistAnAlias && resultExistOtherAlias);
     }
 
     @Test
     public void createAliasesWithSavedVirtualhost() {
         logTestedMethod();
-        VirtualHost virtualHost = virtualhostFactory.build(UUID.randomUUID().toString());
-        String anAlias = UUID.randomUUID().toString();
-        String otherAlias = UUID.randomUUID().toString();
-        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAlias);
-        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAlias);
-        virtualHost.getAliases().add(anAlias);
 
-        virtuahostEngine.create(virtualHost, virtualhostFactory.jmsHeaderProperties());
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        String anAliasName = UUID.randomUUID().toString();
+        String otherAliasName = UUID.randomUUID().toString();
 
-        virtualHost.getAliases().add(otherAlias);
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
+        VirtualHost anAliasVirtualHost = virtualhostFactory.build(anAliasName);
+        VirtualHost otherAliasVirtualHost = virtualhostFactory.build(otherAliasName);
 
-        virtuahostEngine.update(virtualHost, virtualhostFactory.jmsHeaderProperties());
+        Properties virtualhostProperties = virtualhostFactory.makeProperties(virtualHost);
+        Properties anAliasProperties = virtualhostFactory.makeProperties(anAliasVirtualHost);
+        Properties otherAliasProperties = virtualhostFactory.makeProperties(otherAliasVirtualHost);
 
-        boolean resultExist = driver.exist(virtualhostFactory.makeProperties(virtualHost));
-        boolean resultExistAnAlias = driver.exist(virtualhostFactory.makeProperties(anAliasVirtualHost));
-        boolean resultExistOtherAlias = driver.exist(virtualhostFactory.makeProperties(otherAliasVirtualHost));
+        // when
+        virtualHost.getAliases().add(anAliasName); // add only one alias
+        virtuahostEngine.create(virtualHost, jmsHeaders); // create virtualhost with one alias
+        virtualHost.getAliases().add(otherAliasName); // add an other alias
+        virtuahostEngine.update(virtualHost, jmsHeaders); // update virtualhost (now with two aliases)
 
-        Assert.isTrue(resultExist && resultExistAnAlias && resultExistOtherAlias);
+        boolean resultExistVirtualhost = driver.exist(virtualhostProperties);
+        boolean resultExistAnAlias     = driver.exist(anAliasProperties);
+        boolean resultExistOtherAlias  = driver.exist(otherAliasProperties);
+
+        // then
+        Assert.isTrue(resultExistVirtualhost && resultExistAnAlias && resultExistOtherAlias);
     }
 
 }
