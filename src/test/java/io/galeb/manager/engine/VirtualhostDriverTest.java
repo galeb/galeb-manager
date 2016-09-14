@@ -158,10 +158,12 @@ public class VirtualhostDriverTest {
         Properties virtualhostProperties = virtualhostFactory.makeProperties(virtualHost);
         Properties anAliasProperties = virtualhostFactory.makeProperties(anAliasVirtualHost);
         Properties otherAliasProperties = virtualhostFactory.makeProperties(otherAliasVirtualHost);
+        Set<String> aliases = new HashSet<>();
 
         // when
-        virtualHost.getAliases().add(anAliasName); // add an alias
-        virtualHost.getAliases().add(otherAliasName); // add an other alias
+        aliases.add(anAliasName); // add an alias
+        aliases.add(otherAliasName); // add an other alias
+        virtualHost.setAliases(aliases);
         virtuahostEngine.create(virtualHost, jmsHeaders); // create virtualhost with two alias
 
         boolean resultExistVirtualhost = driver.exist(virtualhostProperties);
