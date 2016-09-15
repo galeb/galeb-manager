@@ -37,13 +37,10 @@ public class VirtualHostAliasBuilder {
     public VirtualHost buildVirtualHostAlias(String virtualHostName, final VirtualHost virtualHost) {
         VirtualHost virtualHostAlias = new VirtualHost(virtualHostName, virtualHost.getEnvironment(), virtualHost.getProject());
 
-        SystemUserService.runAs();
         Set<Rule> rulesOfVirtualhost = getRulesOfVirtualhost(virtualHost);
-        SystemUserService.clearContext();
         virtualHostAlias.setRules(rulesOfVirtualhost);
         virtualHostAlias.setId(virtualHost.getId());
         virtualHostAlias.setFarmId(virtualHost.getFarmId());
-        virtualHostAlias.setRuleDefault(virtualHost.getRuleDefault());
         virtualHostAlias.setProperties(virtualHost.getProperties());
         virtualHostAlias.setRuleDefault(virtualHost.getRuleDefault());
         virtualHostAlias.setRulesOrdered(virtualHost.getRulesOrdered());
@@ -52,8 +49,11 @@ public class VirtualHostAliasBuilder {
 
     private Set<Rule> getRulesOfVirtualhost(VirtualHost virtualHost) {
         if (virtualHostRepository != null) {
-            return virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
-                    .stream().collect(Collectors.toSet());
+            SystemUserService.runAs();
+            final Set<Rule> setOfRules = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
+                                                              .stream().collect(Collectors.toSet());
+            SystemUserService.clearContext();
+            return setOfRules;
         }
         return virtualHost.getRules();
     }
