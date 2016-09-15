@@ -30,6 +30,7 @@ import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -65,6 +66,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private RuleRepository ruleRepository;
+    @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private QueueLocator queueLocator;
     @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
@@ -153,8 +155,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = ruleRepository.findAll().stream()
-                .filter(r -> r.getParents().contains(virtualHost) && !ruleOrderedIds.contains(r.getId()))
+        final Set<Rule> rulesNotOrdered = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
+                .filter(r -> !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet());
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
@@ -170,8 +172,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = ruleRepository.findAll().stream()
-                .filter(r -> r.getParents().contains(virtualHost) && !ruleOrderedIds.contains(r.getId()))
+        final Set<Rule> rulesNotOrdered = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
+                .filter(r -> !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet());
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
