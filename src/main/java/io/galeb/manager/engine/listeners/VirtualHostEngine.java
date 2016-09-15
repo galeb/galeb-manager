@@ -22,6 +22,7 @@ import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
@@ -47,6 +48,9 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
@@ -66,7 +70,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
     public void create(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
 
-        LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
+        LOGGER.info("Creating " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
         final Driver driver = getDriver(virtualHost);
         try {
             driver.create(makeProperties(virtualHost, jmsHeaders));
@@ -75,6 +79,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                         .buildVirtualHostAlias(virtualHostName, virtualHost);
                 create(virtualHostAlias, jmsHeaders);
             });
+            createRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
             LOGGER.error(e);
         }
@@ -91,12 +96,11 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                         .buildVirtualHostAlias(virtualHostName, virtualHost);
                 if (!driver.exist(makeProperties(virtualHostAlias, jmsHeaders))) {
                     create(virtualHostAlias, jmsHeaders);
-                    createRules(virtualHostAlias);
                 } else {
                     update(virtualHostAlias, jmsHeaders);
                 }
             });
-            updateRules(virtualHost);
+            updateRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
             LOGGER.error(e);
         }
@@ -142,23 +146,37 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         return properties;
     }
 
-    private void updateRules(VirtualHost virtualHost) {
+    private void updateRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        virtualHost.getRulesOrdered().stream()
-                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
-                .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
+        final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
+                .map(RuleOrder::getRuleId)
+                .collect(Collectors.toSet());
+        final Set<Rule> rulesNotOrdered = virtualHost.getRules().stream()
+                .filter(r -> !ruleOrderedIds.contains(r.getId()))
+                .collect(Collectors.toSet());
+        ruleOrderedIds.stream()
+                .map(id -> ruleRepository.findOne(id))
+                .filter(Objects::nonNull)
+                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
+        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
         SystemUserService.runAs(currentUser);
     }
 
-    private void createRules(VirtualHost virtualHost) {
+    private void createRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        virtualHost.getRulesOrdered().stream()
-                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
-                .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule));
+        final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
+                .map(RuleOrder::getRuleId)
+                .collect(Collectors.toSet());
+        final Set<Rule> rulesNotOrdered = virtualHost.getRules().stream()
+                .filter(r -> !ruleOrderedIds.contains(r.getId()))
+                .collect(Collectors.toSet());
+        ruleOrderedIds.stream()
+                .map(id -> ruleRepository.findOne(id))
+                .filter(Objects::nonNull)
+                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule, jmsHeaders));
+        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
         SystemUserService.runAs(currentUser);
     }
 
