@@ -152,8 +152,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = virtualHost.getRules().stream()
-                .filter(r -> !ruleOrderedIds.contains(r.getId()))
+        final Set<Rule> rulesNotOrdered = ruleRepository.findAll().stream()
+                .filter(r -> r.getParents().contains(virtualHost) && !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet());
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
@@ -169,8 +169,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = virtualHost.getRules().stream()
-                .filter(r -> !ruleOrderedIds.contains(r.getId()))
+        final Set<Rule> rulesNotOrdered = ruleRepository.findAll().stream()
+                .filter(r -> r.getParents().contains(virtualHost) && !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet());
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
