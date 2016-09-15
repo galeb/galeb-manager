@@ -28,6 +28,7 @@ import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.RuleQueue;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +75,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
                     driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
                 });
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         });
     }
@@ -97,7 +98,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
                     driver.update(makeProperties(rule, virtualHostAlias, jmsHeaders));
                 });
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         });
     }
@@ -115,7 +116,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
                     driver.remove(makeProperties(rule, virtualHostAlias, jmsHeaders));
                 });
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         });
     }
@@ -152,7 +153,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             jsonMapper.addToNode("properties", "default", String.valueOf(rule.isRuleDefault()));
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(rule, jmsHeaders);
         properties.put("json", json);

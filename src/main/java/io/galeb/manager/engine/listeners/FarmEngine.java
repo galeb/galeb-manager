@@ -41,6 +41,7 @@ import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,7 +130,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         try {
             provisioning.create(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -140,7 +141,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         try {
             provisioning.remove(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -213,7 +214,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                 } catch (Exception e) {
                     CounterDownLatch.reset(api);
-                    LOGGER.error(e);
+                    LOGGER.error(ExceptionUtils.getStackTrace(e));
                     LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
                     statusMap.put(api, ERROR);
                 }
@@ -331,7 +332,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     LOGGER.error("Repository is NULL: " + managerEntityType);
                 }
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
                 CounterDownLatch.decrementDiffCounter(api);
             }
         });

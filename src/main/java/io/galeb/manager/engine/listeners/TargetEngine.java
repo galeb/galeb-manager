@@ -25,6 +25,7 @@ import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.TargetQueue;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         try {
             driver.create(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -73,7 +74,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         try {
             driver.update(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -85,7 +86,7 @@ public class TargetEngine extends AbstractEngine<Target> {
         try {
             driver.remove(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -108,7 +109,7 @@ public class TargetEngine extends AbstractEngine<Target> {
             }
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(target, jmsHeaders);
         properties.put("json", json);

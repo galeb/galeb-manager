@@ -30,6 +30,7 @@ import io.galeb.manager.queue.RuleQueue;
 import io.galeb.manager.queue.VirtualHostQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +82,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             });
             createRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -102,7 +103,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             });
             updateRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -118,7 +119,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 remove(virtualHostAlias, jmsHeaders);
             });
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 

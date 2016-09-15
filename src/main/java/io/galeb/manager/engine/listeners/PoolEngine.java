@@ -32,6 +32,7 @@ import io.galeb.manager.entity.Pool;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
 import io.galeb.manager.repository.FarmRepository;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +62,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         try {
             driver.create(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -72,7 +73,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         try {
             driver.update(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -84,7 +85,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
         try {
             driver.remove(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -108,7 +109,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(pool);
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(pool, jmsHeaders);
         properties.put("json", json);
