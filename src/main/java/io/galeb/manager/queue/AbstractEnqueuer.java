@@ -21,6 +21,7 @@
 package io.galeb.manager.queue;
 
 import io.galeb.manager.entity.AbstractEntity;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.springframework.jms.core.JmsTemplate;
 
@@ -112,11 +113,11 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
                 Message message = session.createObjectMessage(entity);
                 String uniqueId = "ID:" + queue + UNIQUE_ID_SEP +
                         entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
-                properties.entrySet().stream().forEach(entry -> {
+                properties.entrySet().forEach(entry -> {
                     try {
                         message.setStringProperty(entry.getKey(), entry.getValue());
                     } catch (JMSException e) {
-                        e.printStackTrace();
+                        logger.error(ExceptionUtils.getStackTrace(e));
                     }
                 });
                 message.setStringProperty("_HQ_DUPL_ID", uniqueId);
