@@ -115,7 +115,9 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
                         entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
                 properties.entrySet().forEach(entry -> {
                     try {
-                        message.setStringProperty(entry.getKey(), entry.getValue());
+                        if (entry.getValue() instanceof String) {
+                            message.setStringProperty(entry.getKey(), entry.getValue());
+                        }
                     } catch (JMSException e) {
                         logger.error(ExceptionUtils.getStackTrace(e));
                     }
