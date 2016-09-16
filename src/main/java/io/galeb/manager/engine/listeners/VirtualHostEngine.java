@@ -160,7 +160,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 .filter(r -> !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet()) : Collections.emptySet();
         ruleOrderedIds.stream()
-                .map(id -> ruleRepository.findOne(id))
+                .map(id -> ruleRepository != null ? ruleRepository.findOne(id) : null)
                 .filter(Objects::nonNull)
                 .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
         rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
@@ -177,7 +177,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
                 .filter(r -> !ruleOrderedIds.contains(r.getId()))
                 .collect(Collectors.toSet()) : Collections.emptySet();
         ruleOrderedIds.stream()
-                .map(id -> ruleRepository.findOne(id))
+                .map(id -> ruleRepository != null ? ruleRepository.findOne(id) : null)
                 .filter(Objects::nonNull)
                 .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule, jmsHeaders));
         rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
