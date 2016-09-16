@@ -18,6 +18,11 @@
 
 package io.galeb.manager.test.factory;
 
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
+import io.galeb.manager.engine.driver.impl.GalebV32Driver;
+import io.galeb.manager.engine.listeners.VirtualHostEngine;
+import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.VirtualHost;
@@ -27,6 +32,7 @@ import org.apache.commons.logging.LogFactory;
 public class VirtualhostFactory extends AbstractFactory<VirtualHost> {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualhostFactory.class);
+    private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
 
     @Override
     public VirtualHost build(String name) {
@@ -35,4 +41,11 @@ public class VirtualhostFactory extends AbstractFactory<VirtualHost> {
         return new VirtualHost(name, environment, project);
     }
 
+    public VirtualHostEngine buildVirtualHostEngine(Driver driver) {
+        return (VirtualHostEngine) new VirtualHostEngine()
+                                        .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
+                                        .setDriver(driver)
+                                        .setFarmRepository(new FarmFactory().mockFarmRepository());
+
+    }
 }

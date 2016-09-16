@@ -32,8 +32,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
 import java.util.Map;
+
+import static io.galeb.manager.engine.listeners.AbstractEngine.*;
 
 public class PoolDriverTest {
 
@@ -78,7 +79,7 @@ public class PoolDriverTest {
         logTestedMethod();
         Pool pool = poolFactory.build(null);
         Properties properties = poolEngine.makeProperties(pool, jmsHeaders);
-        String api = properties.getOrDefault("api", "UNDEF").toString();
+        String api = properties.getOrDefault(API_PROP, "UNDEF").toString();
         String poolName = pool.getName();
         boolean resultCreate = driver.create(properties);
         Map<String, String> map = driver.getAll(properties).get("backendpool").get(api + "/backendpool/" + poolName + "@");

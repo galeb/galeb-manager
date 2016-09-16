@@ -18,12 +18,18 @@
 
 package io.galeb.manager.test.factory;
 
+import io.galeb.manager.engine.VirtualhostDriverTest;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.entity.*;
+import io.galeb.manager.repository.FarmRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.*;
+
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class FarmFactory extends AbstractFactory<Farm> {
 
@@ -33,6 +39,7 @@ public class FarmFactory extends AbstractFactory<Farm> {
     public Farm build(String api) {
         Environment environment = new Environment("NULL");
         Provider provider = new Provider(GalebV32Driver.class.getSimpleName());
+        provider.setDriver(GalebV32Driver.class.getSimpleName().replaceAll("Driver", ""));
         String name = UUID.randomUUID().toString();
         String domain = UUID.randomUUID().toString();
         return new Farm(name, domain, api, environment, provider);
@@ -45,5 +52,12 @@ public class FarmFactory extends AbstractFactory<Farm> {
         entitiesMap.put(Target.class.getSimpleName().toLowerCase(), new ArrayList<Target>());
         entitiesMap.put(Rule.class.getSimpleName().toLowerCase(), new ArrayList<Rule>());
         return entitiesMap;
+    }
+
+    public FarmRepository mockFarmRepository() {
+        Farm farm = build(UUID.randomUUID().toString());
+        FarmRepository mockFarmRepository = mock(FarmRepository.class);
+        when(mockFarmRepository.findOne(anyLong())).thenReturn(farm);
+        return mockFarmRepository;
     }
 }

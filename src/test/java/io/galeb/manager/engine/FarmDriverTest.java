@@ -25,7 +25,6 @@ import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.engine.listeners.FarmEngine;
 import io.galeb.manager.engine.listeners.VirtualHostEngine;
-import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.FarmFactory;
@@ -41,16 +40,14 @@ import java.util.*;
 public class FarmDriverTest {
 
     private static final Log LOGGER = LogFactory.getLog(GalebV32Driver.class);
+    private static final String FARM_NAME = "api";
 
     private final FarmFactory farmFactory = new FarmFactory();
     private final VirtualhostFactory virtualhostFactory = new VirtualhostFactory();
     private final FakeFarmClient fakeFarmClient = new FakeFarmClient();
     private final Driver driver = DriverBuilder.build(GalebV32Driver.DRIVER_NAME).addResource(fakeFarmClient);
     private final FarmEngine farmEngine = (FarmEngine) new FarmEngine().setDriver(driver);
-    private final VirtualHostAliasBuilder virtualHostAliasBuilder = new VirtualHostAliasBuilder();
-    private final VirtualHostEngine virtuahostEngine = (VirtualHostEngine) new VirtualHostEngine()
-                                                                                .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
-                                                                                .setDriver(driver);
+    private final VirtualHostEngine virtuahostEngine = virtualhostFactory.buildVirtualHostEngine (driver);
 
     private void logTestedMethod() {
         LOGGER.info("Testing " + this.getClass().getSimpleName() + "." +
@@ -74,7 +71,7 @@ public class FarmDriverTest {
     public void getFarmAlwaysReturnOK() throws JsonProcessingException {
         logTestedMethod();
 
-        Farm farm = farmFactory.build("api");
+        Farm farm = farmFactory.build(FARM_NAME);
         boolean result = driver.exist(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
         Assert.isTrue(result);
     }
@@ -83,7 +80,7 @@ public class FarmDriverTest {
     public void removeFarmAlwaysReturnAccept() throws JsonProcessingException {
         logTestedMethod();
 
-        Farm farm = farmFactory.build("api");
+        Farm farm = farmFactory.build(FARM_NAME);
         boolean result = driver.remove(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
         Assert.isTrue(result);
     }
@@ -92,7 +89,7 @@ public class FarmDriverTest {
     public void createAndUpdateFarmIsNotPossible() {
         logTestedMethod();
 
-        Farm farm = farmFactory.build("api");
+        Farm farm = farmFactory.build(FARM_NAME);
         boolean resultCreate = driver.create(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
         boolean resultUpdate = driver.update(farmEngine.getPropertiesWithEntities(farm, farm.getApi(), Collections.emptyMap()));
 
@@ -105,7 +102,7 @@ public class FarmDriverTest {
         logTestedMethod();
 
         final Map<String, List<?>> entitiesMap = farmFactory.entitiesMap();
-        Farm farm = farmFactory.build("api");
+        Farm farm = farmFactory.build(FARM_NAME);
         Properties properties = farmEngine.getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
 
         Map<String, Map<String, Object>> diff = new HashMap<>();
@@ -125,7 +122,7 @@ public class FarmDriverTest {
         VirtualHost virtualhost = virtualhostFactory.build(UUID.randomUUID().toString());
         List<VirtualHost> virtualhosts = (List<VirtualHost>) entitiesMap.get(VirtualHost.class.getSimpleName().toLowerCase());
         virtualhosts.add(virtualhost);
-        Farm farm = farmFactory.build("api");
+        Farm farm = farmFactory.build(FARM_NAME);
         Properties farmProperties = farmEngine.getPropertiesWithEntities(farm, farm.getApi(), entitiesMap);
         virtuahostEngine.create(virtualhost, virtualhostFactory.jmsHeaderProperties());
 

@@ -23,13 +23,15 @@ import io.galeb.manager.entity.AbstractEntity;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.galeb.manager.engine.listeners.AbstractEngine.*;
+
 public abstract class AbstractFactory<T extends AbstractEntity<T>> {
 
     public abstract T build(String arg);
 
     public Map<String, String> jmsHeaderProperties() {
         Map<String, String> jmsHeader= new HashMap<>();
-        jmsHeader.put("api", "api");
+        jmsHeader.put(API_PROP, "api");
         return jmsHeader;
     }
 }
