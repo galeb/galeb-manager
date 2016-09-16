@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.galeb.manager.engine.listeners.AbstractEngine.*;
 import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter;
 
 public class GalebV32Driver implements Driver {
@@ -181,7 +182,7 @@ public class GalebV32Driver implements Driver {
     }
 
     private String extractPathFromProperties(Properties properties) {
-        return properties.getOrDefault("path", "").toString();
+        return properties.getOrDefault(PATH_PROP, "").toString();
     }
 
     private String pathWithId(String path, String json) {
@@ -190,11 +191,11 @@ public class GalebV32Driver implements Driver {
     }
 
     private String extractBodyFromProperties(final Properties properties) {
-        return properties.getOrDefault("json", "{}").toString();
+        return properties.getOrDefault(JSON_PROP, "{}").toString();
     }
 
     private String extractApiFromProperties(final Properties properties) {
-        return properties.getOrDefault("api", "NULL").toString();
+        return properties.getOrDefault(API_PROP, "NULL").toString();
     }
 
     private boolean hasExpectedParent(String body, String expectedParent) {

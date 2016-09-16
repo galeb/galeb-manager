@@ -19,6 +19,7 @@
  */
 
 package io.galeb.manager.engine.util;
+
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
@@ -44,6 +45,7 @@ import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.UPDATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
+import static io.galeb.manager.engine.listeners.AbstractEngine.*;
 import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
@@ -79,7 +81,7 @@ public class DiffProcessor {
 
     private String getApi() {
         if ("".equals(api) && properties != null) {
-            api = properties.getOrDefault("api", "localhost:9090").toString();
+            api = properties.getOrDefault(API_PROP, "localhost:9090").toString();
         }
         return api;
     }

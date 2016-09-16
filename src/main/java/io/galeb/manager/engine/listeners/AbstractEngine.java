@@ -22,11 +22,13 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
@@ -40,12 +42,21 @@ import io.galeb.manager.security.services.SystemUserService;
 public abstract class AbstractEngine<T> {
 
     public static final String SEPARATOR = "__";
+    public static final String JSON_PROP = "json";
+    public static final String PATH_PROP = "path";
+    public static final String API_PROP  = "api";
 
-    protected Driver driver = null;
+    private Driver driver = null;
 
     public AbstractEngine<T> setDriver(Driver driver) {
         this.driver = driver;
         return this;
+    }
+
+    public Driver getDriver(AbstractEntity<?> entity) {
+        final Farm farm = findFarm(entity).orElse(null);
+        return entity != null ? DriverBuilder.getDriver(farm) :
+                (driver != null ? driver : DriverBuilder.getDriver(null));
     }
 
     public abstract void create(T entity, final Map<String, String> jmsHeaders);
@@ -55,6 +66,8 @@ public abstract class AbstractEngine<T> {
     public abstract void update(T entity, final Map<String, String> jmsHeaders);
 
     protected abstract FarmRepository getFarmRepository();
+
+    public abstract AbstractEngine<T> setFarmRepository(FarmRepository farmRepository);
 
     protected abstract FarmQueue farmQueue();
 

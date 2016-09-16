@@ -45,7 +45,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
@@ -91,7 +90,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_UPDATE)
     public void update(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
-        LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
+        LOGGER.info("Updating " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
         final Driver driver = getDriver(virtualHost);
         try {
             driver.update(makeProperties(virtualHost, jmsHeaders));
@@ -132,6 +131,12 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     }
 
     @Override
+    public AbstractEngine<VirtualHost> setFarmRepository(FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    @Override
     protected FarmQueue farmQueue() {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
@@ -145,29 +150,31 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             LOGGER.error(e.getMessage());
         }
         final Properties properties = fromEntity(virtualHost, jmsHeaderProperties);
-        properties.put("json", json);
-        properties.put("path", "virtualhost");
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, "virtualhost");
         return properties;
     }
 
     private void updateRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
-                .map(RuleOrder::getRuleId)
-                .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = virtualHostRepository != null ?  virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
-                .filter(r -> !ruleOrderedIds.contains(r.getId()))
-                .collect(Collectors.toSet()) : Collections.emptySet();
-        ruleOrderedIds.stream()
-                .map(id -> ruleRepository != null ? ruleRepository.findOne(id) : null)
-                .filter(Objects::nonNull)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
-        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
-        SystemUserService.runAs(currentUser);
+        String ruleQueue = RuleQueue.QUEUE_UPDATE;
+        sendRuleToQueue(virtualHost, jmsHeaders, ruleQueue);
     }
 
     private void createRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
+        String ruleQueue = RuleQueue.QUEUE_CREATE;
+        sendRuleToQueue(virtualHost, jmsHeaders, ruleQueue);
+    }
+
+    private AbstractEnqueuer<Rule> ruleQueue() {
+        return (RuleQueue)queueLocator.getQueue(Rule.class);
+    }
+
+    public VirtualHostEngine setVirtualHostAliasBuilder(VirtualHostAliasBuilder aVirtualHostAliasBuilder) {
+        virtualHostAliasBuilder = aVirtualHostAliasBuilder;
+        return this;
+    }
+
+    private void sendRuleToQueue(VirtualHost virtualHost, final Map<String, String> jmsHeaders, String ruleQueue) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
@@ -179,26 +186,9 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository != null ? ruleRepository.findOne(id) : null)
                 .filter(Objects::nonNull)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule, jmsHeaders));
-        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule, jmsHeaders));
+                .forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, jmsHeaders));
+        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, jmsHeaders));
         SystemUserService.runAs(currentUser);
-    }
-
-    private AbstractEnqueuer<Rule> ruleQueue() {
-        return (RuleQueue)queueLocator.getQueue(Rule.class);
-    }
-
-
-    private Driver getDriver(VirtualHost virtualHost) {
-        if (driver == null) {
-            driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        }
-        return driver;
-    }
-
-    public VirtualHostEngine setVirtualHostAliasBuilder(VirtualHostAliasBuilder aVirtualHostAliasBuilder) {
-        virtualHostAliasBuilder = aVirtualHostAliasBuilder;
-        return this;
     }
 
 }

@@ -41,7 +41,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.repository.FarmRepository;
 
 import java.util.Map;
@@ -64,8 +63,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getParents().stream().forEach(virtualhost -> {
+        final Driver driver = getDriver(rule);
+        rule.getParents().forEach(virtualhost -> {
             try {
                 updateRuleSpecialProperties(rule, virtualhost);
                 driver.create(makeProperties(rule, virtualhost, jmsHeaders));
@@ -83,8 +82,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @JmsListener(destination = RuleQueue.QUEUE_UPDATE)
     public void update(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating "+rule.getClass().getSimpleName()+" "+rule.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getParents().stream().forEach(virtualhost -> {
+        final Driver driver = getDriver(rule);
+        rule.getParents().forEach(virtualhost -> {
             try {
                 updateRuleSpecialProperties(rule, virtualhost);
                 if (!driver.exist(makeProperties(rule, virtualhost, jmsHeaders))) {
@@ -106,8 +105,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @JmsListener(destination = RuleQueue.QUEUE_REMOVE)
     public void remove(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(rule).get());
-        rule.getParents().stream().forEach(virtualhost -> {
+        final Driver driver = getDriver(rule);
+        rule.getParents().forEach(virtualhost -> {
             try {
                 driver.remove(makeProperties(rule, virtualhost, jmsHeaders));
                 virtualhost.getAliases().forEach(virtualHostName -> {
@@ -124,6 +123,12 @@ public class RuleEngine extends AbstractEngine<Rule> {
     @Override
     protected FarmRepository getFarmRepository() {
         return farmRepository;
+    }
+
+    @Override
+    public AbstractEngine<Rule> setFarmRepository(FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
     }
 
     @Override
@@ -156,8 +161,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(rule, jmsHeaders);
-        properties.put("json", json);
-        properties.put("path", "rule");
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, Rule.class.getSimpleName().toLowerCase());
         return properties;
     }
 

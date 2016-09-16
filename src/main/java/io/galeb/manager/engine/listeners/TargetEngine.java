@@ -38,7 +38,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.repository.FarmRepository;
 
 import java.util.Map;
@@ -59,7 +58,7 @@ public class TargetEngine extends AbstractEngine<Target> {
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
+        final Driver driver = getDriver(target);
         try {
             driver.create(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
@@ -70,7 +69,7 @@ public class TargetEngine extends AbstractEngine<Target> {
     @JmsListener(destination = TargetQueue.QUEUE_UPDATE)
     public void update(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + target.getClass().getSimpleName() + " " + target.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
+        final Driver driver = getDriver(target);
         try {
             driver.update(makeProperties(target, target.getParent(), jmsHeaders));
         } catch (Exception e) {
@@ -81,7 +80,7 @@ public class TargetEngine extends AbstractEngine<Target> {
     @JmsListener(destination = TargetQueue.QUEUE_REMOVE)
     public void remove(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(target).get());
+        final Driver driver = getDriver(target);
 
         try {
             driver.remove(makeProperties(target, target.getParent(), jmsHeaders));
@@ -93,6 +92,12 @@ public class TargetEngine extends AbstractEngine<Target> {
     @Override
     protected FarmRepository getFarmRepository() {
         return farmRepository;
+    }
+
+    @Override
+    public AbstractEngine<Target> setFarmRepository(FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
     }
 
     @Override
@@ -112,8 +117,8 @@ public class TargetEngine extends AbstractEngine<Target> {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(target, jmsHeaders);
-        properties.put("json", json);
-        properties.put("path", Backend.class.getSimpleName().toLowerCase());
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, Backend.class.getSimpleName().toLowerCase());
         return properties;
     }
 }

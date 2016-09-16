@@ -25,7 +25,6 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
@@ -58,7 +57,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
+        final Driver driver = getDriver(pool);
         try {
             driver.create(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
@@ -69,7 +68,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @JmsListener(destination = PoolQueue.QUEUE_UPDATE)
     public void update(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
+        final Driver driver = getDriver(pool);
         try {
             driver.update(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
@@ -80,7 +79,7 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
     public void remove(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
+        final Driver driver = getDriver(pool);
 
         try {
             driver.remove(makeProperties(pool, jmsHeaders));
@@ -92,6 +91,12 @@ public class PoolEngine extends AbstractEngine<Pool> {
     @Override
     protected FarmRepository getFarmRepository() {
         return farmRepository;
+    }
+
+    @Override
+    public AbstractEngine<Pool> setFarmRepository(FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
     }
 
     @Override
@@ -112,8 +117,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(pool, jmsHeaders);
-        properties.put("json", json);
-        properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, BackendPool.class.getSimpleName().toLowerCase());
         return properties;
     }
 }

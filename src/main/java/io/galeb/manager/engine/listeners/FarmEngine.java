@@ -20,7 +20,6 @@ package io.galeb.manager.engine.listeners;
 
 import static io.galeb.manager.cache.DistMap.DIST_MAP_FARM_ID_PROP;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
-import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.lang.System.currentTimeMillis;
 
@@ -69,21 +68,18 @@ import java.util.stream.StreamSupport;
 @Component
 public class FarmEngine extends AbstractEngine<Farm> {
 
-    private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
+    public static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
-    private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
+    public static final String ENTITIES_MAP_PROP = "entitiesMap";
+    public static final String LOCK_NAME_PROP    = "lockName";
+
+    private static final String FARM_STATUS_MSG_PREFIX = "FARM STATUS - ";
+    private static final Pageable ALL_PAGES = new PageRequest(0, Integer.MAX_VALUE);
 
     private LockerManager lockerManager = null;
 
     @Autowired private DistMap distMap;
-
     @Autowired private StatusDistributed statusDist;
-
-    @Override
-    protected Log getLogger() {
-        return LOGGER;
-    }
-
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private RuleRepository ruleRepository;
@@ -92,6 +88,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @Autowired private QueueLocator queueLocator;
 
     private AtomicBoolean isReady = new AtomicBoolean(false);
+
+    @Override
+    protected Log getLogger() {
+        return LOGGER;
+    }
 
     @PostConstruct
     public void init() {
@@ -153,10 +154,6 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @SuppressWarnings({ "unchecked", "unused" })
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Farm farm) {
-        long farmId = farm.getId();
-        String farmName = farm.getName();
-        String farmStatusMsgPrefix = "FARM STATUS - ";
-
         if (lockerManager == null) {
             lockerManager = new LockerManager();
         }
@@ -164,80 +161,77 @@ public class FarmEngine extends AbstractEngine<Farm> {
             statusDist = new StatusDistributed();
         }
         if (lockerManager.lock(farm.idName())) {
-
             statusDist.updateNewStatus(farm.idName(), true);
-
             String apiWithSeparator = farm.getApi();
-            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
-                CounterDownLatch.put(api, -1);
-            });
-
-            final Driver driver = getDriver(farm);
-
-            final Map<String, EntityStatus> statusMap = new HashMap<>();
-
-            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
-                long start = currentTimeMillis();
-
-                String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
-                LOGGER.info(farmStatusMsgPrefix + "Retrieving entities from database - " + farmFull);
-                final Properties properties = getPropertiesWithEntities(farm, api);
-
-                LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task - " + farmFull);
-                Map<String, Map<String, Object>> diff = new HashMap<>();
-                Map<String, Map<String, Map<String, String>>> remoteMultiMap;
-
-                try {
-                    long diffStart = currentTimeMillis();
-                    remoteMultiMap = driver.getAll(properties);
-                    diff.putAll(driver.diff(properties, remoteMultiMap));
-                    int diffSize = diff.size();
-
-                    String diffDurationMsg = farmStatusMsgPrefix + "diff from " + farmFull + " finished ("
-                            + (currentTimeMillis() - diffStart) + " ms)";
-                    LOGGER.info(diffDurationMsg);
-
-                    CounterDownLatch.put(api, diffSize);
-
-                    updateStatus(remoteMultiMap, farmId);
-                    if (diffSize == 0) {
-                        LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
-                                + (currentTimeMillis() - start) + " ms)");
-
-                        statusMap.put(api, OK);
-                    } else {
-                        LOGGER.warn(farmStatusMsgPrefix + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
-                                + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
-                        fixFarm(farm, diff, driver, api);
-                        statusMap.put(api, PENDING);
-                    }
-
-                } catch (Exception e) {
-                    CounterDownLatch.reset(api);
-                    LOGGER.error(ExceptionUtils.getStackTrace(e));
-                    LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
-                    statusMap.put(api, ERROR);
-                }
-            });
-            EntityStatus statusConsolidated = getStatusConsolidated(statusMap);
+            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> CounterDownLatch.put(api, -1));
+            EntityStatus statusConsolidated = getStatusConsolidated(farm, apiWithSeparator);
             distMap.put(farm, statusConsolidated.toString());
-            statusMap.clear();
         } else {
-            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmName + " locked by an other process/node. Aborting Check & Sync Task.");
+            LOGGER.info(FARM_STATUS_MSG_PREFIX + "Farm " + farm.getName() + " locked by an other process/node. Aborting Check & Sync Task.");
         }
     }
 
-    private EntityStatus getStatusConsolidated(final Map<String, EntityStatus> statusMap) {
+    private EntityStatus getStatusConsolidated(final Farm farm, String apiWithSeparator) {
+        EntityStatus result = UNKNOWN;
+        final Map<String, EntityStatus> statusMap = new HashMap<>();
+        Arrays.stream(apiWithSeparator.split(",")).forEach(api -> diffByApiAndFix(farm, statusMap, api));
         if (statusMap.containsValue(PENDING)) {
-            return PENDING;
+            result = PENDING;
         }
         if (statusMap.entrySet().stream().filter(e -> e.getValue().equals(OK)).count() == statusMap.size()) {
-            return OK;
+            result = OK;
         }
         if (statusMap.containsValue(ERROR)) {
-            return ERROR;
+            result = ERROR;
         }
-        return UNKNOWN;
+        statusMap.clear();
+        return result;
+    }
+
+    private void diffByApiAndFix(Farm farm, final Map<String, EntityStatus> statusMap, String api) {
+        long start = currentTimeMillis();
+        final Driver driver = getDriver(farm);
+
+        long farmId = farm.getId();
+        String farmName = farm.getName();
+
+        String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
+        LOGGER.info(FARM_STATUS_MSG_PREFIX + "Retrieving entities from database - " + farmFull);
+        final Properties properties = getPropertiesWithEntities(farm, api);
+
+        LOGGER.info(FARM_STATUS_MSG_PREFIX + "Starting Check & Sync task - " + farmFull);
+        try {
+            long diffStart = currentTimeMillis();
+            final Map<String, Map<String, Map<String, String>>> remoteMultiMap = driver.getAll(properties);
+            final Map<String, Map<String, Object>> diff = new HashMap<>();
+            diff.putAll(driver.diff(properties, remoteMultiMap));
+            int diffSize = diff.size();
+
+            String diffDurationMsg = FARM_STATUS_MSG_PREFIX + "diff from " + farmFull + " finished ("
+                    + (currentTimeMillis() - diffStart) + " ms)";
+            LOGGER.info(diffDurationMsg);
+
+            CounterDownLatch.put(api, diffSize);
+
+            updateStatus(remoteMultiMap, farmId);
+            if (diffSize == 0) {
+                LOGGER.info(FARM_STATUS_MSG_PREFIX + "OK: " + farmFull + " ("
+                        + (currentTimeMillis() - start) + " ms)");
+
+                statusMap.put(api, OK);
+            } else {
+                LOGGER.warn(FARM_STATUS_MSG_PREFIX + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
+                        + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
+                fixFarm(farm, diff, driver, api);
+                statusMap.put(api, PENDING);
+            }
+
+        } catch (Exception e) {
+            CounterDownLatch.reset(api);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+            LOGGER.error(FARM_STATUS_MSG_PREFIX + farmFull + " FAILED");
+            statusMap.put(api, ERROR);
+        }
     }
 
     private void updateStatus(final Map<String, Map<String, Map<String, String>>> remoteMultiMap, final Long farmId) {
@@ -267,7 +261,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                          final Driver driver,
                          final String api) {
 
-        LOGGER.warn("FARM STATUS - Synchronizing Farm " + farm.getName());
+        LOGGER.warn(FARM_STATUS_MSG_PREFIX + "Synchronizing Farm " + farm.getName());
 
         final AtomicReference<Set<String>> entityTypes = new AtomicReference<>(new HashSet<>());
 
@@ -314,7 +308,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                         } else {
                             LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
                             final Map<String, String> jmsHeaders = new HashMap<>();
-                            jmsHeaders.put("api", api);
+                            jmsHeaders.put(API_PROP, api);
                             switch (action) {
                                 case CREATE:
                                     createEntityOnFarm(queue, entityFromRepository, jmsHeaders);
@@ -341,7 +335,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private void executeFullReload(Farm farm, Driver driver, Properties properties) {
         String farmClassName = farm.getClass().getSimpleName().toLowerCase();
         LOGGER.warn("Full Reloading " + farmClassName + " " + farm.getName());
-        properties.put("path", farmClassName);
+        properties.put(PATH_PROP, farmClassName);
         driver.remove(properties);
     }
 
@@ -351,11 +345,11 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private Properties makeBaseProperty(String apiFarm, String id, String parentId, String entityType) {
         Properties properties = new Properties();
-        properties.put("api", apiFarm);
-        properties.put("json", "{\"id\":\"" + id + "\"" +
+        properties.put(API_PROP, apiFarm);
+        properties.put(JSON_PROP, "{\"id\":\"" + id + "\"" +
                 (parentId != null && !"".equals(parentId) ? ",\"parentId\":\"" + parentId + "\"" : "") +
                 ",\"version\":0}");
-        properties.put("path", entityType);
+        properties.put(PATH_PROP, entityType);
         return properties;
     }
 
@@ -389,6 +383,12 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     @Override
+    public AbstractEngine<Farm> setFarmRepository(FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    @Override
     protected FarmQueue farmQueue() {
         return (FarmQueue)queueLocator.getQueue(Farm.class);
     }
@@ -400,10 +400,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public Properties getPropertiesWithEntities(Farm farm, String api, Map<String, List<?>> anEntitiesMap) {
         final Map<String, List<?>> entitiesMap = anEntitiesMap == null ? getEntitiesMap(farm) : anEntitiesMap;
         final Properties properties = new Properties();
-        properties.put("api", api);
-        properties.put("path", Farm.class.getSimpleName().toLowerCase());
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("lockName", "lock_" + farm.getId());
+        properties.put(API_PROP, api);
+        properties.put(PATH_PROP, Farm.class.getSimpleName().toLowerCase());
+        properties.put(ENTITIES_MAP_PROP, entitiesMap);
+        properties.put(LOCK_NAME_PROP, "lock_" + farm.getId());
         return properties;
     }
 
@@ -412,13 +412,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(),
-                virtualHostRepository.findByFarmId(farm.getId(), pageable).getContent());
+                virtualHostRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(),
-                poolRepository.findByFarmId(farm.getId(), pageable).getContent());
+                poolRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Backend.class.getSimpleName().toLowerCase(),
-                targetRepository.findByFarmId(farm.getId(), pageable).getContent());
+                targetRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Rule.class.getSimpleName().toLowerCase(),
-                ruleRepository.findByFarmId(farm.getId(), pageable).getContent());
+                ruleRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
         SystemUserService.runAs(currentUser);
         return entitiesMap;
     }

@@ -45,8 +45,12 @@ public class DriverBuilder {
     }
 
     public static Driver getDriver(Farm farm) {
-        String driverName = farm.getProvider().getDriver();
-        return build(driverName);
+        if (farm != null) {
+            String driverName = farm.getProvider().getDriver();
+            return build(driverName);
+        } else {
+            return new NullDriver();
+        }
     }
 
 }
