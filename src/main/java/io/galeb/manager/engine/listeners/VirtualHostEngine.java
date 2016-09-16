@@ -49,6 +49,7 @@ import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -155,9 +156,9 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
+        final Set<Rule> rulesNotOrdered = virtualHostRepository != null ?  virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
                 .filter(r -> !ruleOrderedIds.contains(r.getId()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()) : Collections.emptySet();
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
                 .filter(Objects::nonNull)
@@ -172,9 +173,9 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
-        final Set<Rule> rulesNotOrdered = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
+        final Set<Rule> rulesNotOrdered = virtualHostRepository != null ? virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName()).stream()
                 .filter(r -> !ruleOrderedIds.contains(r.getId()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()) : Collections.emptySet();
         ruleOrderedIds.stream()
                 .map(id -> ruleRepository.findOne(id))
                 .filter(Objects::nonNull)

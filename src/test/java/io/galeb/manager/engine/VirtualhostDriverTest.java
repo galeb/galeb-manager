@@ -24,6 +24,7 @@ import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.engine.listeners.VirtualHostEngine;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
+import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.VirtualhostFactory;
@@ -33,10 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class VirtualhostDriverTest {
 
@@ -201,6 +199,39 @@ public class VirtualhostDriverTest {
 
         // then
         Assert.isTrue(resultExistVirtualhost && resultExistAnAlias && resultExistOtherAlias);
+    }
+
+    @Test
+    public void promoteAliasToVirtualhost() {
+        logTestedMethod();
+
+        // given
+        String virtualhostName = UUID.randomUUID().toString();
+        String anAliasName = UUID.randomUUID().toString();
+
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
+
+        Properties anAliasProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(anAliasName), jmsHeaders);
+        Set<String> aliases = new HashSet<>();
+        Set<Rule> rules = Collections.emptySet();
+
+        // when
+        aliases.add(anAliasName); // add only one alias
+        virtualHost.setAliases(aliases);
+        virtualHost.setRules(rules);
+        virtuahostEngine.create(virtualHost, jmsHeaders); // create virtualhost with one alias
+        virtualHost.setName(anAliasName); // update name
+        Properties virtualhostProperties = virtuahostEngine.makeProperties(virtualhostFactory.build(virtualhostName), jmsHeaders);
+        aliases.clear(); // clear aliases
+        virtualHost.setAliases(aliases);
+        driver.remove(anAliasProperties); // remove aliases
+        virtuahostEngine.update(virtualHost, jmsHeaders); // update virtualhost (really?)
+
+        boolean resultExistVirtualhost = driver.exist(virtualhostProperties);
+        boolean resultExistAnAlias     = !driver.exist(anAliasProperties);
+
+        // then
+        Assert.isTrue(resultExistVirtualhost && resultExistAnAlias);
     }
 
 }
