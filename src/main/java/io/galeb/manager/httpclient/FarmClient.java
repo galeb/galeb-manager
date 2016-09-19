@@ -199,17 +199,23 @@ public class FarmClient implements CommonHttpRequester {
         LoggerUtils.logger(LOGGER, logLevel, request.getMethod().toString() + " " + request.getUrl().toString());
         request.getHeaders().entrySet().forEach(entry ->
                 LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
-        Object requestBody = request.getBody();
-        if (requestBody instanceof String) {
-            LoggerUtils.logger(LOGGER, logLevel, requestBody);
+        if (request.hasBody()) {
+            Object requestBody = request.getBody();
+            if (requestBody != null && requestBody instanceof String) {
+                LoggerUtils.logger(LOGGER, logLevel, requestBody);
+            }
         }
         LoggerUtils.logger(LOGGER, logLevel, "---");
         LoggerUtils.logger(LOGGER, logLevel, status);
         response.getHeaders().entrySet().forEach(entry ->
                 LoggerUtils.logger(LOGGER, logLevel, entry.getKey() + ": " + entry.getValue().stream().collect(Collectors.joining(","))));
-        String responseBody = response.getBody();
-        if (StringUtils.countOccurrencesOf(responseBody, "},{") == 0) {
-            LoggerUtils.logger(LOGGER, logLevel, responseBody);
+        if (response.hasBody()) {
+            String responseBody = response.getBody();
+            if (responseBody != null) {
+                if (StringUtils.countOccurrencesOf(responseBody, "},{") == 0) {
+                    LoggerUtils.logger(LOGGER, logLevel, responseBody);
+                }
+            }
         }
     }
 
