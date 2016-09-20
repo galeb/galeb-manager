@@ -78,14 +78,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private LockerManager lockerManager = null;
 
-    @Autowired private DistMap distMap;
-    @Autowired private StatusDistributed statusDist;
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private VirtualHostRepository virtualHostRepository;
-    @Autowired private RuleRepository ruleRepository;
-    @Autowired private TargetRepository targetRepository;
-    @Autowired private PoolRepository poolRepository;
-    @Autowired private QueueLocator queueLocator;
+    private DistMap distMap;
+    private StatusDistributed statusDist;
+    private FarmRepository farmRepository;
+    private VirtualHostRepository virtualHostRepository;
+    private RuleRepository ruleRepository;
+    private TargetRepository targetRepository;
+    private PoolRepository poolRepository;
+    private QueueLocator queueLocator;
 
     private AtomicBoolean isReady = new AtomicBoolean(false);
 
@@ -102,13 +102,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private JpaRepositoryWithFindByName getRepository(String entityClass) {
         switch (entityClass) {
             case "virtualhost":
-                return virtualHostRepository;
+                return getVirtualHostRepository();
             case "rule":
-                return ruleRepository;
+                return getRuleRepository();
             case "pool":
-                return poolRepository;
+                return getPoolRepository();
             case "target":
-                return targetRepository;
+                return getTargetRepository();
             default:
                 LOGGER.error("Entity Class " + entityClass + " NOT FOUND");
                 return null;
@@ -117,7 +117,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
     public void reload(Farm farm) {
-        distMap.resetFarm(farm.getId());
+        getDistMap().resetFarm(farm.getId());
         String apiWithSeparator = farm.getApi();
         Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
             executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm, api));
@@ -151,21 +151,26 @@ public class FarmEngine extends AbstractEngine<Farm> {
         //
     }
 
+    @Override
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
     @SuppressWarnings({ "unchecked", "unused" })
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Farm farm) {
         if (lockerManager == null) {
             lockerManager = new LockerManager();
         }
-        if (statusDist == null) {
-            statusDist = new StatusDistributed();
+        if (getStatusDist() == null) {
+            setStatusDist(new StatusDistributed());
         }
         if (lockerManager.lock(farm.idName())) {
-            statusDist.updateNewStatus(farm.idName(), true);
+            getStatusDist().updateNewStatus(farm.idName(), true);
             String apiWithSeparator = farm.getApi();
             Arrays.stream(apiWithSeparator.split(",")).forEach(api -> CounterDownLatch.put(api, -1));
             EntityStatus statusConsolidated = getStatusConsolidated(farm, apiWithSeparator);
-            distMap.put(farm, statusConsolidated.toString());
+            getDistMap().put(farm, statusConsolidated.toString());
         } else {
             LOGGER.info(FARM_STATUS_MSG_PREFIX + "Farm " + farm.getName() + " locked by an other process/node. Aborting Check & Sync Task.");
         }
@@ -250,7 +255,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 entity.setVersion(Integer.parseInt(version));
                 entity.setEntityType(entityType);
                 entity.getProperties().put(DIST_MAP_FARM_ID_PROP, farmId);
-                distMap.put(entity, JsonObject.toJsonString(entity));
+                getDistMap().put(entity, JsonObject.toJsonString(entity));
             });
         });
     }
@@ -301,7 +306,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                         LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
                         CounterDownLatch.decrementDiffCounter(api);
                     } else {
-                        AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
+                        AbstractEnqueuer queue = getQueueLocator().getQueue(managerEntityType);
                         if (action == REMOVE) {
                             LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
                             removeEntityFromFarm(driver, makeBaseProperty(api, id, parentId, entityType));
@@ -379,19 +384,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
-    }
-
-    @Override
-    public AbstractEngine<Farm> setFarmRepository(FarmRepository farmRepository) {
-        this.farmRepository = farmRepository;
-        return this;
-    }
-
-    @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
     public Properties getPropertiesWithEntities(Farm farm, String api) {
@@ -413,15 +407,94 @@ public class FarmEngine extends AbstractEngine<Farm> {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(),
-                virtualHostRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
+                getVirtualHostRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(),
-                poolRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
+                getPoolRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Backend.class.getSimpleName().toLowerCase(),
-                targetRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
+                getTargetRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Rule.class.getSimpleName().toLowerCase(),
-                ruleRepository.findByFarmId(farm.getId(), ALL_PAGES).getContent());
+                getRuleRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         SystemUserService.runAs(currentUser);
         return entitiesMap;
     }
 
+    public DistMap getDistMap() {
+        return distMap;
+    }
+
+    @Autowired
+    public FarmEngine setDistMap(final DistMap distMap) {
+        this.distMap = distMap;
+        return this;
+    }
+
+    public StatusDistributed getStatusDist() {
+        return statusDist;
+    }
+
+    @Autowired
+    public FarmEngine setStatusDist(final StatusDistributed statusDist) {
+        this.statusDist = statusDist;
+        return this;
+    }
+
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public FarmEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public VirtualHostRepository getVirtualHostRepository() {
+        return virtualHostRepository;
+    }
+
+    @Autowired
+    public FarmEngine setVirtualHostRepository(final VirtualHostRepository virtualHostRepository) {
+        this.virtualHostRepository = virtualHostRepository;
+        return this;
+    }
+
+    public RuleRepository getRuleRepository() {
+        return ruleRepository;
+    }
+
+    @Autowired
+    public FarmEngine setRuleRepository(final RuleRepository ruleRepository) {
+        this.ruleRepository = ruleRepository;
+        return this;
+    }
+
+    public TargetRepository getTargetRepository() {
+        return targetRepository;
+    }
+
+    @Autowired
+    public FarmEngine setTargetRepository(final TargetRepository targetRepository) {
+        this.targetRepository = targetRepository;
+        return this;
+    }
+
+    public PoolRepository getPoolRepository() {
+        return poolRepository;
+    }
+
+    @Autowired
+    public FarmEngine setPoolRepository(final PoolRepository poolRepository) {
+        this.poolRepository = poolRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public FarmEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
+    }
 }

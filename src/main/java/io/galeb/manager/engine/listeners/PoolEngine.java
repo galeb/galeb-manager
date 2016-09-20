@@ -51,8 +51,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
         return LOGGER;
     }
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private QueueLocator queueLocator;
+    private FarmRepository farmRepository;
+    private QueueLocator queueLocator;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
     public void create(Pool pool, @Headers final Map<String, String> jmsHeaders) {
@@ -76,6 +76,11 @@ public class PoolEngine extends AbstractEngine<Pool> {
         }
     }
 
+    @Override
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
     @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
     public void remove(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
@@ -89,19 +94,8 @@ public class PoolEngine extends AbstractEngine<Pool> {
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
-    }
-
-    @Override
-    public AbstractEngine<Pool> setFarmRepository(FarmRepository farmRepository) {
-        this.farmRepository = farmRepository;
-        return this;
-    }
-
-    @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
     public Properties makeProperties(Pool pool, Map<String, String> jmsHeaders) {
@@ -120,5 +114,25 @@ public class PoolEngine extends AbstractEngine<Pool> {
         properties.put(JSON_PROP, json);
         properties.put(PATH_PROP, BackendPool.class.getSimpleName().toLowerCase());
         return properties;
+    }
+
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public PoolEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public PoolEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
     }
 }

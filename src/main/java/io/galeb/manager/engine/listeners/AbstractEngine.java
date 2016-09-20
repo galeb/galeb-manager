@@ -66,9 +66,7 @@ public abstract class AbstractEngine<T> {
 
     public abstract void update(T entity, final Map<String, String> jmsHeaders);
 
-    protected abstract FarmRepository getFarmRepository();
-
-    public abstract AbstractEngine<T> setFarmRepository(FarmRepository farmRepository);
+    public abstract Farm getFarmById(long id);
 
     protected abstract FarmQueue farmQueue();
 
@@ -100,7 +98,7 @@ public abstract class AbstractEngine<T> {
     private Optional<Farm> findFarmById(long farmId) {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Optional<Farm> farm = Optional.ofNullable(getFarmRepository().findOne(farmId));
+        Optional<Farm> farm = Optional.ofNullable(getFarmById(farmId));
         SystemUserService.runAs(originalAuth);
         return farm;
     }

@@ -52,8 +52,8 @@ public class TargetEngine extends AbstractEngine<Target> {
         return LOGGER;
     }
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private QueueLocator queueLocator;
+    private FarmRepository farmRepository;
+    private QueueLocator queueLocator;
 
     @JmsListener(destination = TargetQueue.QUEUE_CREATE)
     public void create(Target target, @Headers final Map<String, String> jmsHeaders) {
@@ -77,6 +77,11 @@ public class TargetEngine extends AbstractEngine<Target> {
         }
     }
 
+    @Override
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
     @JmsListener(destination = TargetQueue.QUEUE_REMOVE)
     public void remove(Target target, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing "+target.getClass().getSimpleName()+" "+target.getName());
@@ -90,19 +95,8 @@ public class TargetEngine extends AbstractEngine<Target> {
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
-    }
-
-    @Override
-    public AbstractEngine<Target> setFarmRepository(FarmRepository farmRepository) {
-        this.farmRepository = farmRepository;
-        return this;
-    }
-
-    @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
     public Properties makeProperties(Target target, Pool pool, final Map<String, String> jmsHeaders) {
@@ -120,5 +114,25 @@ public class TargetEngine extends AbstractEngine<Target> {
         properties.put(JSON_PROP, json);
         properties.put(PATH_PROP, Backend.class.getSimpleName().toLowerCase());
         return properties;
+    }
+
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public TargetEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public TargetEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
     }
 }
