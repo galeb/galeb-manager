@@ -309,6 +309,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                             LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
                             final Map<String, String> jmsHeaders = new HashMap<>();
                             jmsHeaders.put(API_PROP, api);
+                            jmsHeaders.put(PARENTID_PROP, parentId);
                             switch (action) {
                                 case CREATE:
                                     createEntityOnFarm(queue, entityFromRepository, jmsHeaders);
