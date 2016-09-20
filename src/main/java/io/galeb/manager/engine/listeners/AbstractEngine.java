@@ -45,6 +45,7 @@ public abstract class AbstractEngine<T> {
     public static final String JSON_PROP = "json";
     public static final String PATH_PROP = "path";
     public static final String API_PROP  = "api";
+    public static final String PARENTID_PROP  = "parentId";
 
     private Driver driver = null;
 
