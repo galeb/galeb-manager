@@ -56,9 +56,9 @@ public class RuleEngine extends AbstractEngine<Rule> {
         return LOGGER;
     }
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private QueueLocator queueLocator;
-    @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
+    private FarmRepository farmRepository;
+    private QueueLocator queueLocator;
+    private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = RuleQueue.QUEUE_CREATE)
     public void create(Rule rule, @Headers final Map<String, String> jmsHeaders) {
@@ -69,7 +69,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
                 updateRuleSpecialProperties(rule, virtualhost);
                 driver.create(makeProperties(rule, virtualhost, jmsHeaders));
                 virtualhost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                    VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
                             .buildVirtualHostAlias(virtualHostName, virtualhost);
                     driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
                 });
@@ -85,7 +85,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
         final Driver driver = getDriver(rule);
         String parentId = jmsHeaders.get(AbstractEngine.PARENTID_PROP);
         rule.getParents().stream()
-                .filter(virtualhost -> parentId == null ||          virtualhost.getName().equals(parentId))
+                .filter(virtualhost -> parentId == null || virtualhost.getName().equals(parentId))
                 .forEach(virtualhost -> {
                     try {
                         updateRuleSpecialProperties(rule, virtualhost);
@@ -105,6 +105,11 @@ public class RuleEngine extends AbstractEngine<Rule> {
                 });
     }
 
+    @Override
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
     @JmsListener(destination = RuleQueue.QUEUE_REMOVE)
     public void remove(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + rule.getClass().getSimpleName() + " " + rule.getName());
@@ -113,7 +118,7 @@ public class RuleEngine extends AbstractEngine<Rule> {
             try {
                 driver.remove(makeProperties(rule, virtualhost, jmsHeaders));
                 virtualhost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                    VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
                             .buildVirtualHostAlias(virtualHostName, virtualhost);
                     driver.remove(makeProperties(rule, virtualHostAlias, jmsHeaders));
                 });
@@ -124,19 +129,8 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
-    }
-
-    @Override
-    public AbstractEngine<Rule> setFarmRepository(FarmRepository farmRepository) {
-        this.farmRepository = farmRepository;
-        return this;
-    }
-
-    @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
     private void updateRuleSpecialProperties(final Rule rule, final VirtualHost virtualhost) {
@@ -170,7 +164,36 @@ public class RuleEngine extends AbstractEngine<Rule> {
     }
 
     private AbstractEnqueuer<Rule> ruleQueue() {
-        return (RuleQueue)queueLocator.getQueue(Rule.class);
+        return (RuleQueue) getQueueLocator().getQueue(Rule.class);
     }
 
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public RuleEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public RuleEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
+    }
+
+    public VirtualHostAliasBuilder getVirtualHostAliasBuilder() {
+        return virtualHostAliasBuilder;
+    }
+
+    @Autowired
+    public RuleEngine setVirtualHostAliasBuilder(final VirtualHostAliasBuilder virtualHostAliasBuilder) {
+        this.virtualHostAliasBuilder = virtualHostAliasBuilder;
+        return this;
+    }
 }
