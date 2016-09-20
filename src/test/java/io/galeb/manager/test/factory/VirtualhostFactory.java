@@ -44,8 +44,8 @@ public class VirtualhostFactory extends AbstractFactory<VirtualHost> {
     public VirtualHostEngine buildVirtualHostEngine(Driver driver) {
         return (VirtualHostEngine) new VirtualHostEngine()
                                         .setVirtualHostAliasBuilder(virtualHostAliasBuilder)
-                                        .setDriver(driver)
-                                        .setFarmRepository(new FarmFactory().mockFarmRepository());
+                                        .setFarmRepository(new FarmFactory().mockFarmRepository())
+                                        .setDriver(driver);
 
     }
 }
