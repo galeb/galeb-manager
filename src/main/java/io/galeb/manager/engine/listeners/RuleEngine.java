@@ -64,18 +64,21 @@ public class RuleEngine extends AbstractEngine<Rule> {
     public void create(Rule rule, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating "+rule.getClass().getSimpleName()+" "+rule.getName());
         final Driver driver = getDriver(rule);
-        rule.getParents().forEach(virtualhost -> {
-            try {
-                updateRuleSpecialProperties(rule, virtualhost);
-                driver.create(makeProperties(rule, virtualhost, jmsHeaders));
-                virtualhost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
-                            .buildVirtualHostAlias(virtualHostName, virtualhost);
-                    driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
-                });
-            } catch (Exception e) {
-                LOGGER.error(ExceptionUtils.getStackTrace(e));
-            }
+        String parentId = jmsHeaders.get(AbstractEngine.PARENTID_PROP);
+        rule.getParents().stream()
+                .filter(virtualhost -> parentId == null || virtualhost.getName().equals(parentId))
+                .forEach(virtualhost -> {
+                    try {
+                        updateRuleSpecialProperties(rule, virtualhost);
+                        driver.create(makeProperties(rule, virtualhost, jmsHeaders));
+                        virtualhost.getAliases().forEach(virtualHostName -> {
+                            VirtualHost virtualHostAlias = virtualHostAliasBuilder
+                                    .buildVirtualHostAlias(virtualHostName, virtualhost);
+                            driver.create(makeProperties(rule, virtualHostAlias, jmsHeaders));
+                        });
+                    } catch (Exception e) {
+                        LOGGER.error(ExceptionUtils.getStackTrace(e));
+                    }
         });
     }
 
