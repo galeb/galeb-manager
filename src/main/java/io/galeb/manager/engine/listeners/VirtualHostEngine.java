@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Component
@@ -166,6 +167,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     private void sendRuleToQueue(VirtualHost virtualHost, final Map<String, String> jmsHeaders, String ruleQueue) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
+        final Map<String, String> newJmsHeaders = new HashMap<>(jmsHeaders);
+        newJmsHeaders.remove(PARENTID_PROP);
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
                 .map(RuleOrder::getRuleId)
                 .collect(Collectors.toSet());
@@ -175,8 +178,8 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         ruleOrderedIds.stream()
                 .map(id -> getRuleRepository() != null ? getRuleRepository().findOne(id) : null)
                 .filter(Objects::nonNull)
-                .forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, jmsHeaders));
-        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, jmsHeaders));
+                .forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, newJmsHeaders));
+        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, newJmsHeaders));
         SystemUserService.runAs(currentUser);
     }
 
