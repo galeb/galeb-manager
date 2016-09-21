@@ -106,7 +106,7 @@ public class DiffProcessor {
                     final Map<String, String> entityProperties = entry.getValue();
                     final String id = entityProperties.getOrDefault("id", "UNDEF");
                     final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
-                    AtomicBoolean hasId = new AtomicBoolean(false);
+                    AtomicBoolean existEntity = new AtomicBoolean(false);
 
                     entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
                                                        !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME))
@@ -115,26 +115,28 @@ public class DiffProcessor {
                             .filter(getAbstractEntityPredicate(parentId))
                             .forEach(entity ->
                             {
-                                hasId.set(true);
-                                updateIfNecessary(path, id, parentId, entity, entityProperties);
+                                if (!existEntity.get()) {
+                                    existEntity.set(true);
+                                    updateIfNecessary(path, id, parentId, entity, entityProperties);
+                                }
                             });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases).forEach(entity ->
+                    entities.stream().filter(entity -> !existEntity.get() && entity instanceof WithAliases).forEach(entity ->
                     {
                         WithAliases<?> withAliases = (WithAliases) entity;
                         if (withAliases.getAliases().contains(id)) {
-                            hasId.set(true);
+                            existEntity.set(true);
                         }
                     });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents).forEach(entity -> {
+                    entities.stream().filter(entity -> !existEntity.get() && entity instanceof WithParents).forEach(entity -> {
                         WithParents<?> withParents = (WithParents) entity;
                         Set<WithAliases> withAliases = new HashSet<>((Collection<? extends WithAliases>) withParents.getParents());
-                        boolean isAlias = withAliases.stream().map(WithAliases::getAliases)
+                        boolean isAlias = withAliases.stream().filter(v -> ((AbstractEntity<?>) withParents).getName().equals(id)).map(WithAliases::getAliases)
                                 .flatMap(Collection::stream).collect(Collectors.toSet()).contains(parentId);
-                        if (isAlias) {
-                            hasId.set(true);
+                        if (!existEntity.get() && isAlias) {
+                            existEntity.set(true);
                         }
                     });
-                    removeEntityIfNecessary(path, id, parentId, hasId);
+                    removeEntityIfNecessary(path, id, parentId, existEntity);
                 });
 
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
@@ -159,9 +161,9 @@ public class DiffProcessor {
     private void removeEntityIfNecessary(String path,
                                          String id,
                                          String parentId,
-                                         final AtomicBoolean hasId) {
+                                         final AtomicBoolean existEntity) {
         LOGGER.debug("Check if is necessary REMOVE");
-        if (!hasId.get()) {
+        if (!existEntity.get()) {
             delAction(path, id, parentId);
         }
     }
