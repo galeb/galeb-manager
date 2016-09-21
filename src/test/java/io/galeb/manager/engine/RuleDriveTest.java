@@ -23,6 +23,8 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.engine.listeners.RuleEngine;
+import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.httpclient.FakeFarmClient;
 import io.galeb.manager.test.factory.RuleFactory;
 import io.galeb.manager.test.factory.VirtualhostFactory;
@@ -32,6 +34,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.util.Assert;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class RuleDriveTest {
@@ -71,6 +75,46 @@ public class RuleDriveTest {
         // then
         Assert.isTrue(exist);
 
+    }
+
+    @Test
+    public void ruleNotExistIfNotHaveParents() {
+        logTestedMethod();
+
+        // given
+        String ruleName = UUID.randomUUID().toString();
+        String virtualhostName = UUID.randomUUID().toString();
+        Rule rule = ruleFactory.build(ruleName);
+        Properties properties = ruleEngine.makeProperties(rule, virtualhostFactory.build(virtualhostName), ruleFactory.jmsHeaderProperties());
+
+        // when
+        ruleEngine.create(rule, ruleFactory.jmsHeaderProperties());
+        boolean exist = !driver.exist(properties);
+
+        // then
+        Assert.isTrue(exist);
+    }
+
+    @Test
+    public void ruleExistIfHaveParents() {
+        logTestedMethod();
+
+        // given
+        String ruleName = UUID.randomUUID().toString();
+        String virtualhostName = UUID.randomUUID().toString();
+        Rule rule = ruleFactory.build(ruleName);
+        VirtualHost virtualHost = virtualhostFactory.build(virtualhostName);
+        Set<VirtualHost> virtualhosts = new HashSet<>();
+        virtualhosts.add(virtualHost);
+        rule.setParents(virtualhosts);
+
+        // when
+        Properties properties = ruleEngine.makeProperties(rule, virtualHost, ruleFactory.jmsHeaderProperties());
+        ruleEngine.create(rule, ruleFactory.jmsHeaderProperties());
+        boolean exist = driver.exist(properties);
+
+        // then
+        Assert.isTrue(exist);
     }
 
 }
