@@ -167,6 +167,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
     private void sendRuleToQueue(VirtualHost virtualHost, final Map<String, String> jmsHeaders, String ruleQueue) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
+        //TODO Copy jmsheader to remove parentId when send to another queue
         final Map<String, String> newJmsHeaders = new HashMap<>(jmsHeaders);
         newJmsHeaders.remove(PARENTID_PROP);
         final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
