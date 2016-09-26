@@ -1,12 +1,9 @@
 package io.galeb.manager.controller;
 
-//import static io.galeb.core.util.consistenthash.HashAlgorithm.HashType.MD5;
-
 import javax.servlet.http.HttpSession;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import io.galeb.core.util.consistenthash.HashAlgorithm;
 import io.galeb.manager.entity.Account;
 import io.galeb.manager.repository.AccountRepository;
 import io.galeb.manager.security.user.CurrentUser;
