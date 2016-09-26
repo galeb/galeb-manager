@@ -23,7 +23,7 @@ public class SessionRepositoryConfig {
     private static final String SERVER_SESSION_TIMEOUT_PROP = "server.session-timeout";
     private static final String SERVER_SESSION_TIMEOUT_DEF  = "1800";
 
-    @Value("${server.session-timeout}")
+    @Value("#{systemProperties['server.session-timeout']?:1800}")
     private int maxInactiveIntervalInSeconds;
 
     @Bean
