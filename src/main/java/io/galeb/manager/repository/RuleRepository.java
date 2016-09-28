@@ -64,7 +64,7 @@ public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
                         "WHERE (e.name LIKE CONCAT('%', :name, '%')) AND " +
                         "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")"
-                        + " ORDER BY e.name LIMIT 10";
+                        + " ORDER BY e.name";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -86,6 +86,10 @@ public interface RuleRepository extends JpaRepositoryWithFindByName<Rule, Long>,
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Rule> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Rule> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
     @Query(QUERY_FINDBYPOOLNAME)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
