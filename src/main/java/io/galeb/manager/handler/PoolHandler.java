@@ -53,16 +53,13 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @Override
     protected void setBestFarm(final Pool pool) throws Exception {
-        long farmId = -1L;
         final Environment environment = pool.getEnvironment();
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final Iterable<Farm> farmIterable = farmRepository.findByEnvironment(environment);
         final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
         SystemUserService.runAs(currentUser);
-        if (farm != null) {
-            farmId = farm.getId();
-        }
+        long farmId = farm != null ? farm.getId() : -1L;
         pool.setFarmId(farmId);
     }
 

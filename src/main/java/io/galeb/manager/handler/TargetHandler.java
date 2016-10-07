@@ -54,7 +54,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @Override
     protected void setBestFarm(final Target target) throws Exception {
-        long farmId = -1L;
+        long farmId;
         if (target.getParent() != null && !target.getParent().equals(poolRepository.getNoParent())) {
             farmId = target.getParent().getFarmId();
         } else {
@@ -65,9 +65,7 @@ public class TargetHandler extends AbstractHandler<Target> {
                 final Iterable<Farm> farmIterable = farmRepository.findByEnvironment(environment);
                 final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
                 SystemUserService.runAs(currentUser);
-                if (farm != null) {
-                    farmId = farm.getId();
-                }
+                farmId = farm != null ? farm.getId() : -1L;
             } else {
                 final String errorMgs = "Target.environment and Target.pool are null";
                 LOGGER.error(errorMgs);

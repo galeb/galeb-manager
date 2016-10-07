@@ -62,9 +62,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
                 virtualhost.getEnvironment());
         final Farm farm = farmIterable.iterator().hasNext() ? farmIterable.iterator().next() : null;
         SystemUserService.runAs(currentUser);
-        if (farm!=null) {
-            virtualhost.setFarmId(farm.getId());
-        }
+        virtualhost.setFarmId(farm != null ? farm.getId() : -1);
     }
 
     @HandleBeforeCreate
