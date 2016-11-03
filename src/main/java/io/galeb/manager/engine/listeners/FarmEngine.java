@@ -202,10 +202,10 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
         String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
         LOGGER.info(FARM_STATUS_MSG_PREFIX + "Retrieving entities from database - " + farmFull);
-        final Properties properties = getPropertiesWithEntities(farm, api);
-
-        LOGGER.info(FARM_STATUS_MSG_PREFIX + "Starting Check & Sync task - " + farmFull);
         try {
+            final Properties properties = getPropertiesWithEntities(farm, api);
+            LOGGER.info(FARM_STATUS_MSG_PREFIX + "Starting Check & Sync task - " + farmFull);
+
             long diffStart = currentTimeMillis();
             final Map<String, Map<String, Map<String, String>>> remoteMultiMap = driver.getAll(properties);
             final Map<String, Map<String, Object>> diff = new HashMap<>();
@@ -273,6 +273,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
         diff.entrySet().forEach(diffEntrySet -> {
 
             try {
+
+                CounterDownLatch.refresh(api);
 
                 final Map<String, Object> attributes = diffEntrySet.getValue();
 

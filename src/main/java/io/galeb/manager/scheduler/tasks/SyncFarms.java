@@ -21,6 +21,7 @@
 package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.Maps;
 import io.galeb.manager.common.CommandCountDown;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
@@ -45,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.System.getenv;
 import static java.lang.System.getProperty;
@@ -62,6 +64,8 @@ public class SyncFarms {
     private StatusDistributed     statusDist = new StatusDistributed();
 
     private final LockerManager lockerManager = new LockerManager();
+
+    private long timeoutSyncFarm = Long.valueOf(getProperty(SchedulerConfiguration.GALEB_TIMEOUT_SYNC_FARM, String.valueOf(Long.MAX_VALUE)));
 
     private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
@@ -107,10 +111,17 @@ public class SyncFarms {
     }
 
     private void syncFarm(Farm farm) throws JsonProcessingException {
+
         String farmStatusMsgPrefix = "FARM STATUS - " + farm.idName() + " - ";
+        String[] apis = apisToSync.getOrDefault(farm.idName(), farm.getApi().split(","));
+
+        if (checkFarmWithSlowOp(apis, farm.idName())) {
+            LOGGER.error(farmStatusMsgPrefix + " Possible lock cluster. Releasing...");
+            lockerManager.release(farm.idName(), apis);
+            return;
+        }
 
         Boolean containsLock = lockerManager.contains(farm.idName());
-        String[] apis = apisToSync.getOrDefault(farm.idName(), farm.getApi().split(","));
         if (containsLock != null && !containsLock) {
             LOGGER.info(farmStatusMsgPrefix + "Updated apis to sync because the lock is released for this instance.");
             apis = farm.getApi().split(",");
@@ -133,17 +144,36 @@ public class SyncFarms {
                 releaseCounterWithoutCommand(farm);
                 break;
             case STILL_SYNCHRONIZING:
-                updateStatusDistributed(farm, farmStatusMsgPrefix, apis);
                 releaseCounterWithoutCommand(farm);
                 break;
             default:
                 verifyCounterWithoutCommand(farm, apis);
         }
+        updateStatusDistributed(farm, farmStatusMsgPrefix, apis);
+    }
+
+    private boolean checkFarmWithSlowOp(String[] apis, String idFarm) {
+        final AtomicBoolean applied = new AtomicBoolean(false);
+        if (apis != null) {
+            Arrays.stream(apis).forEach(api -> {
+                applied.set(applied.get() || (checkTimeoutCounterLatch(api) || checkLockFarmWithoutCounter(api, idFarm)));
+            });
+        }
+        return applied.get();
+    }
+
+    private boolean checkLockFarmWithoutCounter(String api, String idFarm) {
+        return !CounterDownLatch.checkContainsKey(api) && lockerManager.contains(idFarm);
+    }
+
+    private boolean checkTimeoutCounterLatch(String api) {
+        long timeApi = CounterDownLatch.getTimeOf(api);
+        return (currentTimeMillis() - timeApi) > timeoutSyncFarm;
     }
 
     private void verifyCounterWithoutCommand(Farm farm, String[] apis) {
         Arrays.stream(apis).forEach(api -> {
-            final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+            final Integer latchCount = CounterDownLatch.get(api);
             String farmFull = farm.getName() + " [ " + api + " ] ";
             LOGGER.warn("Without command to execute. Skip the sync farm " + farmFull + " (remains " + latchCount + " tasks)");
         });
@@ -163,11 +193,12 @@ public class SyncFarms {
     }
 
     private void updateStatusDistributed(Farm farm, String farmStatusMsgPrefix, String[] apis) {
-        final Map<String, Integer> countDownLatchOfApis = new HashMap<>();
+        final Map<String, Map.Entry<Long, Integer>> countDownLatchOfApis = new HashMap<>();
         Arrays.stream(apis).forEach(api -> {
-            final Integer latchCount = CounterDownLatch.refreshAndGet(api);
+            final Integer latchCount = CounterDownLatch.get(api);
             if (latchCount != null) {
-                countDownLatchOfApis.put(api, latchCount);
+                final long timeApi = CounterDownLatch.getTimeOf(api);
+                countDownLatchOfApis.put(api, Maps.immutableEntry(timeApi, latchCount));
             }
             String farmFull = farm.getName() + " [ " + api + " ] ";
             LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");

@@ -57,7 +57,7 @@ public final class StatusDistributed implements Serializable {
         distMap.put(cacheName, lockerManager.name(), value);
     }
 
-    public void updateCountDownLatch(String farmIdName, Map<String, Integer> countDownLatchOfApis) {
+    public void updateCountDownLatch(String farmIdName, Map<String, Map.Entry<Long, Integer>> countDownLatchOfApis) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
         String cacheValue = distMap.get(cacheName, lockerManager.name());
         if (cacheValue != null && !countDownLatchOfApis.isEmpty()) {

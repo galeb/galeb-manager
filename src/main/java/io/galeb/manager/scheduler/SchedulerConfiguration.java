@@ -10,5 +10,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class SchedulerConfiguration {
 
     public static final String GALEB_DISABLE_SCHED = "GALEB_DISABLE_SCHED";
+    public static final String GALEB_TIMEOUT_SYNC_FARM = "GALEB_TIMEOUT_SYNC_FARM";
 
 }
