@@ -54,18 +54,24 @@ public class RuleHandler extends AbstractHandler<Rule> {
         long farmIdPool = -1L;
         Set<Long> farmIds = rule.getParents().stream().collect(
                 Collectors.groupingBy(VirtualHost::getFarmId)).keySet();
-        long farmIdVirtualHost = farmIds.size() == 1 && farmIds.iterator().hasNext() ?
-                farmIds.iterator().next() : -1L;
-        if (rule.getPool() != null) {
-            final Pool pool = rule.getPool();
-            farmIdPool = pool.getFarmId();
-        }
-        if (farmIdVirtualHost > -1L && farmIdPool > -1L && farmIdVirtualHost != farmIdPool) {
-            String errorMsg = "VirtualHost.farmId is not equal Pool.farmId";
+        if (farmIds.size() > 1) {
+            String errorMsg = "VirtualHosts into multiples farms not allowed";
             LOGGER.error(errorMsg);
             throw new BadRequestException(errorMsg);
+        } else {
+            long farmIdVirtualHost = farmIds.size() == 1 && farmIds.iterator().hasNext() ?
+                    farmIds.iterator().next() : -1L;
+            if (rule.getPool() != null) {
+                final Pool pool = rule.getPool();
+                farmIdPool = pool.getFarmId();
+            }
+            if (farmIdVirtualHost > -1L && farmIdPool > -1L && farmIdVirtualHost != farmIdPool) {
+                String errorMsg = "VirtualHost.farmId is not equal Pool.farmId";
+                LOGGER.error(errorMsg);
+                throw new BadRequestException(errorMsg);
+            }
+            rule.setFarmId(farmIdPool);
         }
-        rule.setFarmId(farmIdPool);
     }
 
     @HandleBeforeCreate
