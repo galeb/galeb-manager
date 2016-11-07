@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -51,13 +48,19 @@ public final class StatusDistributed implements Serializable {
         return values;
     }
 
+    public Optional<LockStatus> getLockStatusLocal(String farmIdName) {
+        List<LockStatus> allList = getLockStatus(farmIdName);
+        return allList.stream().filter(lockStatus -> lockStatus.getName().contains(lockerManager.name()))
+                               .findAny();
+    }
+
     public void updateNewStatus(String farmIdName, boolean hasLock) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
         String value = JsonObject.toJsonString(LockStatus.create(lockerManager.name(), new Date(), hasLock));
         distMap.put(cacheName, lockerManager.name(), value);
     }
 
-    public void updateCountDownLatch(String farmIdName, Map<String, Map.Entry<Long, Integer>> countDownLatchOfApis) {
+    public void updateCountDownLatch(String farmIdName, Map<String, Integer> countDownLatchOfApis) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
         String cacheValue = distMap.get(cacheName, lockerManager.name());
         if (cacheValue != null && !countDownLatchOfApis.isEmpty()) {

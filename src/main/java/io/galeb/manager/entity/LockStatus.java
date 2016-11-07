@@ -33,7 +33,7 @@ public class LockStatus implements Serializable {
     @Expose
     private boolean hasLock;
     @Expose
-    private Map<String, Map.Entry<Long, Integer>> counterDownLatch;
+    private Map<String, Integer> counterDownLatch;
 
     public static LockStatus create(String name, Date lastModifiedAt, boolean hasLock) {
         return new LockStatus(name, lastModifiedAt, hasLock);
@@ -61,9 +61,9 @@ public class LockStatus implements Serializable {
     public LockStatus() {
     }
 
-    public Map<String, Map.Entry<Long, Integer>> getCounterDownLatch() { return counterDownLatch; }
+    public Map<String, Integer> getCounterDownLatch() { return counterDownLatch; }
 
-    public void setCounterDownLatch(Map<String, Map.Entry<Long, Integer>> counterDownLatch) {
+    public void setCounterDownLatch(Map<String, Integer> counterDownLatch) {
         this.counterDownLatch = counterDownLatch;
     }
     public void setName(String name) {

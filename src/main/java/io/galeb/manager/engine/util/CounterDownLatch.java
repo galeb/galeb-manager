@@ -60,12 +60,20 @@ public class CounterDownLatch {
 
     public static synchronized Integer get(String key) {
         final Map.Entry entry = mapOfDiffCounters.get(key);
-        return (Integer) entry.getValue();
+        if (entry != null) {
+            return (Integer) entry.getValue();
+        } else {
+            return null;
+        }
     }
 
-    public static synchronized long getTimeOf(String key) {
+    public static synchronized Long getTimeOf(String key) {
         final Map.Entry entry = mapOfDiffCounters.get(key);
-        return (Long)entry.getKey();
+        if (entry != null) {
+            return (Long)entry.getKey();
+        } else {
+            return null;
+        }
     }
 
     public static synchronized Integer put(String key, Integer value) {

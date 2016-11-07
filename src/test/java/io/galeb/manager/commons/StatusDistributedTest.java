@@ -26,7 +26,7 @@ public class StatusDistributedTest {
 
     private final String farmIdName = "1";
     private final String key_api = "api.dev.local";
-    private final Map.Entry<Long, Integer> value_api = Maps.immutableEntry(15L, 5);
+    private final Integer value_api = 5;
 
     @InjectMocks
     private StatusDistributed statusDist;
@@ -55,7 +55,7 @@ public class StatusDistributedTest {
 
         statusDist.updateNewStatus(farmIdName, true);
 
-        Map<String, Map.Entry<Long, Integer>> mapApis = new HashMap<>();
+        Map<String, Integer> mapApis = new HashMap<>();
         mapApis.put(key_api, value_api);
 
         statusDist.updateCountDownLatch(farmIdName, mapApis);

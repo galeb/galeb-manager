@@ -28,6 +28,7 @@ import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
 
+import io.galeb.manager.entity.LockStatus;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.repository.FarmRepository;
@@ -35,6 +36,7 @@ import io.galeb.manager.scheduler.SchedulerConfiguration;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,7 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -61,7 +64,7 @@ public class SyncFarms {
     @Autowired private FarmRepository        farmRepository;
     @Autowired private FarmQueue             farmQueue;
 
-    private StatusDistributed     statusDist = new StatusDistributed();
+    private StatusDistributed statusDist = new StatusDistributed();
 
     private final LockerManager lockerManager = new LockerManager();
 
@@ -77,6 +80,8 @@ public class SyncFarms {
 
     private static Map<String, String[]> apisToSync = new ConcurrentHashMap<>();
     private static Map<String, Long> counterWithoutCommandCounterDown = new ConcurrentHashMap<>();
+    private static int tryiesTimeoutSyncFarm = 0;
+    private static int timeToAvoidReleaseToTest = 0;
 
     @Scheduled(fixedRate = SCHED_INTERVAL)
     private void task() {
@@ -98,13 +103,13 @@ public class SyncFarms {
                         try {
                             syncFarm(farm);
                         } catch (Exception e) {
-                            LOGGER.error(e);
+                            LOGGER.error(ExceptionUtils.getStackTrace(e));
                         }
                     });
 
             SystemUserService.runAs(currentUser);
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
             LOGGER.debug("Finished " + this.getClass().getSimpleName() + ".task (" + (currentTimeMillis() - start) + " ms)");
         }
@@ -116,8 +121,8 @@ public class SyncFarms {
         String[] apis = apisToSync.getOrDefault(farm.idName(), farm.getApi().split(","));
 
         if (checkFarmWithSlowOp(apis, farm.idName())) {
-            LOGGER.error(farmStatusMsgPrefix + " Possible lock cluster. Releasing...");
-            lockerManager.release(farm.idName(), apis);
+            LOGGER.error(farmStatusMsgPrefix + " POSSIBLE CLUSTER LOCK! RELEASING THE LOCK...");
+            release(farm, apis);
             return;
         }
 
@@ -139,17 +144,26 @@ public class SyncFarms {
                 releaseCounterWithoutCommand(farm);
                 break;
             case RELEASE:
-                statusDist.updateNewStatus(farm.idName(), false);
-                lockerManager.release(farm.idName(), apis);
+                release(farm, apis);
                 releaseCounterWithoutCommand(farm);
                 break;
             case STILL_SYNCHRONIZING:
                 releaseCounterWithoutCommand(farm);
+                Arrays.stream(apis).forEach(api -> {
+                    String farmFull = farm.getName() + " [ " + api + " ] ";
+                    final Integer latchCount = CounterDownLatch.get(api);
+                    LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
+                });
                 break;
             default:
                 verifyCounterWithoutCommand(farm, apis);
         }
-        updateStatusDistributed(farm, farmStatusMsgPrefix, apis);
+        updateStatusDistributed(farm, apis);
+    }
+
+    private void release(Farm farm, String[] apis) {
+        lockerManager.release(farm.idName(), apis);
+        statusDist.updateNewStatus(farm.idName(), false);
     }
 
     private boolean checkFarmWithSlowOp(String[] apis, String idFarm) {
@@ -163,12 +177,14 @@ public class SyncFarms {
     }
 
     private boolean checkLockFarmWithoutCounter(String api, String idFarm) {
-        return !CounterDownLatch.checkContainsKey(api) && lockerManager.contains(idFarm);
+        Optional<LockStatus> lock = statusDist.getLockStatusLocal(idFarm);
+        boolean isLock = lock.isPresent() && lock.get().isHasLock();
+        return !CounterDownLatch.checkContainsKey(api) && isLock;
     }
 
     private boolean checkTimeoutCounterLatch(String api) {
-        long timeApi = CounterDownLatch.getTimeOf(api);
-        return (currentTimeMillis() - timeApi) > timeoutSyncFarm;
+        Long timeApi = CounterDownLatch.getTimeOf(api);
+        return timeApi != null && (currentTimeMillis() - timeApi.longValue()) > timeoutSyncFarm;
     }
 
     private void verifyCounterWithoutCommand(Farm farm, String[] apis) {
@@ -192,16 +208,16 @@ public class SyncFarms {
         counterWithoutCommandCounterDown.remove(farm.idName());
     }
 
-    private void updateStatusDistributed(Farm farm, String farmStatusMsgPrefix, String[] apis) {
-        final Map<String, Map.Entry<Long, Integer>> countDownLatchOfApis = new HashMap<>();
+    private void updateStatusDistributed(Farm farm, String[] apis) {
+        final Map<String, Integer> countDownLatchOfApis = new HashMap<>();
         Arrays.stream(apis).forEach(api -> {
             final Integer latchCount = CounterDownLatch.get(api);
             if (latchCount != null) {
-                final long timeApi = CounterDownLatch.getTimeOf(api);
-                countDownLatchOfApis.put(api, Maps.immutableEntry(timeApi, latchCount));
+                final Long timeApi = CounterDownLatch.getTimeOf(api);
+                if (timeApi != null) {
+                    countDownLatchOfApis.put(api,latchCount);
+                }
             }
-            String farmFull = farm.getName() + " [ " + api + " ] ";
-            LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
         });
         statusDist.updateCountDownLatch(farm.idName(), countDownLatchOfApis);
     }
