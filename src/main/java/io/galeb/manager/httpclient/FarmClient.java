@@ -19,6 +19,7 @@
 package io.galeb.manager.httpclient;
 
 import io.galeb.manager.common.LoggerUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -233,13 +234,13 @@ public class FarmClient implements CommonHttpRequester {
                 LOGGER.warn("Content is null.");
             }
         } catch (IOException e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
             if (bufferedReader != null) {
                 try {
                     bufferedReader.close();
                 } catch (IOException e) {
-                    LOGGER.error(e);
+                    LOGGER.error(ExceptionUtils.getStackTrace(e));
                 }
             }
         }
