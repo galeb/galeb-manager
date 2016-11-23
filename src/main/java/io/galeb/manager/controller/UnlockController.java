@@ -1,11 +1,9 @@
 package io.galeb.manager.controller;
 
-import io.galeb.core.json.JsonObject;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.LockStatus;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.FarmRepository;
 import org.apache.commons.logging.Log;

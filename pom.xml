@@ -282,6 +282,8 @@
                   <manifest>
                     <mainClass>io.galeb.manager.Application</mainClass>
                     <addClasspath>true</addClasspath>
+                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                   </manifest>
                 </archive>
                </configuration>
