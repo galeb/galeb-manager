@@ -24,6 +24,7 @@ import io.galeb.core.cluster.ignite.IgniteCacheFactory;
 import io.galeb.core.jcache.CacheFactory;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.entity.*;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Service;
@@ -189,7 +190,8 @@ public class DistMap implements Serializable {
                 Set<String> keys = keysToRemove.collect(toSet());
                 cache.removeAll(keys);
             } catch (Exception e) {
-                LOGGER.error("DistMap.removeAll FAILED: " + e.getMessage());
+                LOGGER.error("DistMap.removeAll FAILED");
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
 
         });

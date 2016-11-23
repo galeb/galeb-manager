@@ -142,7 +142,7 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
             JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);
             json = jsonMapper.toString();
         } catch (JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         final Properties properties = fromEntity(virtualHost, jmsHeaderProperties);
         properties.put(JSON_PROP, json);

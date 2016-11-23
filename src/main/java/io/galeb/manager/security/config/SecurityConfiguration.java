@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import io.galeb.manager.security.services.*;
 import io.galeb.manager.security.user.*;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,7 +106,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 authMethod = authMethod == null ? AuthMethod.DEFAULT : authMethod;
                 LOGGER.info("Using "+authMethod.toString()+" Authentication Method.......");
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
                 throw e;
             }
         }
@@ -119,7 +120,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 Files.setPosixFilePermissions(secret, new HashSet<>(Arrays.asList(OWNER_READ, OWNER_WRITE)));
             } catch (Exception e) {
                 LOGGER.info("secret: " + internalPass);
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         } else {
             LOGGER.info("secret: " + internalPass);
