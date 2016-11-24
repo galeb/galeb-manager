@@ -20,7 +20,9 @@ package io.galeb.manager.security.config;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -50,6 +52,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.ldap.userdetails.InetOrgPerson;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.security.ldap.userdetails.LdapUserDetailsMapper;
 import org.springframework.security.ldap.userdetails.UserDetailsContextMapper;
@@ -69,22 +72,19 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private static final Log LOGGER = LogFactory.getLog(SecurityConfiguration.class);
 
+    private static final PageRequest PAGE_REQUEST = new PageRequest(0, 99999);
+
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
+
     enum AuthMethod {
         LDAP,
         LDAP_TEST,
         DEFAULT
     }
 
-    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
-    private Environment env;
+    @Autowired private UserDetailsService userDetailsService;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private Environment env;
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
@@ -177,27 +177,43 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
                 final Authentication originalAuth = CurrentUser.getCurrentAuth();
                 SystemUserService.runAs();
-                final Page<Account> accountPage = accountRepository.findByName(username, new PageRequest(0, 99999));
-                final Account account = accountPage.iterator().hasNext() ? accountPage.iterator().next() : null;
-                SystemUserService.runAs(originalAuth);
-
+                Optional<Account> account = getAccount(username);
                 List<String> localRoles = new ArrayList<>();
-                long id = Long.MAX_VALUE;
-                String email = "";
-                if (account != null) {
-                    localRoles = account.getRoles().stream()
+                Optional<String> email = Optional.empty();
+                if (account.isPresent()) {
+                    localRoles = account.get().getRoles().stream()
                             .map(Enum::toString)
                             .collect(Collectors.toList());
-                    id = account.getId();
-                    email = account.getEmail();
+                    email = Optional.ofNullable(account.get().getEmail());
                 } else {
                     localRoles.add("ROLE_USER");
+                    Object principalObj = originalAuth.getPrincipal();
+                    InetOrgPerson principal;
+                    if (principalObj != null && principalObj instanceof InetOrgPerson) {
+                        principal = (InetOrgPerson)principalObj;
+                        email = Optional.ofNullable(principal.getMail());
+                    }
+                    account = Optional.of(new Account().setPassword(UUID.randomUUID().toString())
+                                                       .setEmail(email.orElse(""))
+                                                       .setTeams(Collections.emptySet())
+                                                       .setRoles(localRoles.stream().map(Account.Role::valueOf)
+                                                                    .collect(Collectors.toSet()))
+                                                       .setName(username));
+                    accountRepository.saveAndFlush(account.get());
+                    account = getAccount(username);
                 }
+                long id = account.isPresent()? account.get().getId() : Long.MAX_VALUE;
+                SystemUserService.runAs(originalAuth);
                 final Collection<GrantedAuthority> localAuthorities =
                         AuthorityUtils.createAuthorityList(localRoles.toArray(new String[localRoles.size()-1]));
-                return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id, email);
+                return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id, email.orElse(""));
             }
         };
+    }
+
+    private Optional<Account> getAccount(String username) {
+        final Page<Account> accountPage = accountRepository.findByName(username, PAGE_REQUEST);
+        return accountPage.iterator().hasNext() ? Optional.of(accountPage.iterator().next()) : Optional.empty();
     }
 
 }
