@@ -68,7 +68,7 @@ public class SyncFarms {
 
     private final LockerManager lockerManager = new LockerManager();
 
-    private long timeoutSyncFarm = Long.valueOf(getProperty(SchedulerConfiguration.GALEB_TIMEOUT_SYNC_FARM, String.valueOf(Long.MAX_VALUE)));
+    private final long timeoutSyncFarm = Long.parseLong(getProperty(SchedulerConfiguration.GALEB_TIMEOUT_SYNC_FARM, String.valueOf(Long.MAX_VALUE)));
 
     private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
@@ -184,7 +184,7 @@ public class SyncFarms {
 
     private boolean checkTimeoutCounterLatch(String api) {
         Long timeApi = CounterDownLatch.getTimeOf(api);
-        return timeApi != null && (currentTimeMillis() - timeApi.longValue()) > timeoutSyncFarm;
+        return timeApi != null && (currentTimeMillis() - timeApi) > timeoutSyncFarm;
     }
 
     private void verifyCounterWithoutCommand(Farm farm, String[] apis) {
@@ -193,7 +193,7 @@ public class SyncFarms {
             String farmFull = farm.getName() + " [ " + api + " ] ";
             LOGGER.warn("Without command to execute. Skip the sync farm " + farmFull + " (remains " + latchCount + " tasks)");
         });
-        Long count = counterWithoutCommandCounterDown.getOrDefault(farm.idName(), Long.valueOf(0));
+        Long count = counterWithoutCommandCounterDown.getOrDefault(farm.idName(), 0L);
         if (count == 6) {
             LOGGER.warn("Force releasing lock: Farm " + farm.getName() + " and removing CountDownLatch of " + Arrays.toString(ArrayUtils.toArray(apis)));
             lockerManager.release(farm.idName(), apis);

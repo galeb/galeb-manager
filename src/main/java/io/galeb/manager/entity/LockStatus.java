@@ -51,7 +51,7 @@ public class LockStatus implements Serializable {
     }
 
     public Date getLastModifiedAt() {
-        return lastModifiedAt;
+        return new Date(lastModifiedAt.getTime());
     }
 
     public boolean isHasLock() {
@@ -70,7 +70,7 @@ public class LockStatus implements Serializable {
         this.name = name;
     }
     public void setLastModifiedAt(Date lastModifiedAt) {
-        this.lastModifiedAt = lastModifiedAt;
+        this.lastModifiedAt = new Date(lastModifiedAt.getTime());
     }
     public void setHasLock(boolean hasLock) {
         this.hasLock = hasLock;
