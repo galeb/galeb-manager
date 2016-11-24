@@ -53,7 +53,7 @@ public class EnvironmentHandler {
     public void beforeSave(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeSave");
         if (environment.getName().equals("Null Environment")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Environment is Null. Choice other.");
         }
     }
 
@@ -67,7 +67,7 @@ public class EnvironmentHandler {
     public void beforeDelete(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeDelete");
         if (environment.getName().equals("Null Environment")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Environment is Null. Choice other.");
         }
     }
 

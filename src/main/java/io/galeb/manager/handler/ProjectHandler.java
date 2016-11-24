@@ -55,7 +55,7 @@ public class ProjectHandler {
     public void beforeSave(Project project) throws Exception {
         LOGGER.info("Project: HandleBeforeSave");
         if (project.getName().equals("Null Project")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Project is Null.");
         }
     }
 
@@ -68,7 +68,7 @@ public class ProjectHandler {
     public void beforeDelete(Project project) throws Exception {
         LOGGER.info("Project: HandleBeforeDelete");
         if (project.getName().equals("Null Project")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Project is Null.");
         }
     }
 

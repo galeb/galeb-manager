@@ -33,7 +33,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
         if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
-            throw new BadRequestException();
+            throw new BadRequestException("Farm does not exists");
         }
     }
 
@@ -50,7 +50,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
         }
         setBestFarm(entity);
         if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
-            throw new BadRequestException();
+            throw new BadRequestException("Farm does not exists");
         }
     }
 
