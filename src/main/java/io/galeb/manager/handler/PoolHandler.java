@@ -83,7 +83,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
         distMap.remove(pool);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeSave");
-            throw new BadRequestException();
+            throw new BadRequestException("Poll is NoParent.");
         }
         beforeSave(pool, poolRepository, LOGGER);
         setGlobalIfNecessary(pool);
@@ -99,7 +99,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
         distMap.remove(pool);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeDelete");
-            throw new BadRequestException();
+            throw new BadRequestException("Pool is NoParent.");
         }
         beforeDelete(pool, LOGGER);
     }

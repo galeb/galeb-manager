@@ -108,7 +108,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
             final Set<Long> rulesIdsOrdered = virtualhost.getRulesOrdered().stream()
                                                 .map(RuleOrder::getRuleId).collect(Collectors.toSet());
             if (!ruleIds.containsAll(rulesIdsOrdered)){
-                throw new BadRequestException();
+                throw new BadRequestException("Any rule not contains in rules ordered.");
             }
             if (!rulesIdsOrdered.isEmpty()) {
                 ruleIds.removeAll(rulesIdsOrdered);
