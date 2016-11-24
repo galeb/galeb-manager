@@ -82,6 +82,7 @@ Feature: Virtualhost with Rule Support
         And send POST /rule
         Then the response status is 201
 
+    @ignore
     Scenario: Delete VirtualHost with Rule not allowed
         Given a REST client authenticated as accountOne
         When send DELETE VirtualHost=virtOne
