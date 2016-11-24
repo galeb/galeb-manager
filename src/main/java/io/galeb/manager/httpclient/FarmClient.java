@@ -19,6 +19,7 @@
 package io.galeb.manager.httpclient;
 
 import io.galeb.manager.common.LoggerUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -153,7 +154,7 @@ public class FarmClient implements CommonHttpRequester {
 
     private ResponseEntity<String> convertResponse(final HttpResponse response) throws IOException {
         final InputStream content = response.getEntity().getContent();
-        final String body = extractContent(content);
+        final String body = IOUtils.toString(content);
         final MultiValueMap<String, String> headers = getHeaders(response);
         final HttpStatus statusCode = EnumSet.allOf(HttpStatus.class)
                                              .stream()
@@ -165,7 +166,7 @@ public class FarmClient implements CommonHttpRequester {
 
     private RequestEntity<String> convertRequest(final HttpEntityEnclosingRequest request) throws IOException {
         final InputStream content = request.getEntity().getContent();
-        final String body = extractContent(content);
+        final String body = IOUtils.toString(content);
         final MultiValueMap<String, String> headers = getHeaders(request);
         final HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class)
                                              .stream()
@@ -218,33 +219,6 @@ public class FarmClient implements CommonHttpRequester {
                 }
             }
         }
-    }
-
-    private String extractContent(InputStream content) {
-        StringBuilder stringBuilder = new StringBuilder();
-        BufferedReader bufferedReader = null;
-        String line;
-        try {
-            if (content != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-            } else {
-                LOGGER.warn("Content is null.");
-            }
-        } catch (IOException e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(ExceptionUtils.getStackTrace(e));
-                }
-            }
-        }
-        return stringBuilder.toString();
     }
 
     @NotThreadSafe

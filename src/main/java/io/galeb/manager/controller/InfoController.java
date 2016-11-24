@@ -19,6 +19,10 @@
 package io.galeb.manager.controller;
 
 import io.galeb.manager.common.JsonMapper;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,12 +30,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.*;
 import java.lang.management.ManagementFactory;
 
 @RestController
 @RequestMapping(value="/info")
 public class InfoController {
+
+    private static final Log LOGGER = LogFactory.getLog(InfoController.class);
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> info() throws Exception {
@@ -47,39 +52,16 @@ public class InfoController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-
     private String getUptimeCommand() {
         ProcessBuilder processBuilder = new ProcessBuilder("/bin/bash", "-c", "uptime");
         processBuilder.redirectErrorStream(true);
         try {
             Process process = processBuilder.start();
-            InputStream stream = process.getInputStream();
-            return convertStreamToString(stream).replace("\n", "");
+            return IOUtils.toString(process.getInputStream()).replace("\n", "");
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
             return "";
         }
     }
-
-    private String convertStreamToString(InputStream is) throws IOException {
-
-        if (is != null) {
-            final Writer writer = new StringWriter();
-
-            final char[] buffer = new char[1024];
-            try {
-                final Reader reader = new BufferedReader(new InputStreamReader(is, "UTF-8")); //$NON-NLS-1$
-                int n;
-                while ((n = reader.read(buffer)) != -1) {
-                    writer.write(buffer, 0, n);
-                }
-            } finally {
-                is.close();
-            }
-            return writer.toString();
-        }
-        return ""; //$NON-NLS-1$
-    }
-
 
 }
