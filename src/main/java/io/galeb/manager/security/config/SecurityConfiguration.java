@@ -21,6 +21,8 @@ package io.galeb.manager.security.config;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -95,36 +97,23 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     private Environment env;
 
-    private AuthMethod authMethod;
-
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 
-        if (authMethod == null) {
-            try {
-                authMethod = AuthMethod.valueOf(System.getProperty("auth_method"));
-                authMethod = authMethod == null ? AuthMethod.DEFAULT : authMethod;
-                LOGGER.info("Using "+authMethod.toString()+" Authentication Method.......");
-            } catch (Exception e) {
-                LOGGER.error(ExceptionUtils.getStackTrace(e));
-                throw e;
-            }
+        AuthMethod authMethod;
+        try {
+            authMethod = AuthMethod.valueOf(System.getProperty("auth_method", AuthMethod.DEFAULT.toString()));
+            LOGGER.info("Using "+authMethod.toString()+" Authentication Method.......");
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+            throw e;
         }
+
         String internalPass = System.getProperty(INTERNAL_PASSWORD, System.getenv(INTERNAL_PASSWORD));
         internalPass = internalPass == null ? UUID.randomUUID().toString() : internalPass;
         auth.inMemoryAuthentication()
             .withUser("admin").roles("ADMIN", "USER").password(internalPass);
-        if (Files.isWritable(Paths.get("./"))) {
-            try {
-                Path secret = Files.write(Paths.get("./.secret.txt"), internalPass.getBytes());
-                Files.setPosixFilePermissions(secret, new HashSet<>(Arrays.asList(OWNER_READ, OWNER_WRITE)));
-            } catch (Exception e) {
-                LOGGER.info("secret: " + internalPass);
-                LOGGER.error(ExceptionUtils.getStackTrace(e));
-            }
-        } else {
-            LOGGER.info("secret: " + internalPass);
-        }
+        LOGGER.info("secret: " + internalPass);
 
         String userDnPatternsEnv = System.getProperty("io.galeb.manager.ldap.user_dn_patterns.env", "GALEB_LDAP_DN");
         String userDnPatterns = System.getenv(userDnPatternsEnv);
