@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.galeb.manager.security.user.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 
@@ -70,4 +69,26 @@ public class CustomLdapUserDetails extends CurrentUser {
         return details.isEnabled();
     }
 
+    public Collection<GrantedAuthority> getLocalAuthorities() {
+        return localAuthorities;
+    }
+
+    public LdapUserDetails getDetails() {
+        return details;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o.getClass() != getClass()) return false;
+        CustomLdapUserDetails other = (CustomLdapUserDetails) o;
+        return  super.equals(o) &&
+                other.getLocalAuthorities() == localAuthorities &&
+                other.getDetails() == details;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
