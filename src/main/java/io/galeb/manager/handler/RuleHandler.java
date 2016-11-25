@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.repository.PoolRepository;
+import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +48,9 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @Autowired private RuleRepository ruleRepository;
     @Autowired private PoolRepository poolRepository;
+    @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
+    @Autowired private VirtualHostHandler virtualHostHandler;
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -83,6 +86,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
         afterCreate(rule, LOGGER);
+        updateRulesOrdered(rule, After.CREATE);
     }
 
     @HandleBeforeSave
@@ -95,6 +99,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
         afterSave(rule, LOGGER);
+        updateRulesOrdered(rule, After.SAVE);
     }
 
     @HandleBeforeDelete
@@ -106,6 +111,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
     @HandleAfterDelete
     public void afterDelete(Rule rule) throws Exception {
         afterDelete(rule, LOGGER);
+        updateRulesOrdered(rule, After.DELETE);
     }
 
     private void setTargetGlobalIfNecessary(Rule rule) {
@@ -116,6 +122,40 @@ public class RuleHandler extends AbstractHandler<Rule> {
             poolRepository.save(pool);
             pool.setSaveOnly(false);
         }
+    }
+
+    private void updateRulesOrdered(final Rule rule, After after) {
+        rule.getParents().forEach(v -> {
+            try {
+                after.handler(virtualHostHandler, v);
+                virtualHostRepository.saveAndFlush(v);
+            } catch (Exception e) {
+                LOGGER.error(e);
+            }
+        });
+    }
+
+    private enum After {
+        CREATE {
+            @Override
+            void handler(final VirtualHostHandler virtualHostHandler, final VirtualHost virtualHost) throws Exception {
+                virtualHostHandler.afterCreate(virtualHost);
+            }
+        },
+        SAVE {
+            @Override
+            void handler(final VirtualHostHandler virtualHostHandler, final VirtualHost virtualHost) throws Exception {
+                virtualHostHandler.afterSave(virtualHost);
+            }
+        },
+        DELETE {
+            @Override
+            void handler(final VirtualHostHandler virtualHostHandler, final VirtualHost virtualHost) throws Exception {
+                virtualHostHandler.afterDelete(virtualHost);
+            }
+        };
+
+        abstract void handler(VirtualHostHandler virtualHostHandler, VirtualHost virtualHost) throws Exception;
     }
 
 }
