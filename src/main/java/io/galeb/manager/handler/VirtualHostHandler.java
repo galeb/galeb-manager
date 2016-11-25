@@ -118,7 +118,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
             if (!rulesIdsOrdered.isEmpty()) {
                 ruleIds.removeAll(rulesIdsOrdered);
             }
-            ruleIds.stream().forEach(ruleId -> {
+            ruleIds.forEach(ruleId -> {
                 virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
             });
         }

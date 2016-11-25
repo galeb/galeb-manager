@@ -47,7 +47,7 @@ public class InfoController {
         String uptime = getUptimeCommand();
         String version = getClass().getPackage().getImplementationVersion();
 
-        result = json.putString("uptime", uptime).putString("uptime-jvm", String.valueOf(uptimeJVM)).putString("version", version).toString();
+        result = json.putString("uptime-so", uptime).putString("uptime-jvm", String.valueOf(uptimeJVM)).putString("version", version).toString();
 
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
