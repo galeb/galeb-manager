@@ -38,7 +38,7 @@ public class CounterDownLatch {
 
     public static synchronized int decrementDiffCounter(String key) {
         int oldValue = -1;
-        if (refreshAndCheckContainsKey(key)) {
+        if (checkContainsKey(key)) {
            final Map.Entry entry = mapOfDiffCounters.get(key);
             oldValue = (int) entry.getValue();
             if (oldValue > 0 ) {
@@ -50,14 +50,30 @@ public class CounterDownLatch {
         return oldValue;
     }
 
-    public static synchronized Integer refreshAndGet(String key) {
+    public static synchronized void refresh(String key) {
         final Map.Entry entry = mapOfDiffCounters.get(key);
         if (entry != null) {
             int value = (Integer) entry.getValue();
             put(key, value);
-            return value;
         }
-        return null;
+    }
+
+    public static synchronized Integer get(String key) {
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        if (entry != null) {
+            return (Integer) entry.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    public static synchronized Long getTimeOf(String key) {
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        if (entry != null) {
+            return (Long)entry.getKey();
+        } else {
+            return null;
+        }
     }
 
     public static synchronized Integer put(String key, Integer value) {
@@ -70,7 +86,7 @@ public class CounterDownLatch {
         return (Integer) (entry != null ? entry.getValue() : null);
     }
 
-    public static synchronized boolean refreshAndCheckContainsKey(String key) {
+    public static synchronized boolean checkContainsKey(String key) {
         return mapOfDiffCounters.containsKey(key);
     }
 

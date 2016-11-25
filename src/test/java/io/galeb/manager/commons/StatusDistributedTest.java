@@ -1,5 +1,6 @@
 package io.galeb.manager.commons;
 
+import com.google.common.collect.Maps;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.entity.LockStatus;
@@ -25,7 +26,7 @@ public class StatusDistributedTest {
 
     private final String farmIdName = "1";
     private final String key_api = "api.dev.local";
-    private final Integer value_api = 57;
+    private final Integer value_api = 5;
 
     @InjectMocks
     private StatusDistributed statusDist;
@@ -53,8 +54,10 @@ public class StatusDistributedTest {
     public void updateNewStatus() {
 
         statusDist.updateNewStatus(farmIdName, true);
+
         Map<String, Integer> mapApis = new HashMap<>();
         mapApis.put(key_api, value_api);
+
         statusDist.updateCountDownLatch(farmIdName, mapApis);
 
         List<LockStatus> listAllLockStatus = statusDist.getLockStatus(farmIdName);

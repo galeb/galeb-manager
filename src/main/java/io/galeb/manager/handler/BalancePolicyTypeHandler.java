@@ -53,7 +53,7 @@ public class BalancePolicyTypeHandler {
     public void beforeSave(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeSave");
         if (balancePolicyType.getName().equals("Default")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Balance Policy Type is Default. Choice other.");
         }
     }
 
@@ -67,7 +67,7 @@ public class BalancePolicyTypeHandler {
     public void beforeDelete(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeDelete");
         if (balancePolicyType.getName().equals("Default")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Balance Policy Type is Default. Choice other.");
         }
     }
 

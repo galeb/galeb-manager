@@ -1,6 +1,5 @@
 package io.galeb.manager.controller;
 
-import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -19,6 +19,7 @@
 package io.galeb.manager.httpclient;
 
 import io.galeb.manager.common.LoggerUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
@@ -42,15 +43,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -80,7 +79,7 @@ public class FarmClient implements CommonHttpRequester {
     }
 
     @Override
-    public ResponseEntity<String> get(String uriPath) throws URISyntaxException {
+    public ResponseEntity<String> get(String uriPath) throws URISyntaxException, RestClientException {
         final URI uri = new URI(uriWithProto(uriPath));
         final RequestEntity<Void> request = RequestEntity.get(uri).build();
         final ResponseEntity<String> response = restTemplate.exchange(request, String.class);
@@ -89,7 +88,7 @@ public class FarmClient implements CommonHttpRequester {
     }
 
     @Override
-    public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException {
+    public ResponseEntity<String> post(String uriPath, String body) throws URISyntaxException, RestClientException {
         final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.post(uri).contentType(MediaType.APPLICATION_JSON).body(body);
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);
@@ -98,7 +97,7 @@ public class FarmClient implements CommonHttpRequester {
     }
 
     @Override
-    public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException {
+    public ResponseEntity<String> put(String uriPath, String body) throws URISyntaxException, RestClientException {
         final URI uri = new URI(uriWithProto(uriPath));
         RequestEntity<String> request = RequestEntity.put(uri).contentType(MediaType.APPLICATION_JSON).body(body);
         ResponseEntity<String> response = restTemplate.exchange(request, String.class);
@@ -152,7 +151,7 @@ public class FarmClient implements CommonHttpRequester {
 
     private ResponseEntity<String> convertResponse(final HttpResponse response) throws IOException {
         final InputStream content = response.getEntity().getContent();
-        final String body = extractContent(content);
+        final String body = IOUtils.toString(content);
         final MultiValueMap<String, String> headers = getHeaders(response);
         final HttpStatus statusCode = EnumSet.allOf(HttpStatus.class)
                                              .stream()
@@ -164,7 +163,7 @@ public class FarmClient implements CommonHttpRequester {
 
     private RequestEntity<String> convertRequest(final HttpEntityEnclosingRequest request) throws IOException {
         final InputStream content = request.getEntity().getContent();
-        final String body = extractContent(content);
+        final String body = IOUtils.toString(content);
         final MultiValueMap<String, String> headers = getHeaders(request);
         final HttpMethod httpMethod = EnumSet.allOf(HttpMethod.class)
                                              .stream()
@@ -217,33 +216,6 @@ public class FarmClient implements CommonHttpRequester {
                 }
             }
         }
-    }
-
-    private String extractContent(InputStream content) {
-        StringBuilder stringBuilder = new StringBuilder();
-        BufferedReader bufferedReader = null;
-        String line;
-        try {
-            if (content != null) {
-                bufferedReader = new BufferedReader(new InputStreamReader(content, StandardCharsets.UTF_8.toString()));
-                while ((line = bufferedReader.readLine()) != null) {
-                    stringBuilder.append(line);
-                }
-            } else {
-                LOGGER.warn("Content is null.");
-            }
-        } catch (IOException e) {
-            LOGGER.error(e);
-        } finally {
-            if (bufferedReader != null) {
-                try {
-                    bufferedReader.close();
-                } catch (IOException e) {
-                    LOGGER.error(e);
-                }
-            }
-        }
-        return stringBuilder.toString();
     }
 
     @NotThreadSafe

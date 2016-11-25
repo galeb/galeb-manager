@@ -11,7 +11,7 @@ public enum CommandCountDown {
         public boolean applied(String[] apis) {
             final AtomicBoolean applied = new AtomicBoolean(true);
             Arrays.stream(apis).forEach(api -> {
-                Integer counter = CounterDownLatch.refreshAndGet(api);
+                Integer counter = CounterDownLatch.get(api);
                 applied.set(applied.get() && counter == null);
             });
             return applied.get();
@@ -21,7 +21,7 @@ public enum CommandCountDown {
         public boolean applied(String[] apis) {
             final AtomicBoolean applied = new AtomicBoolean(false);
             Arrays.stream(apis).forEach(api -> {
-                Integer counter = CounterDownLatch.refreshAndGet(api);
+                Integer counter = CounterDownLatch.get(api);
                 applied.set(applied.get() || (counter != null && (counter > 0 || counter == -1)));
             });
             return applied.get();
@@ -31,7 +31,7 @@ public enum CommandCountDown {
         public boolean applied(String[] apis) {
             final AtomicBoolean applied = new AtomicBoolean(true);
             Arrays.stream(apis).forEach(api -> {
-                Integer counter = CounterDownLatch.refreshAndGet(api);
+                Integer counter = CounterDownLatch.get(api);
                 applied.set(applied.get() && (counter != null && counter == 0));
             });
             return applied.get();

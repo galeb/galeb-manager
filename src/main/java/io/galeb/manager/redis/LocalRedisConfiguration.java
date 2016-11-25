@@ -1,5 +1,6 @@
 package io.galeb.manager.redis;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +72,7 @@ public class LocalRedisConfiguration {
                 jedisConnConfig(jedisConnectionFactory);
 
             } catch (Exception e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         } else {
             jedisConnectionFactory = new JedisConnectionFactory();
@@ -80,7 +81,7 @@ public class LocalRedisConfiguration {
             try {
                 jedisConnectionFactory.setPort(Integer.parseInt(port));
             } catch (NumberFormatException e) {
-                LOGGER.error(e);
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
             }
         }
         try {
@@ -96,7 +97,7 @@ public class LocalRedisConfiguration {
                 }
             }
         } catch (NumberFormatException e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
         return jedisConnectionFactory;
     }
@@ -112,7 +113,7 @@ public class LocalRedisConfiguration {
             jedisConnectionFactory.setUsePool(true);
             jedisConnectionFactory.setTimeout(Integer.parseInt(REDIS_TIMEOUT));
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 

@@ -20,7 +20,6 @@ package io.galeb.manager.handler;
 
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.exceptions.BadRequestException;
-import io.galeb.manager.exceptions.ServiceUnavailableException;
 import org.apache.commons.logging.Log;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -39,7 +38,9 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     public void beforeCreate(T entity, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
-        checkFarmId(entity);
+        if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
+            throw new BadRequestException("Farm does not exists");
+        }
     }
 
     public void afterCreate(T entity, Log logger) throws Exception {
@@ -54,7 +55,9 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
             return;
         }
         setBestFarm(entity);
-        checkFarmId(entity);
+        if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
+            throw new BadRequestException("Farm does not exists");
+        }
     }
 
     public void afterSave(T entity, Log logger) throws Exception {

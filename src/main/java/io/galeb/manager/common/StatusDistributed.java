@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -49,6 +46,12 @@ public final class StatusDistributed implements Serializable {
             values.add((LockStatus) JsonObject.fromJson(entry.getValue(), LockStatus.class));
         });
         return values;
+    }
+
+    public Optional<LockStatus> getLockStatusLocal(String farmIdName) {
+        List<LockStatus> allList = getLockStatus(farmIdName);
+        return allList.stream().filter(lockStatus -> lockStatus.getName().contains(lockerManager.name()))
+                               .findAny();
     }
 
     public void updateNewStatus(String farmIdName, boolean hasLock) {

@@ -63,6 +63,6 @@ public class RuleOrder implements Serializable {
 
     @Override
     public int hashCode() {
-        return Long.valueOf(ruleId).hashCode();
+        return ruleId.hashCode();
     }
 }

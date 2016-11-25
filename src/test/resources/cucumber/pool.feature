@@ -111,7 +111,7 @@ Feature: Pool Support
         When send GET Project=projOne
         Then the response status is 200
 
-    Scenario: Invalid environment return Service Unavaliable
+    Scenario: Invalid environment return Bad Request
         Given a REST client authenticated as admin
         When request json body has:
           | name | envTwo |
@@ -123,7 +123,7 @@ Feature: Pool Support
           | environment | Environment=envTwo |
           | project     | Project=projOne    |
         And send POST /pool
-        Then the response status is 503
+        Then the response status is 400
 
     Scenario: Search Pool by Name
         Given a REST client authenticated as admin
