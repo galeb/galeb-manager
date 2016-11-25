@@ -74,9 +74,4 @@ public class Project extends AbstractEntity<Project> {
         }
         return this;
     }
-
-    @Override
-    public EntityStatus getStatus() {
-        return status;
-    }
 }

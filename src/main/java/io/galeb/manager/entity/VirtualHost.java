@@ -18,8 +18,11 @@
 
 package io.galeb.manager.entity;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -35,6 +38,8 @@ import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import static java.util.stream.Collectors.toSet;
 
 @Entity
 @Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
@@ -124,7 +129,6 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
             this.aliases.clear();
             this.aliases.addAll(aliases);
         }
-        this.aliases = aliases;
         return this;
     }
 
@@ -162,5 +166,10 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
             this.rules.addAll(rules);
         }
         return this;
+    }
+
+    @Override
+    public EntityStatus getStatus() {
+        return getStatusFromMap();
     }
 }

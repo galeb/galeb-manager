@@ -50,7 +50,8 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
                         "WHERE (e.name LIKE concat('%', :name, '%')) AND " +
-                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")"
+                        + " ORDER BY e.name";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -75,5 +76,9 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Target> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Target> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
 }

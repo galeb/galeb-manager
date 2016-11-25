@@ -18,7 +18,7 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
@@ -42,7 +42,6 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import javax.cache.Cache;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,8 +55,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
-
-    private Cache<String, String> distMap = CACHE_FACTORY.getCache(VirtualHost.class.getSimpleName());
+    @Autowired private DistMap distMap;
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -86,7 +84,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleBeforeSave
     public void beforeSave(VirtualHost virtualhost) throws Exception {
-        distMap.remove(virtualhost.getName() + AbstractEngine.SEPARATOR);
+        distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
     }
@@ -115,7 +113,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
             final Set<Long> rulesIdsOrdered = virtualhost.getRulesOrdered().stream()
                                                 .map(RuleOrder::getRuleId).collect(Collectors.toSet());
             if (!ruleIds.containsAll(rulesIdsOrdered)){
-                throw new BadRequestException();
+                throw new BadRequestException("Any rule not contains in rules ordered.");
             }
             if (!rulesIdsOrdered.isEmpty()) {
                 ruleIds.removeAll(rulesIdsOrdered);

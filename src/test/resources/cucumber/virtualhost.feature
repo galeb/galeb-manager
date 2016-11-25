@@ -130,7 +130,7 @@ Feature: VirtualHost Support
         Then the response status is 200
         And property name contains projOne
 
-    Scenario: Invalid environment return Service Unavaliable
+    Scenario: Invalid environment return Bad Request
         Given a REST client authenticated as admin
         When request json body has:
           | name | two |
@@ -142,7 +142,7 @@ Feature: VirtualHost Support
           | environment | Environment=two |
           | project     | Project=projOne |
         And send POST /virtualhost
-        Then the response status is 503
+        Then the response status is 400
 
     Scenario: Search VirtualHost by Name
         Given a REST client authenticated as admin

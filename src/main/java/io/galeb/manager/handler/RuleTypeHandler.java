@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -42,7 +40,6 @@ public class RuleTypeHandler {
     @HandleBeforeCreate
     public void beforeCreate(RuleType ruleType) {
         LOGGER.info("RuleType: HandleBeforeCreate");
-        ruleType.setStatus(OK);
     }
 
     @HandleAfterCreate

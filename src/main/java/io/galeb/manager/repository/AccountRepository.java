@@ -45,7 +45,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                         + CommonJpaFilters.SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + "a.name LIKE CONCAT('%',:name,'%') AND "
-                        + CommonJpaFilters.SECURITY_FILTER;
+                        + CommonJpaFilters.SECURITY_FILTER + " ORDER BY a.name";
 
     @PreAuthorize("hasRole('ROLE_ADMIN') or #id == principal.id")
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -61,5 +61,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    List<Account> findByNameContaining(@Param("name") String name);
+    Iterable<Account> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Account> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 }

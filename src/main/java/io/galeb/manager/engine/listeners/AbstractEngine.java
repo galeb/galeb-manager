@@ -18,17 +18,17 @@
 
 package io.galeb.manager.engine.listeners;
 
+import java.util.Map;
 import java.util.Optional;
 
-import io.galeb.core.cluster.ClusterLocker;
-import io.galeb.core.cluster.ignite.IgniteCacheFactory;
-import io.galeb.core.cluster.ignite.IgniteClusterLocker;
-import io.galeb.core.jcache.CacheFactory;
+import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
+import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
@@ -42,22 +42,35 @@ import io.galeb.manager.security.services.SystemUserService;
 public abstract class AbstractEngine<T> {
 
     public static final String SEPARATOR = "__";
+    public static final String JSON_PROP = "json";
+    public static final String PATH_PROP = "path";
+    public static final String API_PROP  = "api";
+    public static final String PARENTID_PROP  = "parentId";
 
-    protected abstract void create(T entity);
+    private Driver driver = null;
 
-    protected abstract void remove(T entity);
+    public AbstractEngine<T> setDriver(Driver driver) {
+        this.driver = driver;
+        return this;
+    }
 
-    protected abstract void update(T entity);
+    public Driver getDriver(AbstractEntity<?> entity) {
+        final Farm farm = findFarm(entity).orElse(null);
+        return entity != null ? DriverBuilder.getDriver(farm) :
+                (driver != null ? driver : DriverBuilder.getDriver(null));
+    }
 
-    protected abstract FarmRepository getFarmRepository();
+    public abstract void create(T entity, final Map<String, String> jmsHeaders);
+
+    public abstract void remove(T entity, final Map<String, String> jmsHeaders);
+
+    public abstract void update(T entity, final Map<String, String> jmsHeaders);
+
+    public abstract Farm getFarmById(long id);
 
     protected abstract FarmQueue farmQueue();
 
     protected abstract Log getLogger();
-
-    protected ClusterLocker locker = IgniteClusterLocker.getInstance().start();
-
-    protected CacheFactory cacheFactory = IgniteCacheFactory.getInstance().start();
 
     protected Optional<Farm> findFarm(AbstractEntity<?> entity) {
         if (entity instanceof Farm) {
@@ -70,15 +83,12 @@ public abstract class AbstractEngine<T> {
         return findFarmById(farmId);
     }
 
-    protected Properties fromEntity(AbstractEntity<?> entity) {
+    protected Properties fromEntity(AbstractEntity<?> entity, final Map<String, String> jmsHeaders) {
         Properties properties = new Properties();
-        properties.put("api", findApi(entity));
+        jmsHeaders.entrySet().forEach(entry -> {
+            properties.put(entry.getKey(), entry.getValue());
+        });
         return properties;
-    }
-
-    protected String findApi(AbstractEntity<?> entity) {
-        Optional<Farm> farm = findFarm(entity);
-        return farm.isPresent() ? farm.get().getApi() : "UNDEF";
     }
 
     protected Provisioning getProvisioning(AbstractEntity<?> entity) {
@@ -88,7 +98,7 @@ public abstract class AbstractEngine<T> {
     private Optional<Farm> findFarmById(long farmId) {
         final Authentication originalAuth = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        Optional<Farm> farm = Optional.ofNullable(getFarmRepository().findOne(farmId));
+        Optional<Farm> farm = Optional.ofNullable(getFarmById(farmId));
         SystemUserService.runAs(originalAuth);
         return farm;
     }

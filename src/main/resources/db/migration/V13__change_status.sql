@@ -1,0 +1,13 @@
+ALTER TABLE `account` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `balancepolicy` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `balancepolicytype` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `environment` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `farm` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `project` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `provider` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `rule` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `ruletype` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `target` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `team` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `virtualhost` MODIFY COLUMN `_status` int(11);
+ALTER TABLE `pool` MODIFY COLUMN `_status` int(11);

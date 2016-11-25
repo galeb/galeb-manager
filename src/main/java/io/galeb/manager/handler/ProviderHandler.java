@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -41,7 +39,6 @@ public class ProviderHandler {
     private static Log LOGGER = LogFactory.getLog(ProviderHandler.class);
 
     private void checkProvider(final Provider provider) {
-        provider.setStatus(OK);
         provider.setDriver(DriverBuilder.build(provider.getDriver()).toString());
         provider.setProvisioning(ProvisioningBuilder.build(provider.getProvisioning()).toString());
     }

@@ -52,7 +52,8 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     String QUERY_FINDALL = QUERY_PREFIX + SECURITY_FILTER;
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_PROJECT_TO_ACCOUNT
-            + "where (e.name like concat('%', :name, '%')) and " + SECURITY_FILTER;
+            + "where (e.name like concat('%', :name, '%')) and " + SECURITY_FILTER
+            + " ORDER BY e.name";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -74,6 +75,10 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<VirtualHost> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<VirtualHost> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
     @Modifying
     @Override

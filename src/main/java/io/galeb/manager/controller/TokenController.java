@@ -1,15 +1,18 @@
 package io.galeb.manager.controller;
 
-//import static io.galeb.core.util.consistenthash.HashAlgorithm.HashType.MD5;
-
 import javax.servlet.http.HttpSession;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import io.galeb.core.util.consistenthash.HashAlgorithm;
+import io.galeb.manager.entity.Account;
+import io.galeb.manager.repository.AccountRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -27,21 +30,29 @@ import java.util.stream.Collectors;
 public class TokenController {
 
     private static final Log LOGGER = LogFactory.getLog(TokenController.class);
+    private static final Pageable ALL_PAGE = new PageRequest(0, Integer.MAX_VALUE);
 
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private AccountRepository accountRepository;
 
     @RequestMapping(value = "/token", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("isFullyAuthenticated()")
     public String token(HttpSession session) {
 
         Authentication currentUser = CurrentUser.getCurrentAuth();
-
         Map<String, Object> tokenInfo = new HashMap<>();
         tokenInfo.put("token", session.getId());
-        tokenInfo.put("account", currentUser.getName());
+        String loginName = currentUser.getName();
+        tokenInfo.put("account", loginName);
+        Page<Account> accountPage = accountRepository.findByName(loginName, ALL_PAGE);
+        if (accountPage != null && accountPage.hasContent()) {
+            final Account account = accountPage.getContent().get(0);
+            tokenInfo.put("email", account.getEmail());
+            tokenInfo.put("hasTeam", account.getTeams().isEmpty() ? false : true);
+        }
         Set<String> roles = currentUser.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         tokenInfo.put("admin", roles.contains("ROLE_ADMIN"));
-//        tokenInfo.put("gravatar_hash", new HashAlgorithm(MD5).hash(currentUser.getEmail()).asString());
         String json = "{}";
         try {
             json = mapper.writeValueAsString(tokenInfo);
@@ -50,6 +61,11 @@ public class TokenController {
         }
 
         return json;
+    }
+
+    @Autowired
+    public void setAccountRepository(final AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
     }
 
 }

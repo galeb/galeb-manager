@@ -32,16 +32,13 @@ public class CounterDownLatch {
     private static final Map<String, Map.Entry<Long, Integer>> mapOfDiffCounters =
                 Collections.synchronizedMap(new HashMap<>());
 
-    private static final Long IDLE_TIMEOUT =
-            Long.valueOf(System.getProperty("LOCK_IDLE_TIMEOUT", String.valueOf(30000L))); // default: 30 sec
-
     private CounterDownLatch() {
         // singleton?
     }
 
     public static synchronized int decrementDiffCounter(String key) {
         int oldValue = -1;
-        if (refreshAndCheckContainsKey(key)) {
+        if (checkContainsKey(key)) {
            final Map.Entry entry = mapOfDiffCounters.get(key);
             oldValue = (int) entry.getValue();
             if (oldValue > 0 ) {
@@ -53,17 +50,30 @@ public class CounterDownLatch {
         return oldValue;
     }
 
-    public static synchronized Integer refreshAndGet(String key) {
-        if (mapOfDiffCounters.containsKey(key) && isExpired(key)) {
-            return reset(key);
-        }
+    public static synchronized void refresh(String key) {
         final Map.Entry entry = mapOfDiffCounters.get(key);
         if (entry != null) {
             int value = (Integer) entry.getValue();
             put(key, value);
-            return value;
         }
-        return null;
+    }
+
+    public static synchronized Integer get(String key) {
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        if (entry != null) {
+            return (Integer) entry.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    public static synchronized Long getTimeOf(String key) {
+        final Map.Entry entry = mapOfDiffCounters.get(key);
+        if (entry != null) {
+            return (Long)entry.getKey();
+        } else {
+            return null;
+        }
     }
 
     public static synchronized Integer put(String key, Integer value) {
@@ -76,17 +86,8 @@ public class CounterDownLatch {
         return (Integer) (entry != null ? entry.getValue() : null);
     }
 
-    public static synchronized boolean refreshAndCheckContainsKey(String key) {
-        final boolean containsKey = mapOfDiffCounters.containsKey(key);
-        if (containsKey && isExpired(key)) {
-            reset(key);
-        }
-        return containsKey;
-    }
-
-    public static synchronized boolean isExpired(String key) {
-        final Map.Entry entry = mapOfDiffCounters.get(key);
-        return entry != null && ((Long) entry.getKey()) < currentTimeMillis() - IDLE_TIMEOUT;
+    public static synchronized boolean checkContainsKey(String key) {
+        return mapOfDiffCounters.containsKey(key);
     }
 
     public static synchronized int reset(String key) {

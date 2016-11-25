@@ -21,6 +21,7 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Rule;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.stereotype.Repository;
@@ -48,7 +49,7 @@ public class VirtualHostRepositoryImpl implements VirtualHostRepositoryCustom {
         try {
             return em.createQuery(QUERY_GET_RULES).setParameter("name", name).getResultList();
         } catch (Exception e) {
-            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
             return Collections.emptyList();
         }
     }

@@ -20,7 +20,7 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
@@ -54,8 +54,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
-
-    private Cache<String, String> distMap = CACHE_FACTORY.getCache(Pool.class.getSimpleName());
+    @Autowired private DistMap distMap;
 
     @Override
     protected void setBestFarm(final Pool pool) throws Exception {
@@ -86,10 +85,10 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleBeforeSave
     public void beforeSave(Pool pool) throws Exception {
-        distMap.remove(pool.getName() + AbstractEngine.SEPARATOR);
+        distMap.remove(pool);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeSave");
-            throw new BadRequestException();
+            throw new BadRequestException("Poll is NoParent.");
         }
         beforeSave(pool, poolRepository, LOGGER);
         setGlobalIfNecessary(pool);
@@ -105,7 +104,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
         beforeDelete(pool, LOGGER);
         if (pool.getName().equals("NoParent")) {
             LOGGER.info("Pool: HandleBeforeDelete");
-            throw new BadRequestException();
+            throw new BadRequestException("Pool is NoParent.");
         } else {
             beforeDelete(pool, LOGGER);
             pool.setStatus(QUARANTINE);

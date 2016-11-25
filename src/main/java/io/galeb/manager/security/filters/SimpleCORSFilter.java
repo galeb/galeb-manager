@@ -16,6 +16,8 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import static org.apache.commons.lang.exception.ExceptionUtils.getStackTrace;
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SimpleCORSFilter implements Filter {
@@ -54,7 +56,7 @@ public class SimpleCORSFilter implements Filter {
             chain.doFilter(req, res);
         } catch (Exception e) {
             LOGGER.debug(e);
-            LOGGER.error(e.getMessage());
+            LOGGER.error(getStackTrace(e));
         }
     }
 

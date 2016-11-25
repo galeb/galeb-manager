@@ -31,12 +31,6 @@ import javax.persistence.UniqueConstraint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.galeb.core.json.JsonObject;
-import io.galeb.core.model.Backend;
-import io.galeb.manager.engine.listeners.AbstractEngine;
-import org.springframework.data.annotation.Transient;
-
-import java.util.Map;
 
 @Entity
 @JsonInclude(NON_NULL)
@@ -129,25 +123,9 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         return this;
     }
 
-    private Backend extractBackend() {
-        javax.cache.Cache<String, String> distMap = CACHE_FACTORY.getCache(this.getClass().getSimpleName());
-        String key = getName() + AbstractEngine.SEPARATOR + getParent().getName();
-        String json = distMap.get(key);
-        if (json != null) {
-            return  (Backend) JsonObject.fromJson(json, Backend.class);
-        }
-        return null;
-    }
-
     @Override
     public EntityStatus getStatus() {
-        Backend backend = extractBackend();
-        if (backend != null) {
-            if (backend.getVersion() == getHash()) {
-                return EntityStatus.OK;
-            }
-        }
-        return super.getStatus();
+        return super.getStatusFromMap();
     }
 
 }

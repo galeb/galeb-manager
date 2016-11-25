@@ -18,11 +18,11 @@
 
 package io.galeb.manager.engine.listeners;
 
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
@@ -31,10 +31,12 @@ import io.galeb.manager.queue.VirtualHostQueue;
 import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.RuleRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -43,10 +45,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
@@ -58,156 +65,172 @@ public class VirtualHostEngine extends AbstractEngine<VirtualHost> {
         return LOGGER;
     }
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private VirtualHostRepository virtualHostRepository;
-    @Autowired private RuleRepository ruleRepository;
-    @Autowired private GenericEntityService genericEntityService;
-    @Autowired private QueueLocator queueLocator;
-    @Autowired private VirtualHostAliasBuilder virtualHostAliasBuilder;
+    private FarmRepository farmRepository;
+    private RuleRepository ruleRepository;
+    private VirtualHostRepository virtualHostRepository;
+    private QueueLocator queueLocator;
+    private VirtualHostAliasBuilder virtualHostAliasBuilder;
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_CREATE)
-    public void create(VirtualHost virtualHost) {
-        LOGGER.info("Creating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
+    public void create(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
+
+        LOGGER.info("Creating " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
+        final Driver driver = getDriver(virtualHost);
         try {
-            isOk = driver.create(makeProperties(virtualHost));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    create(virtualHostAlias);
-                });
-            }
+            driver.create(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                create(virtualHostAlias, jmsHeaders);
+            });
+            createRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-            }
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @JmsListener(destination = VirtualHostQueue.QUEUE_UPDATE)
-    public void update(VirtualHost virtualHost) {
-        LOGGER.info("Updating "+virtualHost.getClass().getSimpleName()+" "+virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
+    public void update(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
+        LOGGER.info("Updating " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
+        final Driver driver = getDriver(virtualHost);
         try {
-            isOk = driver.update(makeProperties(virtualHost));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    if (!driver.exist(makeProperties(virtualHostAlias))) {
-                        create(virtualHostAlias);
-                        createRules(virtualHostAlias);
-                    } else {
-                        update(virtualHostAlias);
-                    }
-                });
-                updateRules(virtualHost);
-            }
+            driver.update(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                if (!driver.exist(makeProperties(virtualHostAlias, jmsHeaders))) {
+                    create(virtualHostAlias, jmsHeaders);
+                } else {
+                    update(virtualHostAlias, jmsHeaders);
+                }
+            });
+            updateRules(virtualHost, jmsHeaders);
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            if (virtualHost.getStatus() != EntityStatus.DISABLED) {
-                virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-                virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-            }
-        }
-    }
-
-    @JmsListener(destination = VirtualHostQueue.QUEUE_REMOVE)
-    public void remove(VirtualHost virtualHost) {
-        LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(virtualHost).get());
-        boolean isOk = false;
-        try {
-            isOk = driver.remove(makeProperties(virtualHost));
-            if (isOk) {
-                virtualHost.getAliases().forEach(virtualHostName -> {
-                    VirtualHost virtualHostAlias = virtualHostAliasBuilder
-                            .buildVirtualHostAlias(virtualHostName, virtualHost);
-                    remove(virtualHostAlias);
-                });
-            }
-        } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            virtualHost.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            virtualHostQueue().sendToQueue(VirtualHostQueue.QUEUE_CALLBK, virtualHost);
-        }
-    }
-
-    @JmsListener(destination = VirtualHostQueue.QUEUE_CALLBK)
-    public void callBack(VirtualHost virtualHost) {
-        if (genericEntityService.isNew(virtualHost)) {
-            // virtualHost removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            virtualHostRepository.save(virtualHost);
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
+    @JmsListener(destination = VirtualHostQueue.QUEUE_REMOVE)
+    public void remove(VirtualHost virtualHost, @Headers final Map<String, String> jmsHeaders) {
+        LOGGER.info("Removing " + virtualHost.getClass().getSimpleName() + " " + virtualHost.getName());
+        final Driver driver = getDriver(virtualHost);
+        try {
+            driver.remove(makeProperties(virtualHost, jmsHeaders));
+            virtualHost.getAliases().forEach(virtualHostName -> {
+                VirtualHost virtualHostAlias = getVirtualHostAliasBuilder()
+                        .buildVirtualHostAlias(virtualHostName, virtualHost);
+                remove(virtualHostAlias, jmsHeaders);
+            });
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+        }
     }
 
     @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
-    private Properties makeProperties(VirtualHost virtualHost) {
+    public Properties makeProperties(VirtualHost virtualHost, final Map<String, String> jmsHeaderProperties) {
         String json = "{}";
         try {
             JsonMapper jsonMapper = new JsonMapper().makeJson(virtualHost);
             json = jsonMapper.toString();
         } catch (JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
-        Properties properties = fromEntity(virtualHost);
-        properties.put("json", json);
-        properties.put("path", "virtualhost");
+        final Properties properties = fromEntity(virtualHost, jmsHeaderProperties);
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, "virtualhost");
         return properties;
     }
 
-    private void updateRules(VirtualHost virtualHost) {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        virtualHost.getRulesOrdered().stream()
-                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
-                .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_UPDATE, rule));
-        SystemUserService.runAs(currentUser);
+    private void updateRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
+        String ruleQueue = RuleQueue.QUEUE_UPDATE;
+        sendRuleToQueue(virtualHost, jmsHeaders, ruleQueue);
     }
 
-    private void createRules(VirtualHost virtualHost) {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        virtualHost.getRulesOrdered().stream()
-                .map(ruleOrder -> ruleRepository.findOne(ruleOrder.getRuleId()))
-                .filter(rule -> rule != null)
-                .forEach(rule -> ruleQueue().sendToQueue(RuleQueue.QUEUE_CREATE, rule));
-        SystemUserService.runAs(currentUser);
-    }
-
-    private AbstractEnqueuer<VirtualHost> virtualHostQueue() {
-        return (VirtualHostQueue)queueLocator.getQueue(VirtualHost.class);
+    private void createRules(VirtualHost virtualHost, Map<String, String> jmsHeaders) {
+        String ruleQueue = RuleQueue.QUEUE_CREATE;
+        sendRuleToQueue(virtualHost, jmsHeaders, ruleQueue);
     }
 
     private AbstractEnqueuer<Rule> ruleQueue() {
-        return (RuleQueue)queueLocator.getQueue(Rule.class);
+        return (RuleQueue) getQueueLocator().getQueue(Rule.class);
     }
 
+    private void sendRuleToQueue(VirtualHost virtualHost, final Map<String, String> jmsHeaders, String ruleQueue) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        //TODO Copy jmsheader to remove parentId when send to another queue
+        final Map<String, String> newJmsHeaders = new HashMap<>(jmsHeaders);
+        newJmsHeaders.remove(PARENTID_PROP);
+        final Set<Long> ruleOrderedIds = virtualHost.getRulesOrdered().stream()
+                .map(RuleOrder::getRuleId)
+                .collect(Collectors.toSet());
+        final Set<Rule> rulesNotOrdered = getVirtualHostRepository() != null ? getVirtualHostRepository().getRulesFromVirtualHostName(virtualHost.getName()).stream()
+                .filter(r -> !ruleOrderedIds.contains(r.getId()))
+                .collect(Collectors.toSet()) : Collections.emptySet();
+        ruleOrderedIds.stream()
+                .map(id -> getRuleRepository() != null ? getRuleRepository().findOne(id) : null)
+                .filter(Objects::nonNull)
+                .forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, newJmsHeaders));
+        rulesNotOrdered.forEach(rule -> ruleQueue().sendToQueue(ruleQueue, rule, newJmsHeaders));
+        SystemUserService.runAs(currentUser);
+    }
+
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public VirtualHostEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public RuleRepository getRuleRepository() {
+        return ruleRepository;
+    }
+
+    @Autowired
+    public VirtualHostEngine setRuleRepository(final RuleRepository ruleRepository) {
+        this.ruleRepository = ruleRepository;
+        return this;
+    }
+
+    public VirtualHostRepository getVirtualHostRepository() {
+        return virtualHostRepository;
+    }
+
+    @Autowired
+    public VirtualHostEngine setVirtualHostRepository(final VirtualHostRepository virtualHostRepository) {
+        this.virtualHostRepository = virtualHostRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public VirtualHostEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
+    }
+
+    public VirtualHostAliasBuilder getVirtualHostAliasBuilder() {
+        return virtualHostAliasBuilder;
+    }
+
+    @Autowired
+    public VirtualHostEngine setVirtualHostAliasBuilder(final VirtualHostAliasBuilder virtualHostAliasBuilder) {
+        this.virtualHostAliasBuilder = virtualHostAliasBuilder;
+        return this;
+    }
 }

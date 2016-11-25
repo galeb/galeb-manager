@@ -33,7 +33,6 @@ public class PoolQueue extends AbstractEnqueuer<Pool> {
     public static final String QUEUE_CREATE = "queue-pool-create";
     public static final String QUEUE_UPDATE = "queue-pool-update";
     public static final String QUEUE_REMOVE = "queue-pool-remove";
-    public static final String QUEUE_CALLBK = "queue-pool-callback";
     public static final String QUEUE_RELOAD = "queue-pool-reload";
 
     private static final Log LOGGER = LogFactory.getLog(PoolQueue.class);
@@ -46,7 +45,6 @@ public class PoolQueue extends AbstractEnqueuer<Pool> {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
-        setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_RELOAD);
     }
 

@@ -12,20 +12,13 @@ import com.zaxxer.hikari.HikariDataSource;
 @Configuration
 public class DatabaseConfiguration {
 
-    @Autowired
-    private Environment env;
-
     private static String url = "jdbc:h2:mem:galeb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
-
+    private static String driver = "org.h2.Driver";
     private static String username = "root";
-
     private static String password = "";
-
-    @Bean
-    public DataSource dataSource() {
-
+    static {
         String driverEnvName = System.getProperty("io.galeb.manager.datasource.driver.env", "GALEB_DB_DRIVER");
-        String driver = System.getenv(driverEnvName);
+        driver = System.getenv(driverEnvName);
         driver = driver != null ? driver : "org.h2.Driver";
 
         String urlEnvName = System.getProperty("io.galeb.manager.datasource.url.env", "GALEB_DB_URL");
@@ -39,12 +32,19 @@ public class DatabaseConfiguration {
         String passwordEnvName = System.getProperty("io.galeb.manager.datasource.password.env", "GALEB_DB_PASS");
         password = System.getenv(passwordEnvName);
         password = password != null ? password : "";
+    }
+
+    @Autowired
+    private Environment env;
+
+    @Bean
+    public DataSource dataSource() {
 
         HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", driver));
-        dataSource.setJdbcUrl(env.getProperty("spring.datasource.url", url));
-        dataSource.setUsername(env.getProperty("spring.datasource.username", username));
-        dataSource.setPassword(env.getProperty("spring.datasource.password", password));
+        dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name", getDriver()));
+        dataSource.setJdbcUrl(env.getProperty("spring.datasource.url", getUrl()));
+        dataSource.setUsername(env.getProperty("spring.datasource.username", getUsername()));
+        dataSource.setPassword(env.getProperty("spring.datasource.password", getPassword()));
         dataSource.setConnectionTimeout(60000);
         dataSource.setConnectionTestQuery("SELECT 1");
 
@@ -63,4 +63,7 @@ public class DatabaseConfiguration {
         return password;
     }
 
+    public static String getDriver() {
+        return driver;
+    }
 }

@@ -25,6 +25,7 @@ import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.WithAliases;
 import io.galeb.manager.entity.WithParent;
 import io.galeb.manager.entity.WithParents;
+import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -40,12 +41,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CALLBACK;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.UPDATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.CREATE;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
+import static io.galeb.manager.engine.listeners.AbstractEngine.*;
 import static java.util.stream.Collectors.toList;
 
 public class DiffProcessor {
@@ -81,8 +81,7 @@ public class DiffProcessor {
 
     private String getApi() {
         if ("".equals(api) && properties != null) {
-            api = properties.getOrDefault("api", "localhost:9090").toString();
-            api = !api.startsWith("http") ? "http://" + api : api;
+            api = properties.getOrDefault(API_PROP, "localhost:9090").toString();
         }
         return api;
     }
@@ -107,49 +106,46 @@ public class DiffProcessor {
                     final Map<String, String> entityProperties = entry.getValue();
                     final String id = entityProperties.getOrDefault("id", "UNDEF");
                     final String parentId = entityProperties.getOrDefault("parentId", "UNDEF");
-                    AtomicBoolean hasId = new AtomicBoolean(false);
+                    AtomicBoolean existEntity = new AtomicBoolean(false);
 
-                    entities.stream().filter(entity -> entity instanceof AbstractEntity<?>)
+                    entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
+                                                       !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME))
                             .map(entity -> ((AbstractEntity<?>) entity))
                             .filter(entity -> entity.getStatus() != QUARANTINE &&
                                               entity.getStatus() != REMOVED)
                             .filter(entity -> entity.getName().equals(id))
                             .filter(getAbstractEntityPredicate(parentId))
                             .forEach(entity ->
-                    {
-                        hasId.set(true);
-                        updateIfNecessary(path, id, parentId, entity, entityProperties);
-                    });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithAliases)
-                            .filter(entity -> ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
-                                              ((AbstractEntity<?>)entity).getStatus() != REMOVED)
-                            .forEach(entity ->
+                            {
+                                if (!existEntity.get()) {
+                                    existEntity.set(true);
+                                    updateIfNecessary(path, id, parentId, entity, entityProperties);
+                                }
+                            });
+                    entities.stream().filter(entity -> !existEntity.get() && entity instanceof WithAliases).forEach(entity ->
                     {
                         WithAliases<?> withAliases = (WithAliases) entity;
                         if (withAliases.getAliases().contains(id)) {
-                            hasId.set(true);
+                            existEntity.set(true);
                         }
                     });
-                    entities.stream().filter(entity -> !hasId.get() && entity instanceof WithParents)
-                            .filter(entity -> ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
-                                              ((AbstractEntity<?>)entity).getStatus() != REMOVED)
-                            .forEach(entity ->
-                    {
+                    entities.stream().filter(entity -> !existEntity.get() && entity instanceof WithParents).forEach(entity -> {
                         WithParents<?> withParents = (WithParents) entity;
                         Set<WithAliases> withAliases = new HashSet<>((Collection<? extends WithAliases>) withParents.getParents());
-                        boolean isAlias = withAliases.stream().map(WithAliases::getAliases)
+                        boolean isAlias = withAliases.stream().filter(v -> ((AbstractEntity<?>) withParents).getName().equals(id)).map(WithAliases::getAliases)
                                 .flatMap(Collection::stream).collect(Collectors.toSet()).contains(parentId);
-                        if (isAlias) {
-                            hasId.set(true);
+                        if (!existEntity.get() && isAlias) {
+                            existEntity.set(true);
                         }
                     });
-                    removeEntityIfNecessary(path, id, parentId, hasId);
+                    removeEntityIfNecessary(path, id, parentId, existEntity);
                 });
 
         entities.stream().filter(entity -> entity instanceof AbstractEntity<?> &&
                 ((AbstractEntity<?>)entity).getStatus() != DISABLED &&
                 ((AbstractEntity<?>)entity).getStatus() != QUARANTINE &&
-                ((AbstractEntity<?>)entity).getStatus() != REMOVED)
+                ((AbstractEntity<?>)entity).getStatus() != REMOVED) &&
+                !((AbstractEntity)entity).getName().equals(PoolRepository.NO_PARENT_NAME))
                 .map(entity -> ((AbstractEntity<?>) entity))
                 .forEach(entity -> createEntityIfNecessary(path, entity, remoteMap));
     }
@@ -164,19 +160,15 @@ public class DiffProcessor {
         LOGGER.debug("Check if is necessary UPDATE");
         if (!version.equals(String.valueOf(entity.getHash())) || !pk.equals(String.valueOf(entity.getId()))) {
             changeAction(path, id, parentId);
-        } else {
-            if (entity.getStatus() == ERROR ) {
-                callbackStatusOkAction(path, id, parentId);
-            }
         }
     }
 
     private void removeEntityIfNecessary(String path,
                                          String id,
                                          String parentId,
-                                         final AtomicBoolean hasId) {
+                                         final AtomicBoolean existEntity) {
         LOGGER.debug("Check if is necessary REMOVE");
-        if (!hasId.get()) {
+        if (!existEntity.get()) {
             delAction(path, id, parentId);
         }
     }
@@ -249,19 +241,6 @@ public class DiffProcessor {
         Map<String, Object> attributes = new HashMap<>();
         String key = getApi() + "/" + path + "/" + id + "@" + parentId;
         attributes.put("ACTION", REMOVE);
-        attributes.put("ID", id);
-        attributes.put("PARENT_ID", parentId);
-        attributes.put("ENTITY_TYPE", path);
-        diffMap.put(key, attributes);
-    }
-
-
-    private void callbackStatusOkAction(final String path,
-                                        final String id,
-                                        final String parentId) {
-        Map<String, Object> attributes = new HashMap<>();
-        String key = getApi() + "/" + path + "/" + id + "@" + parentId;
-        attributes.put("ACTION", CALLBACK);
         attributes.put("ID", id);
         attributes.put("PARENT_ID", parentId);
         attributes.put("ENTITY_TYPE", path);

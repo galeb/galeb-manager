@@ -29,7 +29,6 @@ public class DriverBuilder {
     private static Map<String, Driver> drivers = new HashMap<>();
     static {
         drivers.put(Driver.DEFAULT_DRIVER_NAME, new NullDriver());
-        drivers.put(GalebV3Driver.DRIVER_NAME, new GalebV3Driver());
         drivers.put(GalebV32Driver.DRIVER_NAME, new GalebV32Driver());
     }
 
@@ -46,8 +45,12 @@ public class DriverBuilder {
     }
 
     public static Driver getDriver(Farm farm) {
-        String driverName = farm.getProvider().getDriver();
-        return build(driverName);
+        if (farm != null) {
+            String driverName = farm.getProvider().getDriver();
+            return build(driverName);
+        } else {
+            return new NullDriver();
+        }
     }
 
 }

@@ -1,7 +1,5 @@
 package io.galeb.manager.controller;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-
 import io.galeb.manager.queue.FarmQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,8 +36,6 @@ public class ReloadController {
         JsonMapper json = new JsonMapper();
         Farm farm = farmRepository.findOne(id);
         if (farm != null) {
-            farm.setStatus(PENDING).setSaveOnly(true);
-            farmRepository.save(farm);
             farmQueue.sendToQueue(FarmQueue.QUEUE_RELOAD, farm);
             result = json.putString("farm", farm.getName()).putString("status", "accept").toString();
         } else {

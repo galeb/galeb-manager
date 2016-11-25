@@ -74,8 +74,4 @@ public class Provider extends AbstractEntity<Provider> {
         return this;
     }
 
-    @Override
-    public EntityStatus getStatus() {
-        return status;
-    }
 }

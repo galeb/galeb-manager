@@ -25,25 +25,21 @@ import io.galeb.core.model.BackendPool;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
-import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
-import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.PoolQueue;
 import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.PoolRepository;
-import io.galeb.manager.security.user.CurrentUser;
-import io.galeb.manager.security.services.SystemUserService;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
-import org.springframework.security.core.Authentication;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 public class PoolEngine extends AbstractEngine<Pool> {
@@ -55,97 +51,54 @@ public class PoolEngine extends AbstractEngine<Pool> {
         return LOGGER;
     }
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private PoolRepository poolRepository;
-    @Autowired private GenericEntityService genericEntityService;
-    @Autowired private QueueLocator queueLocator;
+    private FarmRepository farmRepository;
+    private QueueLocator queueLocator;
 
     @JmsListener(destination = PoolQueue.QUEUE_CREATE)
-    public void create(Pool pool) {
+    public void create(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        createPool(pool, driver);
-    }
-
-    private void createPool(Pool pool, final Driver driver) {
-        boolean isOk = false;
+        final Driver driver = getDriver(pool);
         try {
-            isOk = driver.create(makeProperties(pool));
+            driver.create(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @JmsListener(destination = PoolQueue.QUEUE_UPDATE)
-    public void update(Pool pool) {
+    public void update(Pool pool, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Updating " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        updatePool(pool, driver);
-    }
-
-    private void updatePool(final Pool pool, final Driver driver) {
-        boolean isOk = false;
+        final Driver driver = getDriver(pool);
         try {
-            isOk = driver.update(makeProperties(pool));
+            driver.update(makeProperties(pool, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
-        }
-    }
-
-    @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
-    public void remove(Pool pool) {
-        LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
-        final Driver driver = DriverBuilder.getDriver(findFarm(pool).get());
-        removePool(pool, driver);
-    }
-
-    private void removePool(final Pool pool, final Driver driver) {
-        boolean isOk = false;
-
-        try {
-            isOk = driver.remove(makeProperties(pool));
-        } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            pool.setStatus(isOk ? EntityStatus.PENDING : EntityStatus.ERROR);
-            poolQueue().sendToQueue(PoolQueue.QUEUE_CALLBK, pool);
-        }
-    }
-
-    @JmsListener(destination = PoolQueue.QUEUE_CALLBK)
-    public void callBack(Pool pool) {
-        if (genericEntityService.isNew(pool)) {
-            // pool removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            poolRepository.save(pool);
-        } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
+    }
+
+    @JmsListener(destination = PoolQueue.QUEUE_REMOVE)
+    public void remove(Pool pool, @Headers final Map<String, String> jmsHeaders) {
+        LOGGER.info("Removing " + pool.getClass().getSimpleName() + " " + pool.getName());
+        final Driver driver = getDriver(pool);
+
+        try {
+            driver.remove(makeProperties(pool, jmsHeaders));
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+        }
     }
 
     @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
-    private Properties makeProperties(Pool pool) {
+    public Properties makeProperties(Pool pool, Map<String, String> jmsHeaders) {
         String json = "{}";
         try {
             if (pool.getBalancePolicy() != null) {
@@ -155,16 +108,31 @@ public class PoolEngine extends AbstractEngine<Pool> {
             final JsonMapper jsonMapper = new JsonMapper().makeJson(pool);
             json = jsonMapper.toString();
         } catch (final JsonProcessingException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
-        final Properties properties = fromEntity(pool);
-        properties.put("json", json);
-        properties.put("path", BackendPool.class.getSimpleName().toLowerCase());
+        final Properties properties = fromEntity(pool, jmsHeaders);
+        properties.put(JSON_PROP, json);
+        properties.put(PATH_PROP, BackendPool.class.getSimpleName().toLowerCase());
         return properties;
     }
 
-    private AbstractEnqueuer<Pool> poolQueue() {
-        return (PoolQueue)queueLocator.getQueue(Pool.class);
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
     }
 
+    @Autowired
+    public PoolEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public PoolEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
+    }
 }

@@ -33,7 +33,6 @@ public class RuleQueue extends AbstractEnqueuer<Rule> {
     public static final String QUEUE_CREATE = "queue-rule-create";
     public static final String QUEUE_UPDATE = "queue-rule-update";
     public static final String QUEUE_REMOVE = "queue-rule-remove";
-    public static final String QUEUE_CALLBK = "queue-rule-callback";
     public static final String QUEUE_RELOAD = "queue-rule-reload";
 
     private static final Log LOGGER = LogFactory.getLog(RuleQueue.class);
@@ -46,7 +45,6 @@ public class RuleQueue extends AbstractEnqueuer<Rule> {
         setQueueCreateName(QUEUE_CREATE);
         setQueueUpdateName(QUEUE_UPDATE);
         setQueueRemoveName(QUEUE_REMOVE);
-        setQueueCallBackName(QUEUE_CALLBK);
         setQueueSyncName(QUEUE_RELOAD);
     }
 

@@ -18,7 +18,7 @@
 
 package io.galeb.manager.handler;
 
-import io.galeb.manager.engine.listeners.AbstractEngine;
+import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
@@ -55,8 +55,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     @Autowired private TargetRepository targetRepository;
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
-
-   private Cache<String, String> distMap = CACHE_FACTORY.getCache(Target.class.getSimpleName());
+    @Autowired private DistMap distMap;
 
     @Override
     protected void setBestFarm(final Target target) throws Exception {
@@ -100,7 +99,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeSave
     public void beforeSave(Target target) throws Exception {
-        distMap.remove(target.getName() + AbstractEngine.SEPARATOR + target.getParent().getName());
+        distMap.remove(target);
         setParentIfNull(target);
         beforeSave(target, targetRepository, LOGGER);
         setGlobalIfNecessary(target);

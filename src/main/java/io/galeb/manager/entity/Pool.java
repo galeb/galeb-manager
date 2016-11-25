@@ -155,4 +155,9 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
         return this;
     }
 
+    @Override
+    public EntityStatus getStatus() {
+        return getStatusFromMap();
+    }
+
 }

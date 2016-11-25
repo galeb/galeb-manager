@@ -39,6 +39,7 @@ import static io.galeb.manager.repository.CommonJpaFilters.*;
 public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
                                         FarmIDable<Pool>,
                                         PoolRepositoryCustom {
+    String NO_PARENT_NAME = "NoParent";
 
     String QUERY_PREFIX = "SELECT DISTINCT e FROM Pool e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
@@ -54,7 +55,8 @@ public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX +
                         "WHERE (e.name LIKE concat('%', :name, '%')) AND " +
-                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")";
+                        "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")"
+                        + " ORDER BY e.name";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -80,5 +82,9 @@ public interface PoolRepository extends JpaRepositoryWithFindByName<Pool, Long>,
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Pool> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Pool> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
 }

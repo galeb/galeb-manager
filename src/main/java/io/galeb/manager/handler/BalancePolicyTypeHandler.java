@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,7 +41,6 @@ public class BalancePolicyTypeHandler {
     @HandleBeforeCreate
     public void beforeCreate(BalancePolicyType balancePolicyType) {
         LOGGER.info("BalancePolicyType: HandleBeforeCreate");
-        balancePolicyType.setStatus(OK);
     }
 
     @HandleAfterCreate
@@ -56,7 +53,7 @@ public class BalancePolicyTypeHandler {
     public void beforeSave(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeSave");
         if (balancePolicyType.getName().equals("Default")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Balance Policy Type is Default. Choice other.");
         }
     }
 
@@ -70,7 +67,7 @@ public class BalancePolicyTypeHandler {
     public void beforeDelete(BalancePolicyType balancePolicyType) throws Exception {
         LOGGER.info("BalancePolicyType: HandleBeforeDelete");
         if (balancePolicyType.getName().equals("Default")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Balance Policy Type is Default. Choice other.");
         }
     }
 

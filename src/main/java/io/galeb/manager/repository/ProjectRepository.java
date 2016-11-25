@@ -60,7 +60,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     String QUERY_FINDBYNAMECONTAINING = NATIVE_QUERY_PREFIX + NATIVE_QUERY_TEAM_TO_ACCOUNT +
             "where (e.name like concat('%', :name, '%')) and " +
-            SECURITY_FILTER;
+            SECURITY_FILTER + " ORDER BY e.name";
 
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
@@ -76,6 +76,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query(value = QUERY_FINDBYNAMECONTAINING, nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
-    List<Project> findByNameContaining(@Param("name") String name);
+    Iterable<Project> findByNameContaining(@Param("name") String name);
+
+    @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Project> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
 }

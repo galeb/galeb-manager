@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
@@ -46,7 +44,6 @@ public class ProjectHandler {
             LOGGER.error(message);
             throw new BadRequestException(message);
         }
-        project.setStatus(OK);
     }
 
     @HandleAfterCreate
@@ -58,7 +55,7 @@ public class ProjectHandler {
     public void beforeSave(Project project) throws Exception {
         LOGGER.info("Project: HandleBeforeSave");
         if (project.getName().equals("Null Project")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Project is Null.");
         }
     }
 
@@ -71,7 +68,7 @@ public class ProjectHandler {
     public void beforeDelete(Project project) throws Exception {
         LOGGER.info("Project: HandleBeforeDelete");
         if (project.getName().equals("Null Project")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Project is Null.");
         }
     }
 

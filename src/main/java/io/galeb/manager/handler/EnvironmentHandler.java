@@ -18,8 +18,6 @@
 
 package io.galeb.manager.handler;
 
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
-
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,7 +41,6 @@ public class EnvironmentHandler {
     @HandleBeforeCreate
     public void beforeCreate(Environment environment) {
         LOGGER.info("Environment: HandleBeforeCreate");
-        environment.setStatus(OK);
     }
 
     @HandleAfterCreate
@@ -56,7 +53,7 @@ public class EnvironmentHandler {
     public void beforeSave(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeSave");
         if (environment.getName().equals("Null Environment")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Environment is Null. Choice other.");
         }
     }
 
@@ -70,7 +67,7 @@ public class EnvironmentHandler {
     public void beforeDelete(Environment environment) throws Exception {
         LOGGER.info("Environment: HandleBeforeDelete");
         if (environment.getName().equals("Null Environment")) {
-            throw new BadRequestException();
+            throw new BadRequestException("Environment is Null. Choice other.");
         }
     }
 

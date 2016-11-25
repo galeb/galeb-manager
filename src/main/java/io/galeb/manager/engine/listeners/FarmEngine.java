@@ -18,11 +18,9 @@
 
 package io.galeb.manager.engine.listeners;
 
+import static io.galeb.manager.cache.DistMap.DIST_MAP_FARM_ID_PROP;
 import static io.galeb.manager.engine.driver.Driver.ActionOnDiff.REMOVE;
-import static io.galeb.manager.engine.driver.DriverBuilder.getDriver;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.PENDING;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.ERROR;
-import static io.galeb.manager.entity.AbstractEntity.EntityStatus.OK;
+import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
 import static java.lang.System.currentTimeMillis;
 
 import io.galeb.core.json.JsonObject;
@@ -30,35 +28,27 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.model.BackendPool;
 import io.galeb.core.model.Entity;
 import io.galeb.core.model.Rule;
-import io.galeb.core.model.VirtualHost;
+import io.galeb.manager.cache.DistMap;
+import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.Driver.ActionOnDiff;
-import io.galeb.manager.engine.listeners.services.GenericEntityService;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
-import io.galeb.manager.engine.service.FarmBuilder;
+import io.galeb.manager.engine.service.LockerManager;
 import io.galeb.manager.engine.util.CounterDownLatch;
-import io.galeb.manager.engine.util.ManagerToFarmConverter;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.WithParent;
-import io.galeb.manager.entity.WithParents;
+import io.galeb.manager.entity.*;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.queue.AbstractEnqueuer;
 import io.galeb.manager.queue.FarmQueue;
-import io.galeb.manager.repository.FarmRepository;
-import io.galeb.manager.repository.JpaRepositoryWithFindByName;
-import io.galeb.manager.repository.PoolRepository;
-import io.galeb.manager.repository.RuleRepository;
-import io.galeb.manager.repository.TargetRepository;
-import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.scheduler.tasks.SyncFarms;
+import io.galeb.manager.repository.*;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.hibernate.StaleObjectStateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jms.annotation.JmsListener;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -68,13 +58,7 @@ import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
 import javax.annotation.PostConstruct;
-import javax.cache.Cache;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -84,42 +68,47 @@ import java.util.stream.StreamSupport;
 @Component
 public class FarmEngine extends AbstractEngine<Farm> {
 
-    private static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
+    public static final Log LOGGER = LogFactory.getLog(FarmEngine.class);
 
-    private final Pageable pageable = new PageRequest(0, Integer.MAX_VALUE);
+    public static final String ENTITIES_MAP_PROP = "entitiesMap";
+    public static final String LOCK_NAME_PROP    = "lockName";
+
+    private static final String FARM_STATUS_MSG_PREFIX = "FARM STATUS - ";
+    private static final Pageable ALL_PAGES = new PageRequest(0, Integer.MAX_VALUE);
+
+    private LockerManager lockerManager = null;
+
+    private DistMap distMap;
+    private StatusDistributed statusDist;
+    private FarmRepository farmRepository;
+    private VirtualHostRepository virtualHostRepository;
+    private RuleRepository ruleRepository;
+    private TargetRepository targetRepository;
+    private PoolRepository poolRepository;
+    private QueueLocator queueLocator;
+
+    private AtomicBoolean isReady = new AtomicBoolean(false);
 
     @Override
     protected Log getLogger() {
         return LOGGER;
     }
 
-    @Autowired private GenericEntityService genericEntityService;
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private VirtualHostRepository virtualHostRepository;
-    @Autowired private RuleRepository ruleRepository;
-    @Autowired private TargetRepository targetRepository;
-    @Autowired private PoolRepository poolRepository;
-    @Autowired private QueueLocator queueLocator;
-    @Autowired private FarmBuilder farmBuilder;
-
-    private AtomicBoolean isReady = new AtomicBoolean(false);
-
     @PostConstruct
     public void init() {
         isReady.set(true);
-        cacheFactory.setFarm(farmBuilder.build());
     }
 
     private JpaRepositoryWithFindByName getRepository(String entityClass) {
         switch (entityClass) {
             case "virtualhost":
-                return virtualHostRepository;
+                return getVirtualHostRepository();
             case "rule":
-                return ruleRepository;
+                return getRuleRepository();
             case "pool":
-                return poolRepository;
+                return getPoolRepository();
             case "target":
-                return targetRepository;
+                return getTargetRepository();
             default:
                 LOGGER.error("Entity Class " + entityClass + " NOT FOUND");
                 return null;
@@ -128,112 +117,136 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     @JmsListener(destination = FarmQueue.QUEUE_RELOAD)
     public void reload(Farm farm) {
-        executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm));
+        getDistMap().resetFarm(farm.getId());
+        String apiWithSeparator = farm.getApi();
+        Arrays.stream(apiWithSeparator.split(",")).forEach(api -> {
+            executeFullReload(farm, getDriver(farm), getPropertiesWithEntities(farm, api));
+        });
     }
 
     @JmsListener(destination = FarmQueue.QUEUE_CREATE)
-    public void create(Farm farm) {
+    public void create(Farm farm, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Creating " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
-        boolean isOk = false;
         try {
-            isOk = provisioning.create(fromEntity(farm));
+            provisioning.create(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            farm.setStatus(isOk ? OK : ERROR);
-            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @JmsListener(destination = FarmQueue.QUEUE_REMOVE)
-    public void remove(Farm farm) {
+    public void remove(Farm farm, @Headers final Map<String, String> jmsHeaders) {
         LOGGER.info("Removing " + farm.getClass().getSimpleName() + " " + farm.getName());
         Provisioning provisioning = getProvisioning(farm);
-        boolean isOk = false;
         try {
-            isOk = provisioning.remove(fromEntity(farm));
+            provisioning.remove(fromEntity(farm, jmsHeaders));
         } catch (Exception e) {
-            LOGGER.error(e);
-        } finally {
-            farm.setStatus(isOk ? OK : ERROR);
-            farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
     }
 
     @Override
-    protected void update(Farm entity) {
+    public void update(Farm entity, @Headers final Map<String, String> jmsHeaders) {
         //
+    }
+
+    @Override
+    public Farm getFarmById(long id) {
+        return getFarmRepository() != null ? getFarmRepository().findOne(id) : null;
     }
 
     @SuppressWarnings({ "unchecked", "unused" })
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Farm farm) {
-        long farmId = farm.getId();
-        String farmName = farm.getName();
-        String latchId = farm.getApi();
-        String farmFull = farmName + " (" + farmId + ") [ " + latchId + " ]";
-        String farmStatusMsgPrefix = "FARM STATUS - ";
-
-        if (locker.lock(SyncFarms.LOCK_PREFIX + farm.getId())) {
-            long start = currentTimeMillis();
-
-            LOGGER.info(farmStatusMsgPrefix + "Starting Check & Sync task. Locking " + farmFull);
-
-            final Driver driver = getDriver(farm);
-            final Properties properties = getPropertiesWithEntities(farm);
-            Map<String, Map<String, Object>> diff = new HashMap<>();
-            Map<String, Map<String, Map<String, String>>> remoteMultiMap;
-
-            try {
-                long diffStart = currentTimeMillis();
-                remoteMultiMap = driver.getAll(properties);
-                diff.putAll(driver.diff(properties, remoteMultiMap));
-                int diffSize = diff.size();
-
-                String diffDurationMsg = farmStatusMsgPrefix + "diff from " + farmFull + " finished ("
-                        + (currentTimeMillis() - diffStart) + " ms)";
-                LOGGER.info(diffDurationMsg);
-
-                CounterDownLatch.put(latchId, diffSize);
-
-                updateStatus(remoteMultiMap);
-                if (diffSize == 0) {
-                    LOGGER.info(farmStatusMsgPrefix + "OK: " + farmFull + " ("
-                            + (currentTimeMillis() - start) + " ms)");
-                    farm.setStatus(AbstractEntity.EntityStatus.OK);
-                    farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
-                } else {
-                    LOGGER.warn(farmStatusMsgPrefix + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
-                            + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
-                    farm.setStatus(AbstractEntity.EntityStatus.PENDING);
-                    farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
-                    fixFarm(farm, diff, driver);
-                }
-
-            } catch (Exception e) {
-                CounterDownLatch.reset(latchId);
-                LOGGER.error(e);
-                LOGGER.error(farmStatusMsgPrefix + farmFull + " FAILED");
-                farm.setStatus(AbstractEntity.EntityStatus.ERROR);
-                farmQueue().sendToQueue(FarmQueue.QUEUE_CALLBK, farm);
-            }
+        if (lockerManager == null) {
+            lockerManager = new LockerManager();
+        }
+        if (getStatusDist() == null) {
+            setStatusDist(new StatusDistributed());
+        }
+        if (lockerManager.lock(farm.idName())) {
+            getStatusDist().updateNewStatus(farm.idName(), true);
+            String apiWithSeparator = farm.getApi();
+            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> CounterDownLatch.put(api, -1));
+            EntityStatus statusConsolidated = getStatusConsolidated(farm, apiWithSeparator);
+            getDistMap().put(farm, statusConsolidated.toString());
         } else {
-            LOGGER.info(farmStatusMsgPrefix + "Farm " + farmFull + " locked by an other process/node. Aborting Check & Sync Task.");
+            LOGGER.info(FARM_STATUS_MSG_PREFIX + "Farm " + farm.getName() + " locked by an other process/node. Aborting Check & Sync Task.");
         }
     }
 
-    private void updateStatus(Map<String, Map<String, Map<String, String>>> remoteMultiMap) {
-        remoteMultiMap.entrySet().stream().forEach(entryWithPath -> {
-            final String path = entryWithPath.getKey();
-            final Class<?> internalEntityTypeClass = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(path);
+    private EntityStatus getStatusConsolidated(final Farm farm, String apiWithSeparator) {
+        EntityStatus result = UNKNOWN;
+        final Map<String, EntityStatus> statusMap = new HashMap<>();
+        Arrays.stream(apiWithSeparator.split(",")).forEach(api -> diffByApiAndFix(farm, statusMap, api));
+        if (statusMap.containsValue(PENDING)) {
+            result = PENDING;
+        }
+        if (statusMap.entrySet().stream().filter(e -> e.getValue().equals(OK)).count() == statusMap.size()) {
+            result = OK;
+        }
+        if (statusMap.containsValue(ERROR)) {
+            result = ERROR;
+        }
+        statusMap.clear();
+        return result;
+    }
+
+    private void diffByApiAndFix(Farm farm, final Map<String, EntityStatus> statusMap, String api) {
+        long start = currentTimeMillis();
+        final Driver driver = getDriver(farm);
+
+        long farmId = farm.getId();
+        String farmName = farm.getName();
+
+        String farmFull = farmName + " (" + farmId + ") [ " + api + " ]";
+        LOGGER.info(FARM_STATUS_MSG_PREFIX + "Retrieving entities from database - " + farmFull);
+        try {
+            final Properties properties = getPropertiesWithEntities(farm, api);
+            LOGGER.info(FARM_STATUS_MSG_PREFIX + "Starting Check & Sync task - " + farmFull);
+
+            long diffStart = currentTimeMillis();
+            final Map<String, Map<String, Map<String, String>>> remoteMultiMap = driver.getAll(properties);
+            final Map<String, Map<String, Object>> diff = new HashMap<>();
+            diff.putAll(driver.diff(properties, remoteMultiMap));
+            int diffSize = diff.size();
+
+            String diffDurationMsg = FARM_STATUS_MSG_PREFIX + "diff from " + farmFull + " finished ("
+                    + (currentTimeMillis() - diffStart) + " ms)";
+            LOGGER.info(diffDurationMsg);
+
+            CounterDownLatch.put(api, diffSize);
+
+            updateStatus(remoteMultiMap, farmId);
+            if (diffSize == 0) {
+                LOGGER.info(FARM_STATUS_MSG_PREFIX + "OK: " + farmFull + " ("
+                        + (currentTimeMillis() - start) + " ms)");
+
+                statusMap.put(api, OK);
+            } else {
+                LOGGER.warn(FARM_STATUS_MSG_PREFIX + "INCONSISTENT (" + diffSize + " fix(es)): " + farmFull
+                        + " (" + (currentTimeMillis() - start) + " ms). Calling fixFarm task.");
+                fixFarm(farm, diff, driver, api);
+                statusMap.put(api, PENDING);
+            }
+
+        } catch (Exception e) {
+            CounterDownLatch.reset(api);
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+            LOGGER.error(FARM_STATUS_MSG_PREFIX + farmFull + " FAILED");
+            statusMap.put(api, ERROR);
+        }
+    }
+
+    private void updateStatus(final Map<String, Map<String, Map<String, String>>> remoteMultiMap, final Long farmId) {
+        remoteMultiMap.entrySet().forEach(entryWithPath -> {
             entryWithPath.getValue().entrySet().forEach(entryWithEntity -> {
                 Entity entity = new Entity();
                 Map<String, String> entityMap = entryWithEntity.getValue();
                 String id = entityMap.get("id");
                 String version = entityMap.get("version");
                 version = version != null ? version : "0";
-                String health = entityMap.get("health");
                 String entityType = entityMap.get("_entity_type");
                 String parentId = entityMap.get("parentId");
                 parentId = parentId != null && !Rule.class.getSimpleName().toLowerCase().equals(entityType) ? parentId : "";
@@ -241,13 +254,8 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
                 entity.setEntityType(entityType);
-                if (health != null) {
-                    Map<String, Object> entityProperties = new HashMap<>();
-                    entityProperties.put("health", health);
-                    entity.setProperties(entityProperties);
-                }
-                Cache<String, String> distMap = cacheFactory.getCache(internalEntityTypeClass.getSimpleName());
-                distMap.put(id + SEPARATOR + parentId, JsonObject.toJsonString(entity));
+                entity.getProperties().put(DIST_MAP_FARM_ID_PROP, farmId);
+                getDistMap().put(entity, JsonObject.toJsonString(entity));
             });
         });
     }
@@ -255,15 +263,18 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @SuppressWarnings("unchecked")
     private void fixFarm(final Farm farm,
                          final Map<String, Map<String, Object>> diff,
-                         final Driver driver) {
+                         final Driver driver,
+                         final String api) {
 
-        LOGGER.warn("FARM STATUS - Synchronizing Farm " + farm.getName());
+        LOGGER.warn(FARM_STATUS_MSG_PREFIX + "Synchronizing Farm " + farm.getName());
 
         final AtomicReference<Set<String>> entityTypes = new AtomicReference<>(new HashSet<>());
 
-        diff.entrySet().stream().forEach(diffEntrySet -> {
+        diff.entrySet().forEach(diffEntrySet -> {
 
             try {
+
+                CounterDownLatch.refresh(api);
 
                 final Map<String, Object> attributes = diffEntrySet.getValue();
 
@@ -271,6 +282,13 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 final String id = String.valueOf(attributes.get("ID"));
                 final String parentId = String.valueOf(attributes.get("PARENT_ID"));
                 final String entityType = String.valueOf(attributes.get("ENTITY_TYPE"));
+
+                LOGGER.info("Processing DIFF (Farm " + farm.getId() + ") => " +
+                        "{ ACTION: '" + action.toString()
+                        + "', ID: '" + id
+                        + "', PARENT_ID: '" + parentId
+                        + "', ENTITY_TYPE: '"
+                        + entityType + "' }");
 
                 entityTypes.get().add(entityType);
 
@@ -288,23 +306,23 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                     if (entityFromRepository == null && action != REMOVE) {
                         LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
-                        CounterDownLatch.decrementDiffCounter(farm.getApi());
+                        CounterDownLatch.decrementDiffCounter(api);
                     } else {
-                        AbstractEnqueuer queue = queueLocator.getQueue(managerEntityType);
+                        AbstractEnqueuer queue = getQueueLocator().getQueue(managerEntityType);
                         if (action == REMOVE) {
                             LOGGER.debug("Sending " + id + " to " + queue + " queue [action: " + action + "]");
-                            removeEntityFromFarm(driver, makeBaseProperty(farm.getApi(), id, parentId, entityType));
+                            removeEntityFromFarm(driver, makeBaseProperty(api, id, parentId, entityType));
                         } else {
                             LOGGER.debug("Sending " + entityFromRepository.getName() + " to " + queue + " queue [action: " + action + "]");
+                            final Map<String, String> jmsHeaders = new HashMap<>();
+                            jmsHeaders.put(API_PROP, api);
+                            jmsHeaders.put(PARENTID_PROP, parentId);
                             switch (action) {
                                 case CREATE:
-                                    createEntityOnFarm(queue, entityFromRepository);
+                                    createEntityOnFarm(queue, entityFromRepository, jmsHeaders);
                                     break;
                                 case UPDATE:
-                                    updateEntityOnFarm(queue, entityFromRepository);
-                                    break;
-                                case CALLBACK:
-                                    resendCallBackWithOK(queue, entityFromRepository);
+                                    updateEntityOnFarm(queue, entityFromRepository, jmsHeaders);
                                     break;
                                 default:
                                     LOGGER.error("ACTION " + action + "(entityType: " + entityType + " - id: " + id + " - parentId: " + parentId + ") NOT EXIST");
@@ -316,23 +334,16 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     LOGGER.error("Repository is NULL: " + managerEntityType);
                 }
             } catch (Exception e) {
-                LOGGER.error(e);
-                CounterDownLatch.decrementDiffCounter(farm.getApi());
+                LOGGER.error(ExceptionUtils.getStackTrace(e));
+                CounterDownLatch.decrementDiffCounter(api);
             }
         });
-    }
-
-    private void resendCallBackWithOK(final AbstractEnqueuer<AbstractEntity<?>> queue, final AbstractEntity<?> entityFromRepository) {
-        if (entityFromRepository.getStatus() == PENDING || entityFromRepository.getStatus() == ERROR ) {
-            entityFromRepository.setStatus(OK);
-            queue.sendToQueue(queue.getQueueCallBackName(), entityFromRepository);
-        }
     }
 
     private void executeFullReload(Farm farm, Driver driver, Properties properties) {
         String farmClassName = farm.getClass().getSimpleName().toLowerCase();
         LOGGER.warn("Full Reloading " + farmClassName + " " + farm.getName());
-        properties.put("path", farmClassName);
+        properties.put(PATH_PROP, farmClassName);
         driver.remove(properties);
     }
 
@@ -342,20 +353,20 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
     private Properties makeBaseProperty(String apiFarm, String id, String parentId, String entityType) {
         Properties properties = new Properties();
-        properties.put("api", apiFarm);
-        properties.put("json", "{\"id\":\"" + id + "\"" +
+        properties.put(API_PROP, apiFarm);
+        properties.put(JSON_PROP, "{\"id\":\"" + id + "\"" +
                 (parentId != null && !"".equals(parentId) ? ",\"parentId\":\"" + parentId + "\"" : "") +
                 ",\"version\":0}");
-        properties.put("path", entityType);
+        properties.put(PATH_PROP, entityType);
         return properties;
     }
 
-    private void updateEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entityFromRepository) {
-        queue.sendToQueue(queue.getQueueUpdateName(), entityFromRepository);
+    private void updateEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entityFromRepository, final Map<String, String> jmsHeaders) {
+        queue.sendToQueue(queue.getQueueUpdateName(), entityFromRepository, jmsHeaders);
     }
 
-    private void createEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entity) {
-        queue.sendToQueue(queue.getQueueCreateName(), entity);
+    private void createEntityOnFarm(AbstractEnqueuer<AbstractEntity<?>> queue, AbstractEntity<?> entity, final Map<String, String> jmsHeaders) {
+        queue.sendToQueue(queue.getQueueCreateName(), entity, jmsHeaders);
     }
 
     @SuppressWarnings("unchecked")
@@ -374,42 +385,22 @@ public class FarmEngine extends AbstractEngine<Farm> {
         ).findAny();
     }
 
-    @SuppressWarnings("unused")
-    @JmsListener(destination = FarmQueue.QUEUE_CALLBK)
-    public void callBack(Farm farm) {
-        if (genericEntityService.isNew(farm)) {
-            // farm removed?
-            return;
-        }
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        try {
-            farmRepository.save(farm);
-        } catch (StaleObjectStateException e) {
-            LOGGER.debug(e.getMessage());
-        } catch (Exception e2) {
-            LOGGER.error(e2.getMessage());
-        } finally {
-            SystemUserService.runAs(currentUser);
-        }
-    }
-
-    @Override
-    protected FarmRepository getFarmRepository() {
-        return farmRepository;
-    }
-
     @Override
     protected FarmQueue farmQueue() {
-        return (FarmQueue)queueLocator.getQueue(Farm.class);
+        return (FarmQueue) getQueueLocator().getQueue(Farm.class);
     }
 
-    private Properties getPropertiesWithEntities(Farm farm) {
-        final Map<String, List<?>> entitiesMap = getEntitiesMap(farm);
+    public Properties getPropertiesWithEntities(Farm farm, String api) {
+        return getPropertiesWithEntities(farm, api, null);
+    }
+
+    public Properties getPropertiesWithEntities(Farm farm, String api, Map<String, List<?>> anEntitiesMap) {
+        final Map<String, List<?>> entitiesMap = anEntitiesMap == null ? getEntitiesMap(farm) : anEntitiesMap;
         final Properties properties = new Properties();
-        properties.put("api", farm.getApi());
-        properties.put("entitiesMap", entitiesMap);
-        properties.put("lockName", "lock_" + farm.getId());
+        properties.put(API_PROP, api);
+        properties.put(PATH_PROP, Farm.class.getSimpleName().toLowerCase());
+        properties.put(ENTITIES_MAP_PROP, entitiesMap);
+        properties.put(LOCK_NAME_PROP, "lock_" + farm.getId());
         return properties;
     }
 
@@ -418,15 +409,94 @@ public class FarmEngine extends AbstractEngine<Farm> {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         entitiesMap.put(VirtualHost.class.getSimpleName().toLowerCase(),
-                virtualHostRepository.findByFarmId(farm.getId(), pageable).getContent());
+                getVirtualHostRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(BackendPool.class.getSimpleName().toLowerCase(),
-                poolRepository.findByFarmId(farm.getId(), pageable).getContent());
+                getPoolRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Backend.class.getSimpleName().toLowerCase(),
-                targetRepository.findByFarmId(farm.getId(), pageable).getContent());
+                getTargetRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         entitiesMap.put(Rule.class.getSimpleName().toLowerCase(),
-                ruleRepository.findByFarmId(farm.getId(), pageable).getContent());
+                getRuleRepository().findByFarmId(farm.getId(), ALL_PAGES).getContent());
         SystemUserService.runAs(currentUser);
         return entitiesMap;
     }
 
+    public DistMap getDistMap() {
+        return distMap;
+    }
+
+    @Autowired
+    public FarmEngine setDistMap(final DistMap distMap) {
+        this.distMap = distMap;
+        return this;
+    }
+
+    public StatusDistributed getStatusDist() {
+        return statusDist;
+    }
+
+    @Autowired
+    public FarmEngine setStatusDist(final StatusDistributed statusDist) {
+        this.statusDist = statusDist;
+        return this;
+    }
+
+    public FarmRepository getFarmRepository() {
+        return farmRepository;
+    }
+
+    @Autowired
+    public FarmEngine setFarmRepository(final FarmRepository farmRepository) {
+        this.farmRepository = farmRepository;
+        return this;
+    }
+
+    public VirtualHostRepository getVirtualHostRepository() {
+        return virtualHostRepository;
+    }
+
+    @Autowired
+    public FarmEngine setVirtualHostRepository(final VirtualHostRepository virtualHostRepository) {
+        this.virtualHostRepository = virtualHostRepository;
+        return this;
+    }
+
+    public RuleRepository getRuleRepository() {
+        return ruleRepository;
+    }
+
+    @Autowired
+    public FarmEngine setRuleRepository(final RuleRepository ruleRepository) {
+        this.ruleRepository = ruleRepository;
+        return this;
+    }
+
+    public TargetRepository getTargetRepository() {
+        return targetRepository;
+    }
+
+    @Autowired
+    public FarmEngine setTargetRepository(final TargetRepository targetRepository) {
+        this.targetRepository = targetRepository;
+        return this;
+    }
+
+    public PoolRepository getPoolRepository() {
+        return poolRepository;
+    }
+
+    @Autowired
+    public FarmEngine setPoolRepository(final PoolRepository poolRepository) {
+        this.poolRepository = poolRepository;
+        return this;
+    }
+
+    public QueueLocator getQueueLocator() {
+        return queueLocator;
+    }
+
+    @Autowired
+    public FarmEngine setQueueLocator(final QueueLocator queueLocator) {
+        this.queueLocator = queueLocator;
+        return this;
+    }
 }

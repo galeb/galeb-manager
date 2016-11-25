@@ -18,7 +18,6 @@
 
 package io.galeb.manager.engine.util;
 
-import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.VirtualHostRepository;
@@ -26,6 +25,7 @@ import io.galeb.manager.security.services.SystemUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,18 +37,25 @@ public class VirtualHostAliasBuilder {
     public VirtualHost buildVirtualHostAlias(String virtualHostName, final VirtualHost virtualHost) {
         VirtualHost virtualHostAlias = new VirtualHost(virtualHostName, virtualHost.getEnvironment(), virtualHost.getProject());
 
-        SystemUserService.runAs();
-        Set<Rule> rulesOfVirtualhost = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
-                .stream().collect(Collectors.toSet());
-        SystemUserService.clearContext();
+        Set<Rule> rulesOfVirtualhost = getRulesOfVirtualhost(virtualHost);
         virtualHostAlias.setRules(rulesOfVirtualhost);
         virtualHostAlias.setId(virtualHost.getId());
         virtualHostAlias.setFarmId(virtualHost.getFarmId());
-        virtualHostAlias.setRuleDefault(virtualHost.getRuleDefault());
         virtualHostAlias.setProperties(virtualHost.getProperties());
         virtualHostAlias.setRuleDefault(virtualHost.getRuleDefault());
         virtualHostAlias.setRulesOrdered(virtualHost.getRulesOrdered());
-        virtualHostAlias.setStatus(AbstractEntity.EntityStatus.DISABLED);
         return virtualHostAlias;
     }
+
+    private Set<Rule> getRulesOfVirtualhost(VirtualHost virtualHost) {
+        if (virtualHostRepository != null) {
+            SystemUserService.runAs();
+            final Set<Rule> setOfRules = virtualHostRepository.getRulesFromVirtualHostName(virtualHost.getName())
+                                                              .stream().collect(Collectors.toSet());
+            SystemUserService.clearContext();
+            return setOfRules;
+        }
+        return virtualHost.getRules();
+    }
+
 }
