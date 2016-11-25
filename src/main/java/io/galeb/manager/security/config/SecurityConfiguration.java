@@ -174,12 +174,11 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
             public UserDetails mapUserFromContext(DirContextOperations ctx, String username,
                                                   Collection<? extends GrantedAuthority> authorities) {
                 final UserDetails details = super.mapUserFromContext(ctx, username, authorities);
-
-                final Authentication originalAuth = CurrentUser.getCurrentAuth();
+                final Optional<Authentication> originalAuth = Optional.ofNullable(CurrentUser.getCurrentAuth());
                 SystemUserService.runAs();
-                Optional<Account> account = getAccount(username);
+                Optional<Account> account = getAccountFromDatabase(username);
                 List<String> localRoles = new ArrayList<>();
-                Optional<String> email = Optional.empty();
+                Optional<String> email;
                 if (account.isPresent()) {
                     localRoles = account.get().getRoles().stream()
                             .map(Enum::toString)
@@ -187,31 +186,46 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                     email = Optional.ofNullable(account.get().getEmail());
                 } else {
                     localRoles.add("ROLE_USER");
-                    Object principalObj = originalAuth.getPrincipal();
-                    InetOrgPerson principal;
-                    if (principalObj != null && principalObj instanceof InetOrgPerson) {
-                        principal = (InetOrgPerson)principalObj;
-                        email = Optional.ofNullable(principal.getMail());
-                    }
-                    account = Optional.of(new Account().setPassword(UUID.randomUUID().toString())
-                                                       .setEmail(email.orElse(""))
-                                                       .setTeams(Collections.emptySet())
-                                                       .setRoles(localRoles.stream().map(Account.Role::valueOf)
-                                                                    .collect(Collectors.toSet()))
-                                                       .setName(username));
-                    accountRepository.saveAndFlush(account.get());
-                    account = getAccount(username);
+                    email = getEmailFromLdap(ctx, originalAuth);
+                    account = newAccount(username, localRoles, email);
                 }
                 long id = account.isPresent()? account.get().getId() : Long.MAX_VALUE;
-                SystemUserService.runAs(originalAuth);
-                final Collection<GrantedAuthority> localAuthorities =
-                        AuthorityUtils.createAuthorityList(localRoles.toArray(new String[localRoles.size()-1]));
+                SystemUserService.runAs(originalAuth.orElse(null));
+                final Collection<GrantedAuthority> localAuthorities = getGrantedAuthorities(localRoles);
                 return new CustomLdapUserDetails((LdapUserDetails) details, localAuthorities, id, email.orElse(""));
             }
         };
     }
 
-    private Optional<Account> getAccount(String username) {
+    private Collection<GrantedAuthority> getGrantedAuthorities(final List<String> localRoles) {
+        return AuthorityUtils.createAuthorityList(localRoles.toArray(new String[localRoles.size()-1]));
+    }
+
+    private Optional<String> getEmailFromLdap(final DirContextOperations ctx, final Optional<Authentication> originalAuth) {
+        Optional<String> email;
+        Optional<Object> principalObj = Optional.ofNullable(originalAuth.isPresent() ? originalAuth.get().getPrincipal() : Optional.empty());
+        if (principalObj.isPresent() && principalObj.get().getClass() == InetOrgPerson.class) {
+            InetOrgPerson principal = (InetOrgPerson)principalObj.get();
+            email = Optional.ofNullable(principal.getMail());
+        } else {
+            email = Optional.ofNullable(ctx.getStringAttribute("mail"));
+        }
+        return email;
+    }
+
+    private Optional<Account> newAccount(String username, final List<String> localRoles, final Optional<String> email) {
+        Optional<Account> account = Optional.of(new Account().setPassword(UUID.randomUUID().toString())
+                                                             .setEmail(email.orElse(""))
+                                                             .setTeams(Collections.emptySet())
+                                                             .setRoles(localRoles.stream().map(Account.Role::valueOf)
+                                                                        .collect(Collectors.toSet()))
+                                                             .setName(username));
+        account.ifPresent(a -> accountRepository.saveAndFlush(a));
+        account = getAccountFromDatabase(username);
+        return account;
+    }
+
+    private Optional<Account> getAccountFromDatabase(String username) {
         final Page<Account> accountPage = accountRepository.findByName(username, PAGE_REQUEST);
         return accountPage.iterator().hasNext() ? Optional.of(accountPage.iterator().next()) : Optional.empty();
     }
