@@ -19,6 +19,7 @@
 package io.galeb.manager.security.user;
 
 import java.util.Collection;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
@@ -58,7 +59,7 @@ public class CurrentUser implements UserDetails {
                        Long id,
                        String email) {
         user = new User(username,
-                        ENCODER.encode(password),
+                        password != null ? ENCODER.encode(password) : UUID.randomUUID().toString(),
                         enabled,
                         accountNonExpired,
                         credentialsNonExpired,
