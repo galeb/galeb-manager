@@ -52,6 +52,7 @@ public class SimpleCORSFilter implements Filter {
         response.setHeader("Access-Control-Allow-Methods", allowMethods);
         response.setHeader("Access-Control-Max-Age", maxAge);
         response.setHeader("Access-Control-Allow-Headers", allowHeaders);
+        response.setHeader("Access-Control-Expose-Headers", "Location");
         try {
             chain.doFilter(req, res);
         } catch (Exception e) {
