@@ -242,18 +242,22 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private void updateStatus(final Map<String, Map<String, Map<String, String>>> remoteMultiMap, final Long farmId) {
         remoteMultiMap.entrySet().forEach(entryWithPath -> {
             entryWithPath.getValue().entrySet().forEach(entryWithEntity -> {
-                Entity entity = new Entity();
                 Map<String, String> entityMap = entryWithEntity.getValue();
+                String entityType = entityMap.get("_entity_type");
+                Entity entity = Backend.class.getSimpleName().toLowerCase().equals(entityType) ? new Backend() : new Entity();
                 String id = entityMap.get("id");
                 String version = entityMap.get("version");
                 version = version != null ? version : "0";
-                String entityType = entityMap.get("_entity_type");
                 String parentId = entityMap.get("parentId");
                 parentId = parentId != null && !Rule.class.getSimpleName().toLowerCase().equals(entityType) ? parentId : "";
+                String healthObj = Backend.class.getSimpleName().toLowerCase().equals(entityType) ? entityMap.get("health") : null;
                 entity.setId(id);
                 entity.setParentId(parentId);
                 entity.setVersion(Integer.parseInt(version));
                 entity.setEntityType(entityType);
+                if (healthObj != null) {
+                    ((Backend) entity).setHealth(Backend.Health.valueOf(healthObj));
+                }
                 entity.getProperties().put(DIST_MAP_FARM_ID_PROP, farmId);
                 getDistMap().put(entity, JsonObject.toJsonString(entity));
             });

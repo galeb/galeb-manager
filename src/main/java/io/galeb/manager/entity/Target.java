@@ -31,6 +31,9 @@ import javax.persistence.UniqueConstraint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.core.json.JsonObject;
+import io.galeb.core.model.Backend;
+import io.galeb.manager.cache.DistMap;
 
 @Entity
 @JsonInclude(NON_NULL)
@@ -56,6 +59,10 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @Column(insertable = false, updatable = false, nullable = false)
     private Boolean global = false;
+
+    @JsonProperty("_healthy")
+    @Transient
+    protected Backend.Health healthy;
 
     public Target(String name) {
         setName(name);
@@ -126,6 +133,18 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     @Override
     public EntityStatus getStatus() {
         return super.getStatusFromMap();
+    }
+
+    public Backend.Health getHealthy() {
+        if (distMap == null) {
+            distMap = new DistMap();
+        }
+        String value = distMap.get(this);
+        if (value != null) {
+            Backend entity = (Backend) JsonObject.fromJson(value, Backend.class);
+            return entity.getHealth();
+        }
+        return Backend.Health.UNKNOWN;
     }
 
 }
