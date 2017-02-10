@@ -32,6 +32,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -85,6 +86,9 @@ public class GalebV32Driver implements Driver {
             result = result && hasExpectedParent(response.getBody(), parentId);
         } catch (IOException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
+        } catch (HttpClientErrorException e) {
+            LOGGER.info(e.getMessage());
+            result = false;
         }
         return result;
     }
@@ -277,9 +281,18 @@ public class GalebV32Driver implements Driver {
 
     private JsonNode getJson(String fullPath) throws URISyntaxException, IOException {
         final CommonHttpRequester httpClient = getHttpClient();
-        ResponseEntity<String> response = httpClient.get(fullPath);
-        boolean result = httpClient.isStatusCodeEqualOrLessThan(response, 200);
-        return result ? mapper.readTree(response.getBody()) : null;
+        JsonNode json = null;
+        try {
+            ResponseEntity<String> response = httpClient.get(fullPath);
+            boolean result = httpClient.isStatusCodeEqualOrLessThan(response, 200);
+            if (result) {
+                json = mapper.readTree(response.getBody());
+            }
+        } catch (HttpClientErrorException e) {
+            LOGGER.info(e.getMessage());
+            json = null;
+        }
+        return json;
     }
 
     private CommonHttpRequester getHttpClient() {
