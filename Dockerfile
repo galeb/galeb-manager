@@ -11,4 +11,6 @@ EXPOSE 8000
 RUN git clone https://github.com/galeb/galeb-manager.git && \
     mvn clean package -DskipTests -f galeb-manager/pom.xml
 
-CMD java -jar galeb-manager/target/galeb-manager-*-SNAPSHOT.jar
+WORKDIR galeb-manager
+
+CMD java -jar target/galeb-manager-*-SNAPSHOT.jar
