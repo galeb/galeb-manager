@@ -393,11 +393,11 @@
       </hashTree>
       <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="Loader" enabled="true">
         <collectionProp name="threads_schedule">
-          <collectionProp name="584923717">
+          <collectionProp name="311420720">
             <stringProp name="50">2</stringProp>
             <stringProp name="0">0</stringProp>
             <stringProp name="48">0</stringProp>
-            <stringProp name="50547">300</stringProp>
+            <stringProp name="1629">30</stringProp>
             <stringProp name="48">0</stringProp>
           </collectionProp>
         </collectionProp>
@@ -559,6 +559,42 @@
           <stringProp name="variableName">trandomname</stringProp>
         </RandomVariableConfig>
         <hashTree/>
+        <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="target byte2" enabled="true">
+          <stringProp name="maximumValue">254</stringProp>
+          <stringProp name="minimumValue">1</stringProp>
+          <stringProp name="outputFormat">000</stringProp>
+          <boolProp name="perThread">false</boolProp>
+          <stringProp name="randomSeed">111111</stringProp>
+          <stringProp name="variableName">byte2</stringProp>
+        </RandomVariableConfig>
+        <hashTree/>
+        <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="target byte4" enabled="true">
+          <stringProp name="maximumValue">254</stringProp>
+          <stringProp name="minimumValue">1</stringProp>
+          <stringProp name="outputFormat">000</stringProp>
+          <boolProp name="perThread">false</boolProp>
+          <stringProp name="randomSeed">222222</stringProp>
+          <stringProp name="variableName">byte4</stringProp>
+        </RandomVariableConfig>
+        <hashTree/>
+        <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="target byte3" enabled="true">
+          <stringProp name="maximumValue">254</stringProp>
+          <stringProp name="minimumValue">1</stringProp>
+          <stringProp name="outputFormat">000</stringProp>
+          <boolProp name="perThread">false</boolProp>
+          <stringProp name="randomSeed">333333</stringProp>
+          <stringProp name="variableName">byte3</stringProp>
+        </RandomVariableConfig>
+        <hashTree/>
+        <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="target port" enabled="true">
+          <stringProp name="maximumValue">50000</stringProp>
+          <stringProp name="minimumValue">10000</stringProp>
+          <stringProp name="outputFormat">00000</stringProp>
+          <boolProp name="perThread">false</boolProp>
+          <stringProp name="randomSeed"></stringProp>
+          <stringProp name="variableName">target_port</stringProp>
+        </RandomVariableConfig>
+        <hashTree/>
         <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="rule randomname" enabled="true">
           <stringProp name="maximumValue">1000000000000000</stringProp>
           <stringProp name="minimumValue">0</stringProp>
@@ -625,7 +661,7 @@
                 <elementProp name="" elementType="HTTPArgument">
                   <boolProp name="HTTPArgument.always_encode">false</boolProp>
                   <stringProp name="Argument.value">{&#xd;
-	&quot;name&quot;: &quot;http://${trandomname}&quot;,&#xd;
+	&quot;name&quot;: &quot;http://127.${byte2}.${byte3}.${byte4}:8081&quot;,&#xd;
 	&quot;parent&quot;: &quot;${pool_path}&quot;&#xd;
 }</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
