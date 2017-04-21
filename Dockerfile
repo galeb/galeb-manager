@@ -8,9 +8,9 @@ ENV REDIS_HOSTNAME redis.local
 
 EXPOSE 8000
 
-RUN git clone https://github.com/galeb/galeb-manager.git && \
+RUN sleep 5; git clone https://github.com/galeb/galeb-manager.git && \
     mvn clean package -DskipTests -f galeb-manager/pom.xml
 
 WORKDIR galeb-manager
 
-CMD java -jar target/galeb-manager-*-SNAPSHOT.jar
+CMD $PWD/docker-start.sh
