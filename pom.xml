@@ -271,7 +271,7 @@
                       -DINTERNAL_PASSWORD=password
                       -DIGNITE_JETTY_PORT=50001
                       -Dmanagement.port=9001
-                      -Dspring.jpa.properties.hibernate.dialect = org.hibernate.dialect.MySQL5Dialect
+                      -Dspring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
                   </jvmArguments>
                 </configuration>
             </plugin>
