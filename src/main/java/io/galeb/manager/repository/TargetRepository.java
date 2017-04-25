@@ -53,6 +53,17 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
                         "(" + SECURITY_FILTER + " OR " + IS_GLOBAL_FILTER + ")"
                         + " ORDER BY e.name";
 
+    String QUERY_FINDBYPROPERTIES = NATIVE_QUERY_PREFIX +
+            "INNER JOIN target_properties tp ON e.id = tp.target " +
+            "WHERE tp.properties_key = :key AND tp.properties = :value " +
+            "ORDER BY e.name";
+
+    String QUERY_FINDBYPROPERTIES_AND_POOL = NATIVE_QUERY_PREFIX +
+            "INNER JOIN pool ON e.parent_id = pool.id " +
+            "INNER JOIN target_properties tp ON e.id = tp.target " +
+            "WHERE tp.properties_key = :key AND tp.properties = :value AND pool.name = :poolName " +
+            "ORDER BY e.name";
+
     @Query(QUERY_FINDONE)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Target findOne(@Param("id") Long id);
@@ -80,5 +91,13 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
     @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Target> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
+
+    @Query(value = QUERY_FINDBYPROPERTIES, nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Target> findByPropertiesAndValue(@Param("key") String key, @Param("value") String value);
+
+    @Query(value = QUERY_FINDBYPROPERTIES_AND_POOL, nativeQuery = true)
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Iterable<Target> findByPropertiesAndValueAndParentName(@Param("key") String key, @Param("value") String value, @Param("poolName") String parentName);
 
 }
