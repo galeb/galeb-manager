@@ -18,8 +18,10 @@
 
 package io.galeb.manager.repository;
 
+import io.galeb.manager.repository.custom.TargetRepositoryCustom;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -29,12 +31,15 @@ import io.galeb.manager.entity.Target;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static io.galeb.manager.repository.CommonJpaFilters.*;
 
 @PreAuthorize("isFullyAuthenticated()")
 @RepositoryRestResource(collectionResourceRel = "target", path = "target")
 public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Long>,
-                                          FarmIDable<Target> {
+                                          FarmIDable<Target>,
+                                          TargetRepositoryCustom {
 
     String QUERY_PREFIX = "SELECT DISTINCT e FROM Target e " + QUERY_PROJECT_TO_ACCOUNT + " WHERE ";
 
@@ -80,5 +85,10 @@ public interface TargetRepository extends JpaRepositoryWithFindByName<Target, Lo
     @Query(value = QUERY_FINDBYNAMECONTAINING + " LIMIT :size", nativeQuery = true)
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<Target> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
+
+    @Modifying
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    List<Target> allAvaliablesOf(@Param("pool") String pool);
 
 }
