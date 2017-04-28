@@ -31,6 +31,8 @@ import javax.jms.Message;
 import java.util.Collections;
 import java.util.Map;
 
+import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTION_ID;
+
 public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     private static final String UNIQUE_ID_SEP = ".";
@@ -107,24 +109,31 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     }
 
+    public void sendToQueue(String queue, T entity, String uniqueId) {
+        sendToQueue(queue, entity, Collections.emptyMap(), uniqueId);
+    }
+
     public void sendToQueue(String queue, T entity, final Map<String, String> properties) {
+        String uniqueId = "ID:" + queue + UNIQUE_ID_SEP + entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+        sendToQueue(queue, entity, properties, uniqueId);
+    }
+
+    public void sendToQueue(String queue, T entity, final Map<String, String> properties, String uniqueId) {
         if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
             template().send(queue, session -> {
                 Message message = session.createObjectMessage(entity);
-                String uniqueId = "ID:" + queue + UNIQUE_ID_SEP +
-                        entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
-                properties.entrySet().forEach(entry -> {
+                properties.forEach((key, value) -> {
                     try {
-                        if (entry.getValue() instanceof String) {
-                            message.setStringProperty(entry.getKey(), entry.getValue());
-                        }
+                        if (value != null) message.setStringProperty(key, value);
                     } catch (JMSException e) {
                         logger.error(ExceptionUtils.getStackTrace(e));
                     }
                 });
                 message.setStringProperty("_HQ_DUPL_ID", uniqueId);
                 message.setJMSMessageID(uniqueId);
-                logger.info("JMSMessageID: " + uniqueId + " - Farm " + entity.getName());
+                message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
+
+                logger.info("JMSMessageID: " + uniqueId + " - " + entity.getClass().getSimpleName() + " " + entity.getName());
                 return message;
             });
         }

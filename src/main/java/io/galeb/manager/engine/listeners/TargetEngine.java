@@ -18,6 +18,7 @@
 
 package io.galeb.manager.engine.listeners;
 
+import com.google.gson.Gson;
 import io.galeb.core.model.Backend;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.entity.Farm;
@@ -40,10 +41,14 @@ import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.repository.FarmRepository;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Map;
 
 @Component
 public class TargetEngine extends AbstractEngine<Target> {
+
+    private static final String QUEUE_HEALTH_CALLBACK = "health-callback";
 
     private static final Log LOGGER = LogFactory.getLog(TargetEngine.class);
 
@@ -51,6 +56,9 @@ public class TargetEngine extends AbstractEngine<Target> {
     protected Log getLogger() {
         return LOGGER;
     }
+
+    @PersistenceContext
+    private EntityManager em;
 
     private FarmRepository farmRepository;
     private QueueLocator queueLocator;
@@ -92,6 +100,17 @@ public class TargetEngine extends AbstractEngine<Target> {
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    @JmsListener(destination = QUEUE_HEALTH_CALLBACK)
+    public void healthCallback(String targetStr) {
+        final Target targetCopy = new Gson().fromJson(targetStr, Target.class);
+        final Target target = em.find(Target.class, targetCopy.getId());
+        target.setProperties(targetCopy.getProperties());
+        em.getTransaction().begin();
+        em.merge(target);
+        em.getTransaction().commit();
+        LOGGER.warn("Healthcheck: target " + target.getName() + " updated");
     }
 
     @Override

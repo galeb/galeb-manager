@@ -137,7 +137,7 @@ public class SyncFarms {
         switch (comm) {
             case SEND_TO_QUEUE:
                 if (farm.isAutoReload() && !disableQueue) {
-                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
+                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm, "ID:farm-" + farm.getId() + "-" + System.currentTimeMillis());
                 } else {
                     LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
                 }
