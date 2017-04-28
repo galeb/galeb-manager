@@ -180,7 +180,7 @@ public class FullVirtualHostJsonController {
                 return rule.getRuleType().getHash();
             }
         };
-        return new Rule(rule.getName(), ruleType, pool) {
+        final Rule ruleCopy = new Rule(rule.getName(), ruleType, pool) {
             @Override
             public Date getCreatedAt() {
                 return rule.getCreatedAt();
@@ -206,6 +206,8 @@ public class FullVirtualHostJsonController {
                 return rule.getHash();
             }
         };
+        ruleCopy.setProperties(rule.getProperties());
+        return ruleCopy;
     }
     
     private Set<Rule> copyRules(final VirtualHost virtualHost) {
