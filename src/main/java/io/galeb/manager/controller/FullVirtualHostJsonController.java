@@ -100,6 +100,11 @@ public class FullVirtualHostJsonController {
     private Project getProject(VirtualHost virtualHost) {
         return new Project(virtualHost.getProject().getName()) {
             @Override
+            public long getId() {
+                return virtualHost.getProject().getId();
+            }
+
+            @Override
             public Date getCreatedAt() {
                 return virtualHost.getProject().getCreatedAt();
             }
@@ -129,6 +134,11 @@ public class FullVirtualHostJsonController {
     private Environment getEnvironment(VirtualHost virtualHost) {
         return new Environment(virtualHost.getEnvironment().getName()) {
             @Override
+            public long getId() {
+                return virtualHost.getEnvironment().getId();
+            }
+
+            @Override
             public Date getCreatedAt() {
                 return virtualHost.getEnvironment().getCreatedAt();
             }
@@ -157,6 +167,11 @@ public class FullVirtualHostJsonController {
 
     private Rule copyRule(final Rule rule, final Pool pool, final VirtualHost virtualhost) {
         final RuleType ruleType = new RuleType(rule.getRuleType().getName()){
+            @Override
+            public long getId() {
+                return rule.getRuleType().getId();
+            }
+
             @Override
             public Date getCreatedAt() {
                 return rule.getRuleType().getCreatedAt();
@@ -208,11 +223,11 @@ public class FullVirtualHostJsonController {
                 return rule.getHash();
             }
         };
+        ruleCopy.setId(rule.getId());
         ruleCopy.setProperties(rule.getProperties());
-
-        Optional<Integer> ruleOrder = virtualhost.getRulesOrdered().stream()
-                .filter(r -> r.getRuleId() == rule.getId()).map(RuleOrder::getRuleOrder).findAny();
-        ruleCopy.setRuleOrder(ruleOrder.orElse(Integer.MAX_VALUE));
+        Integer ruleOrder = virtualhost.getRulesOrdered().stream()
+                .filter(r -> r.getRuleId() == rule.getId()).map(RuleOrder::getRuleOrder).findAny().orElse(Integer.MAX_VALUE);
+        ruleCopy.getProperties().put("order", String.valueOf(ruleOrder));
         return ruleCopy;
     }
     
@@ -254,6 +269,7 @@ public class FullVirtualHostJsonController {
                         return target.getHash();
                     }
                 };
+                targetCopy.setId(target.getId());
                 targetCopy.setProperties(target.getProperties());
                 return targetCopy;
             }).collect(Collectors.toSet());
@@ -263,6 +279,11 @@ public class FullVirtualHostJsonController {
 
     private Pool copyPool(final Pool pool) {
         final Pool poolCopy = new Pool(pool.getName()) {
+            @Override
+            public long getId() {
+                return pool.getId();
+            }
+
             @Override
             public Date getCreatedAt() {
                 return pool.getCreatedAt();
@@ -290,6 +311,11 @@ public class FullVirtualHostJsonController {
         };
         final BalancePolicyType balancePolicyType = new BalancePolicyType(pool.getBalancePolicy().getBalancePolicyType().getName()){
             private final BalancePolicyType balancePolicyTypeOriginal = pool.getBalancePolicy().getBalancePolicyType();
+
+            @Override
+            public long getId() {
+                return balancePolicyTypeOriginal.getId();
+            }
 
             @Override
             public Date getCreatedAt() {
