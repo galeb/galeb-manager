@@ -56,7 +56,7 @@ public class FullVirtualHostJsonController {
         final Environment enviroment = getEnvironment(virtualHost);
         final Project project = getProject(virtualHost);
         final Pool poolDefault = copyPool(virtualHost.getRuleDefault().getPool());
-        final Rule ruleDefault = copyRule(virtualHost.getRuleDefault(), poolDefault);
+        final Rule ruleDefault = copyRule(virtualHost.getRuleDefault(), poolDefault, virtualHost);
 
         final VirtualHost virtualHostCopy = new VirtualHost(virtualHost.getName(), enviroment, project) {
             @Override
