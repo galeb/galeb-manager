@@ -6,6 +6,7 @@ import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.RuleType;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
@@ -22,6 +23,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -153,7 +155,7 @@ public class FullVirtualHostJsonController {
         };
     }
 
-    private Rule copyRule(final Rule rule, final Pool pool) {
+    private Rule copyRule(final Rule rule, final Pool pool, final VirtualHost virtualhost) {
         final RuleType ruleType = new RuleType(rule.getRuleType().getName()){
             @Override
             public Date getCreatedAt() {
@@ -207,6 +209,10 @@ public class FullVirtualHostJsonController {
             }
         };
         ruleCopy.setProperties(rule.getProperties());
+
+        Optional<Integer> ruleOrder = virtualhost.getRulesOrdered().stream()
+                .filter(r -> r.getRuleId() == rule.getId()).map(RuleOrder::getRuleOrder).findAny();
+        ruleCopy.setRuleOrder(ruleOrder.orElse(Integer.MAX_VALUE));
         return ruleCopy;
     }
     
