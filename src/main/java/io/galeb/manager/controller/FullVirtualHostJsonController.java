@@ -219,7 +219,7 @@ public class FullVirtualHostJsonController {
     private Set<Rule> copyRules(final VirtualHost virtualHost) {
         return em.createQuery(QUERY_RULE, Rule.class).getResultList().stream()
                 .filter(rule -> rule.getParents().contains(virtualHost))
-                .map(rule -> copyRule(rule, copyPool(rule.getPool())))
+                .map(rule -> copyRule(rule, copyPool(rule.getPool()), virtualHost))
                 .collect(Collectors.toSet());
     }
 
