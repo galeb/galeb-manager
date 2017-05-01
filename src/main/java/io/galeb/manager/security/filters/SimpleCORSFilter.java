@@ -34,7 +34,7 @@ public class SimpleCORSFilter implements Filter {
     private static final String DEFAULT_ALLOW_METHODS = "POST, GET, OPTIONS, DELETE, PUT, PATCH";
     private static final String DEFAULT_MAX_AGE = "3600";
     private static final String DEFAULT_ALLOW_HEADERS = "x-requested-with, authorization, "
-                                                      + "content-type, x-auth-token";
+                                                      + "content-type, x-auth-token, accept-encoding";
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
