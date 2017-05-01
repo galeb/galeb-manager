@@ -40,6 +40,7 @@ import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.repository.FarmRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -103,14 +104,17 @@ public class TargetEngine extends AbstractEngine<Target> {
     }
 
     @JmsListener(destination = QUEUE_HEALTH_CALLBACK)
+    @Transactional
     public void healthCallback(String targetStr) {
-        final Target targetCopy = new Gson().fromJson(targetStr, Target.class);
-        final Target target = em.find(Target.class, targetCopy.getId());
-        target.setProperties(targetCopy.getProperties());
-        em.getTransaction().begin();
-        em.merge(target);
-        em.getTransaction().commit();
-        LOGGER.warn("Healthcheck: target " + target.getName() + " updated");
+        try {
+            final Target targetCopy = new Gson().fromJson(targetStr, Target.class);
+            final Target target = em.find(Target.class, targetCopy.getId());
+            target.setProperties(targetCopy.getProperties());
+            em.merge(target);
+            LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+        }
     }
 
     @Override
