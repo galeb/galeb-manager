@@ -772,7 +772,8 @@
 	&quot;name&quot;: &quot;${rrandomname}&quot;,&#xd;
 	&quot;ruleType&quot;: &quot;${ruletype_path}&quot;,&#xd;
 	&quot;parents&quot;: [ &quot;${virtualhost_path}&quot; ],&#xd;
-	&quot;pool&quot;: &quot;${pool_path}&quot;&#xd;
+	&quot;pool&quot;: &quot;${pool_path}&quot;,&#xd;
+	&quot;properties&quot;:{&quot;match&quot;:&quot;/&quot;},&#xd;
 }</stringProp>
                   <stringProp name="Argument.metadata">=</stringProp>
                 </elementProp>
