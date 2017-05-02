@@ -20,9 +20,12 @@ package io.galeb.manager.security.filters;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.ThreadContext;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
 
 import javax.servlet.DispatcherType;
@@ -32,8 +35,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.security.Principal;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.stream.Collectors;
 
 @Configuration
 public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
@@ -67,39 +73,41 @@ public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
     }
 
     private void logRequest(HttpServletRequest request, HttpServletResponse response, long time) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("request\turi:\t")
-          .append(request.getRequestURI())
-          .append(request.getQueryString() == null ? "" : request.getQueryString())
-          .append("\tmethod:\t")
-          .append(request.getMethod())
-          .append("\tclient:\t")
-          .append(request.getRemoteAddr());
+        ThreadContext.put("uri", request.getRequestURI() + (request.getQueryString() == null ? "" : request.getQueryString()));
+        ThreadContext.put("method", request.getMethod());
+        ThreadContext.put("client ", request.getRemoteAddr());
         HttpSession session = request.getSession(false);
         if (session != null) {
-            sb.append("\tsession:\t").append(session.getId());
+            ThreadContext.put("session ", session.getId());
+            SecurityContextImpl sci = (SecurityContextImpl) session.getAttribute("SPRING_SECURITY_CONTEXT");
+            if (sci != null) {
+                UserDetails userDetails = (UserDetails) sci.getAuthentication().getPrincipal();
+                String user = userDetails.getUsername();
+                if (user != null) {
+                    ThreadContext.put("user", user);
+                }
+            }
         }
-        String user = request.getRemoteUser();
-        if (user != null) {
-            sb.append("\tuser:\t").append(user);
-        }
-        sb.append("\tstatusCode:\t")
-          .append(response.getStatus())
-          .append("\ttime:\t")
-          .append(time);
+        ThreadContext.put("status", String.valueOf(response.getStatus()));
+        ThreadContext.put("time", String.valueOf(time));
         Enumeration<String> headerNames = request.getHeaderNames();
         if (headerNames != null) {
-            sb.append("\theaders:\t");
+            StringBuilder headers = new StringBuilder();
             while (headerNames.hasMoreElements()) {
                 String next = headerNames.nextElement();
-                sb.append(next)
-                  .append(": ")
-                  .append(request.getHeader(next))
-                  .append(", ");
+                headers.append(next)
+                       .append(": ")
+                       .append(request.getHeader(next))
+                       .append(", ");
             }
-            sb.delete(sb.length()-2,sb.length());
+            headers.delete(headers.length()-2, headers.length());
+            ThreadContext.put("headers", headers.toString());
         }
-        LOGGER.info(sb.toString());
+        String result = ThreadContext.getContext().entrySet()
+                                                  .stream()
+                                                  .map(entry -> entry.getKey() + ": " + entry.getValue())
+                                                  .collect(Collectors.joining(", "));
+        LOGGER.info(result);
     }
 
     @Override
