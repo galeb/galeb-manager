@@ -18,6 +18,7 @@ package io.galeb.manager.queue;
 
 import org.apache.activemq.artemis.api.core.client.loadbalance.RoundRobinConnectionLoadBalancingPolicy;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.annotation.EnableJms;
@@ -45,7 +46,7 @@ public class JmsConfiguration {
 
     public static final String DISABLE_QUEUE = "DISABLE_QUEUE";
 
-    @Bean(name="connectionFactory")
+    @Bean(name="jmsConnectionFactory")
     public CachingConnectionFactory cachingConnectionFactory() throws JMSException {
         CachingConnectionFactory cachingConnectionFactory = new CachingConnectionFactory();
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_CONN);
@@ -62,7 +63,7 @@ public class JmsConfiguration {
     }
 
     @Bean(name = "jmsTemplate")
-    public JmsTemplate jmsTemplate(ConnectionFactory connectionFactory) {
+    public JmsTemplate jmsTemplate(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory) {
         JmsTemplate jmsTemplate = new JmsTemplate(connectionFactory);
         jmsTemplate.setExplicitQosEnabled(true);
         jmsTemplate.setDeliveryPersistent(false);
