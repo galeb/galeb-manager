@@ -59,6 +59,8 @@ import static org.springframework.http.HttpStatus.OK;
 @RequestMapping(value="/virtualhostscached", produces = MediaType.APPLICATION_JSON_VALUE)
 public class VirtualHostsCachedController {
 
+    private static final String PROP_HEALTHY = "healthy";
+
     private static final Log LOGGER = LogFactory.getLog(VirtualHostsCachedController.class);
 
     private final VirtualHostRepository virtualHostRepository;
@@ -298,7 +300,11 @@ public class VirtualHostsCachedController {
 
     @Cacheable("target")
     public Set<Target> copyTargets(final Pool pool) {
-        return pool.getTargets().stream().map(target -> {
+        // Send only Targets OK (property "healthy":"OK")
+        return pool.getTargets().stream().filter(target -> {
+            String targetHealthy = target.getProperties().get(PROP_HEALTHY);
+            return OK.toString().equals(targetHealthy);
+        }).map(target -> {
             Target targetCopy = new Target(target.getName()) {
                 @Override
                 public Date getCreatedAt() {
