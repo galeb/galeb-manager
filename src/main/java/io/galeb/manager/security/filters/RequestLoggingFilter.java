@@ -24,6 +24,8 @@ import org.apache.logging.log4j.ThreadContext;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
@@ -36,9 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -73,41 +73,26 @@ public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
     }
 
     private void logRequest(HttpServletRequest request, HttpServletResponse response, long time) {
-        ThreadContext.put("uri", request.getRequestURI() + (request.getQueryString() == null ? "" : request.getQueryString()));
-        ThreadContext.put("method", request.getMethod());
-        ThreadContext.put("client ", request.getRemoteAddr());
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            ThreadContext.put("session ", session.getId());
-            SecurityContextImpl sci = (SecurityContextImpl) session.getAttribute("SPRING_SECURITY_CONTEXT");
-            if (sci != null) {
-                UserDetails userDetails = (UserDetails) sci.getAuthentication().getPrincipal();
-                String user = userDetails.getUsername();
-                if (user != null) {
-                    ThreadContext.put("user", user);
-                }
-            }
+        Map<String, String> mapContext = new HashMap<>();
+        mapContext.put("uri", request.getRequestURI() + (request.getQueryString() == null ? "" : request.getQueryString()));
+        mapContext.put("method", request.getMethod());
+        String xForwardFor = request.getHeader("X-Forward-For");
+        if (xForwardFor != null) {
+            mapContext.put("client", xForwardFor);
         }
-        ThreadContext.put("status", String.valueOf(response.getStatus()));
-        ThreadContext.put("time", String.valueOf(time));
-        Enumeration<String> headerNames = request.getHeaderNames();
-        if (headerNames != null) {
-            StringBuilder headers = new StringBuilder();
-            while (headerNames.hasMoreElements()) {
-                String next = headerNames.nextElement();
-                headers.append(next)
-                       .append(": ")
-                       .append(request.getHeader(next))
-                       .append(", ");
-            }
-            headers.delete(headers.length()-2, headers.length());
-            ThreadContext.put("headers", headers.toString());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getName() != null) {
+            mapContext.put("user", authentication.getName());
         }
-        String result = ThreadContext.getContext().entrySet()
-                                                  .stream()
-                                                  .map(entry -> entry.getKey() + ": " + entry.getValue())
-                                                  .collect(Collectors.joining(", "));
+        mapContext.put("status", String.valueOf(response.getStatus()));
+        mapContext.put("time", String.valueOf(time));
+        String result = mapContext.entrySet()
+                                  .stream()
+                                  .map(entry -> entry.getKey() + ": " + entry.getValue())
+                                  .collect(Collectors.joining(", "));
+        ThreadContext.getContext().putAll(mapContext);
         LOGGER.info(result);
+        ThreadContext.clearMap();
     }
 
     @Override
