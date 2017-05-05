@@ -34,6 +34,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTION_ID;
 
@@ -54,19 +55,23 @@ public class HealthCheckProducer {
 
     @Scheduled(fixedDelay = 10000)
     public void sendTargetsToQueue() {
+        final AtomicInteger counter = new AtomicInteger(0);
         em.createQuery("SELECT t FROM Target t", Target.class).getResultList().forEach(target ->
             template.send("galeb-health", session -> {
+                counter.incrementAndGet();
                 String json = new Gson().toJson(copyTarget(target), Target.class);
                 Message message = session.createObjectMessage(json);
                 String uniqueId = "ID:" + target.getId() + "-" + target.getLastModifiedAt().getTime() + "-" + (System.currentTimeMillis() / 10000L);
                 message.setStringProperty("_HQ_DUPL_ID", uniqueId);
                 message.setJMSMessageID(uniqueId);
                 message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
-
-                LOGGER.info("JMSMessageID: " + uniqueId + " - Target " + target.getName());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("JMSMessageID: " + uniqueId + " - Target " + target.getName());
+                }
                 return message;
             })
         );
+        LOGGER.info("Sending " + counter.get() + " targets to QUEUE galeb-health");
     }
 
     private Target copyTarget(final Target target) {
