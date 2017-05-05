@@ -261,7 +261,7 @@ createBackendPool() {
               "balancePolicy": "'${PROTOCOL}'://'${SERVER}'/balancepolicy/'${BALANCEPOLICY_ID}'",
               "properties": {
                   "hcPath": "/",
-                  "hcBody": "OK",
+                  "hcBody": "A",
                   "hcStatusCode": 200
               }
           }' \
@@ -537,7 +537,6 @@ createRule ${TOKEN} ${RULE_NAME}_4
 defineRuleDefaultToVirtualHost ${TOKEN} ${VIRTUALHOST_NAME} ${RULE_NAME}_3
 
 ####
-
 # Wait
 for x in $(seq 1 5);do echo -n .;sleep 1;done;echo
 
