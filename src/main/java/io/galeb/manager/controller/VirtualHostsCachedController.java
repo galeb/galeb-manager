@@ -303,7 +303,7 @@ public class VirtualHostsCachedController {
         // Send only Targets OK (property "healthy":"OK")
         return pool.getTargets().stream().filter(target -> {
             String targetHealthy = target.getProperties().get(PROP_HEALTHY);
-            return OK.toString().equals(targetHealthy);
+            return "OK".equals(targetHealthy);
         }).map(target -> {
             Target targetCopy = new Target(target.getName()) {
                 @Override
