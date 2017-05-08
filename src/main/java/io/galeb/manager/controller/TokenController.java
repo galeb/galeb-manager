@@ -49,7 +49,7 @@ public class TokenController {
         if (accountPage != null && accountPage.hasContent()) {
             final Account account = accountPage.getContent().get(0);
             tokenInfo.put("email", account.getEmail());
-            tokenInfo.put("hasTeam", account.getTeams().isEmpty() ? false : true);
+            tokenInfo.put("hasTeam", !account.getTeams().isEmpty());
         }
         Set<String> roles = currentUser.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         tokenInfo.put("admin", roles.contains("ROLE_ADMIN"));
