@@ -126,8 +126,10 @@ public class VirtualHostsCachedController {
 
     private String etag(List<VirtualHost> virtualHosts) {
         String key = virtualHosts.stream().map(v ->
-                Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse(""))
-                .collect(Collectors.joining());
+                                    Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse(""))
+                                 .sorted()
+                                 .distinct()
+                                 .collect(Collectors.joining());
         return sha256.hash(key).asString();
     }
 
