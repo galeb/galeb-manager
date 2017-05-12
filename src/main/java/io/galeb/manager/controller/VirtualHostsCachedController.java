@@ -28,6 +28,7 @@ import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.RuleType;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
@@ -35,12 +36,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -50,8 +55,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -59,34 +66,75 @@ import static org.springframework.http.HttpStatus.OK;
 @RequestMapping(value="/virtualhostscached", produces = MediaType.APPLICATION_JSON_VALUE)
 public class VirtualHostsCachedController {
 
-    private static final String PROP_HEALTHY = "healthy";
+    private static final String PROP_HEALTHY  = "healthy";
+    private static final String PROP_FULLHASH = "fullhash";
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostsCachedController.class);
 
+    private final HashAlgorithm sha256 = new HashAlgorithm(HashAlgorithm.HashType.SHA256);
+
     private final VirtualHostRepository virtualHostRepository;
+    private final EnvironmentRepository environmentRepository;
 
     @Autowired
-    public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository) {
+    public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository, EnvironmentRepository environmentRepository) {
         this.virtualHostRepository = virtualHostRepository;
+        this.environmentRepository = environmentRepository;
     }
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
-    public ResponseEntity showall(@PathVariable String envname) throws Exception {
-        return findByEnvironmentName(envname);
+    public ResponseEntity showall(@PathVariable String envname, @RequestHeader("If-None-Match") String etag) throws Exception {
+        final Environment environment = envFindByName(envname);
+        if (Optional.ofNullable(environment.getProperties().get(PROP_FULLHASH)).orElse("").equals(etag)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
+        }
+        return findByEnvironmentName(environment);
     }
 
-    @Cacheable("virtualhost")
-    public ResponseEntity findByEnvironmentName(String envname) throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    private Environment envFindByName(String envname) {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        List<VirtualHost> virtualHosts = virtualHostRepository.findByEnvironmentName(envname)
-                .stream().map(this::copyVirtualHost).collect(Collectors.toList());
+        final Page<Environment> envPage = environmentRepository.findByName(envname, new PageRequest(0, 1));
+        SystemUserService.runAs(currentUser);
+        Environment environment = null;
+        if (envPage.hasContent()) {
+            environment = StreamSupport.stream(envPage.spliterator(), false).findAny().get();
+        }
+        return environment;
+    }
+
+    @Transactional
+    private ResponseEntity findByEnvironmentName(Environment environment) throws Exception {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        List<VirtualHost> virtualHosts = getVirtualHosts(environment.getName());
+        saveEtag(environment, virtualHosts);
         SystemUserService.runAs(currentUser);
         if (virtualHosts == null || virtualHosts.isEmpty()) {
             throw new VirtualHostNotFoundException();
         }
         Resources resourceRoot = new Resources<>(virtualHosts);
         return new ResponseEntity<>(resourceRoot, OK);
+    }
+
+    private void saveEtag(Environment environment, List<VirtualHost> virtualHosts) {
+        String etag = etag(virtualHosts);
+        environment.getProperties().put(PROP_FULLHASH, etag);
+        environmentRepository.saveAndFlush(environment);
+    }
+
+    private String etag(List<VirtualHost> virtualHosts) {
+        String key = virtualHosts.stream().map(v ->
+                Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse(""))
+                .collect(Collectors.joining());
+        return sha256.hash(key).asString();
+    }
+
+    @Cacheable("virtualhosts")
+    public List<VirtualHost> getVirtualHosts(String envname) {
+        return virtualHostRepository.findByEnvironmentName(envname)
+                    .stream().map(this::copyVirtualHost).collect(Collectors.toList());
     }
 
     private String buildFullHash(final VirtualHost virtualHost) {
@@ -104,7 +152,7 @@ public class VirtualHostsCachedController {
                     .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
         });
         String key = String.join("", keys);
-        return new HashAlgorithm(HashAlgorithm.HashType.SHA256).hash(key).asString();
+        return sha256.hash(key).asString();
     }
 
     private VirtualHost copyVirtualHost(final VirtualHost virtualHost) {
@@ -151,7 +199,7 @@ public class VirtualHostsCachedController {
 
         final Set<Rule> rules = copyRules(virtualHost);
         virtualHostCopy.setRules(rules);
-        virtualHostCopy.getProperties().put("fullhash", buildFullHash(virtualHostCopy));
+        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy));
         return virtualHostCopy;
     }
 
@@ -225,8 +273,7 @@ public class VirtualHostsCachedController {
         };
     }
 
-    @Cacheable("rule")
-    public Rule copyRule(final Rule rule, final Pool pool, final VirtualHost virtualhost) {
+    private Rule copyRule(final Rule rule, final Pool pool, final VirtualHost virtualhost) {
         final RuleType ruleType = new RuleType(rule.getRuleType().getName()){
             @Override
             public long getId() {
@@ -292,13 +339,14 @@ public class VirtualHostsCachedController {
         return ruleCopy;
     }
 
-    private Set<Rule> copyRules(final VirtualHost virtualHost) {
+    @Cacheable("rules")
+    public Set<Rule> copyRules(final VirtualHost virtualHost) {
         return virtualHost.getRules().stream()
                 .map(rule -> copyRule(rule, copyPool(rule.getPool()), virtualHost))
                 .collect(Collectors.toSet());
     }
 
-    @Cacheable("target")
+    @Cacheable("targets")
     public Set<Target> copyTargets(final Pool pool) {
         // Send only Targets OK (property "healthy":"OK")
         return pool.getTargets().stream().filter(target -> {
