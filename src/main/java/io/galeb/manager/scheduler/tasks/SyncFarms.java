@@ -21,7 +21,6 @@
 package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.Maps;
 import io.galeb.manager.common.CommandCountDown;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
