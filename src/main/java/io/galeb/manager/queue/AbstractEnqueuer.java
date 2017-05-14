@@ -31,6 +31,7 @@ import javax.jms.Message;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.galeb.manager.engine.listeners.AbstractEngine.API_PROP;
 import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTION_ID;
 
 public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
@@ -114,8 +115,17 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
     }
 
     public void sendToQueue(String queue, T entity, final Map<String, String> properties) {
-        String uniqueId = "ID:" + queue + UNIQUE_ID_SEP + entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+        String api = getApiEncoded(properties.get(API_PROP));
+        String apiWithSep = !"".equals(api) ? UNIQUE_ID_SEP + api : "";
+        String uniqueId = "ID:" + queue + UNIQUE_ID_SEP + entity.getId() + apiWithSep + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
         sendToQueue(queue, entity, properties, uniqueId);
+    }
+
+    private String getApiEncoded(String api) {
+        if (api != null) {
+            return  api.replace('/', '_').replace(':', '_').replace('?', '_');
+        }
+        return "";
     }
 
     public void sendToQueue(String queue, T entity, final Map<String, String> properties, String uniqueId) {
