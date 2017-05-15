@@ -83,12 +83,14 @@ public class VirtualHostsCachedController {
     }
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
-    public ResponseEntity showall(@PathVariable String envname, @RequestHeader("If-None-Match") String etag) throws Exception {
+    public ResponseEntity showall(@PathVariable String envname, @RequestHeader(value = "If-None-Match", required = false) String etag) throws Exception {
         final Environment environment = envFindByName(envname);
+        final ResponseEntity result = findByEnvironmentName(environment);
         if (Optional.ofNullable(environment.getProperties().get(PROP_FULLHASH)).orElse("").equals(etag)) {
+            LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
             return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
         }
-        return findByEnvironmentName(environment);
+        return result;
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -120,17 +122,24 @@ public class VirtualHostsCachedController {
 
     private void saveEtag(Environment environment, List<VirtualHost> virtualHosts) {
         String etag = etag(virtualHosts);
-        environment.getProperties().put(PROP_FULLHASH, etag);
-        environmentRepository.saveAndFlush(environment);
+        String oldEtag = environment.getProperties().get(PROP_FULLHASH);
+        if (!etag.equals(oldEtag)) {
+            LOGGER.warn("Environment: saving new etag " + etag);
+            environment.getProperties().put(PROP_FULLHASH, etag);
+            environmentRepository.saveAndFlush(environment);
+        }
     }
 
     private String etag(List<VirtualHost> virtualHosts) {
-        String key = virtualHosts.stream().map(v ->
-                                    Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse(""))
+        String key = virtualHosts.stream().map(this::getFullHash)
                                  .sorted()
                                  .distinct()
                                  .collect(Collectors.joining());
         return sha256.hash(key).asString();
+    }
+
+    private String getFullHash(VirtualHost v) {
+        return Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse("");
     }
 
     @Cacheable("virtualhosts")
