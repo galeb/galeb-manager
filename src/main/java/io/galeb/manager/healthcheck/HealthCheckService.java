@@ -17,6 +17,7 @@
 package io.galeb.manager.healthcheck;
 
 import com.google.gson.Gson;
+import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.queue.JmsConfiguration;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -55,6 +57,7 @@ import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTI
 public class HealthCheckService {
 
     private static final String QUEUE_HEALTH_CALLBACK = "health-callback";
+    private static final String QUEUE_GALEB_HEALTH    = "galeb-health";
     private static final int    PAGE_SIZE             = 100;
     private static final Log    LOGGER                = LogFactory.getLog(HealthCheckService.class);
 
@@ -73,51 +76,23 @@ public class HealthCheckService {
     @Scheduled(fixedDelay = 10000)
     public void sendTargetsToQueue() {
         final String schedId = UUID.randomUUID().toString();
-        LOGGER.info("[sch " + schedId + "] Sending targets to queue galeb-health");
+        LOGGER.info("[sch " + schedId + "] Sending targets to queue " + QUEUE_GALEB_HEALTH);
         long start = System.currentTimeMillis();
         final AtomicInteger counter = new AtomicInteger(0);
-        final AtomicBoolean hasFail = new AtomicBoolean(false);
         final Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final long size = targetRepository.count();
-        int page = 0;
-        while (page <= size/PAGE_SIZE) {
+        for (int page = 0; page <= size/PAGE_SIZE; page++) {
             Page<Target> targetsPage = targetRepository.findAll(new PageRequest(page, PAGE_SIZE));
             try {
-                StreamSupport.stream(targetsPage.spliterator(), false).forEach(target -> {
-                    try {
-                        MessageCreator messageCreator = session -> {
-                            counter.incrementAndGet();
-                            String json = "{}";
-                            try {
-                                json = new Gson().toJson(copyTarget(target), Target.class);
-                            } catch (Exception e) {
-                                LOGGER.error(ExceptionUtils.getStackTrace(e));
-                            }
-                            Message message = session.createObjectMessage(json);
-                            String uniqueId = "ID:" + target.getId() + "-" + target.getLastModifiedAt().getTime() + "-" + (System.currentTimeMillis() / 10000L);
-                            message.setStringProperty("_HQ_DUPL_ID", uniqueId);
-                            message.setJMSMessageID(uniqueId);
-                            message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
-
-                            LOGGER.debug("JMSMessageID: " + uniqueId + " - Target " + target.getName());
-                            return message;
-                        };
-                        template.send("galeb-health", messageCreator);
-                    } catch (Exception e) {
-                        LOGGER.error(ExceptionUtils.getStackTrace(e));
-                    }
-                });
+                StreamSupport.stream(targetsPage.spliterator(), false).forEach(target -> sendToQueue(target, counter));
             } catch (Exception e) {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
-                hasFail.set(true);
-            } finally {
-                page++;
+                break;
             }
-            if (hasFail.get()) break;
         }
         SystemUserService.runAs(currentUser);
-        LOGGER.info("[sch " + schedId + "] Sent " + counter.get() + " targets to queue galeb-health " +
+        LOGGER.info("[sch " + schedId + "] Sent " + counter.get() + " targets to queue " + QUEUE_GALEB_HEALTH + " " +
                 "[" + (System.currentTimeMillis() - start) + " ms] (before to start this task: " + size + " targets from db)");
     }
 
@@ -134,6 +109,35 @@ public class HealthCheckService {
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    private void sendToQueue(final Target target, final AtomicInteger counter) {
+        try {
+            MessageCreator messageCreator = session -> {
+                counter.incrementAndGet();
+                String json = "{}";
+                try {
+                    json = new Gson().toJson(copyTarget(target), Target.class);
+                } catch (Exception e) {
+                    LOGGER.error(ExceptionUtils.getStackTrace(e));
+                }
+                Message message = session.createObjectMessage(json);
+                String uniqueId = "ID:" + target.getId() + "-" + target.getLastModifiedAt().getTime() + "-" + (System.currentTimeMillis() / 10000L);
+                defineUniqueId(message, uniqueId);
+
+                if (LOGGER.isDebugEnabled()) LOGGER.debug("JMSMessageID: " + uniqueId + " - Target " + target.getName());
+                return message;
+            };
+            template.send(QUEUE_GALEB_HEALTH, messageCreator);
+        } catch (Exception e) {
+            ErrorLogger.logError(e, this.getClass());
+        }
+    }
+
+    private void defineUniqueId(final Message message, String uniqueId) throws JMSException {
+        message.setStringProperty("_HQ_DUPL_ID", uniqueId);
+        message.setJMSMessageID(uniqueId);
+        message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
     }
 
     private Target copyTarget(final Target target) {
