@@ -18,14 +18,18 @@
 
 package io.galeb.manager.engine.listeners;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.TargetQueue;
+import io.galeb.manager.repository.FarmRepository;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,22 +38,12 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.repository.FarmRepository;
-import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.Map;
 
 @Component
 public class TargetEngine extends AbstractEngine<Target> {
-
-    private static final String QUEUE_HEALTH_CALLBACK = "health-callback";
 
     private static final Log LOGGER = LogFactory.getLog(TargetEngine.class);
 
@@ -98,20 +92,6 @@ public class TargetEngine extends AbstractEngine<Target> {
 
         try {
             driver.remove(makeProperties(target, target.getParent(), jmsHeaders));
-        } catch (Exception e) {
-            LOGGER.error(ExceptionUtils.getStackTrace(e));
-        }
-    }
-
-    @JmsListener(destination = QUEUE_HEALTH_CALLBACK)
-    @Transactional
-    public void healthCallback(String targetStr) {
-        try {
-            final Target targetCopy = new Gson().fromJson(targetStr, Target.class);
-            final Target target = em.find(Target.class, targetCopy.getId());
-            target.setProperties(targetCopy.getProperties());
-            em.merge(target);
-            LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
