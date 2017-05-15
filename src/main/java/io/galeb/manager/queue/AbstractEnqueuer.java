@@ -20,10 +20,12 @@
 
 package io.galeb.manager.queue;
 
+import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.AbstractEntity;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -130,7 +132,7 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     public void sendToQueue(String queue, T entity, final Map<String, String> properties, String uniqueId) {
         if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
-            template().send(queue, session -> {
+            MessageCreator messageCreator = session -> {
                 Message message = session.createObjectMessage(entity);
                 properties.forEach((key, value) -> {
                     try {
@@ -139,13 +141,22 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
                         logger.error(ExceptionUtils.getStackTrace(e));
                     }
                 });
-                message.setStringProperty("_HQ_DUPL_ID", uniqueId);
-                message.setJMSMessageID(uniqueId);
-                message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
+                defineUniqueId(message, uniqueId);
 
                 logger.info("JMSMessageID: " + uniqueId + " - " + entity.getClass().getSimpleName() + " " + entity.getName());
                 return message;
-            });
+            };
+            try {
+                template().send(queue, messageCreator);
+            } catch (Exception e) {
+                ErrorLogger.logError(e, this.getClass());
+            }
         }
+    }
+
+    private void defineUniqueId(Message message, String uniqueId) throws JMSException {
+        message.setStringProperty("_HQ_DUPL_ID", uniqueId);
+        message.setJMSMessageID(uniqueId);
+        message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
     }
 }
