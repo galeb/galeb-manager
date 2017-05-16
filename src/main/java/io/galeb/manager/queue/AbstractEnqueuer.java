@@ -147,7 +147,7 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
                 return message;
             };
             try {
-                template().send(queue, messageCreator);
+                template().sendAndReceive(queue, messageCreator);
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
             }

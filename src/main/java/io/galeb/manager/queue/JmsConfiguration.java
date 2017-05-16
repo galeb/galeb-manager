@@ -51,6 +51,7 @@ public class JmsConfiguration {
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(BROKER_CONN);
         connectionFactory.setUser(BROKER_USER);
         connectionFactory.setPassword(BROKER_PASS);
+        connectionFactory.setPreAcknowledge(true);
         if (BROKER_HA) {
             connectionFactory.setConnectionLoadBalancingPolicyClassName(RoundRobinConnectionLoadBalancingPolicy.class.getName());
         }

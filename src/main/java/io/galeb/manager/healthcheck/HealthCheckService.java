@@ -128,7 +128,7 @@ public class HealthCheckService {
                 if (LOGGER.isDebugEnabled()) LOGGER.debug("JMSMessageID: " + uniqueId + " - Target " + target.getName());
                 return message;
             };
-            template.send(QUEUE_GALEB_HEALTH, messageCreator);
+            template.sendAndReceive(QUEUE_GALEB_HEALTH, messageCreator);
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
         }
