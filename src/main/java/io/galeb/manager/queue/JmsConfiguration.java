@@ -27,7 +27,6 @@ import org.springframework.jms.core.JmsTemplate;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
-import java.io.ObjectStreamClass;
 import java.util.Optional;
 
 import static org.springframework.jms.core.JmsTemplate.RECEIVE_TIMEOUT_NO_WAIT;
@@ -39,7 +38,7 @@ public class JmsConfiguration {
     private static final long EFEMERAL_JMS_TIMEOUT = Long.parseLong(Optional.ofNullable(System.getenv("EFEMERAL_JMS_TIMEOUT")).orElse("10000"));
     private static final long DEFAULT_JMS_TIMEOUT  = Long.parseLong(Optional.ofNullable(System.getenv("JMS_TIMEOUT")).orElse("600000"));
 
-    private static final String BROKER_CONN = Optional.ofNullable(System.getenv("BROKER_CONN")).orElse("tcp://localhost:61616?protocols=Core");
+    private static final String BROKER_CONN = Optional.ofNullable(System.getenv("BROKER_CONN")).orElse("tcp://localhost:61616?blockOnDurableSend=false&consumerWindowSize=0&protocols=Core");
     private static final String BROKER_USER = Optional.ofNullable(System.getenv("BROKER_USER")).orElse("guest");
     private static final String BROKER_PASS = Optional.ofNullable(System.getenv("BROKER_PASS")).orElse("guest");
     private static final boolean  BROKER_HA = Boolean.parseBoolean(Optional.ofNullable(System.getenv("BROKER_HA")).orElse("false"));
