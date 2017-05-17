@@ -20,16 +20,21 @@
 
 package io.galeb.manager.queue;
 
+import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.AbstractEntity;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
 
 import java.util.Collections;
 import java.util.Map;
+
+import static io.galeb.manager.engine.listeners.AbstractEngine.API_PROP;
+import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTION_ID;
 
 public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
@@ -107,26 +112,51 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     }
 
+    public void sendToQueue(String queue, T entity, String uniqueId) {
+        sendToQueue(queue, entity, Collections.emptyMap(), uniqueId);
+    }
+
     public void sendToQueue(String queue, T entity, final Map<String, String> properties) {
+        String api = getApiEncoded(properties.get(API_PROP));
+        String apiWithSep = !"".equals(api) ? UNIQUE_ID_SEP + api : "";
+        String uniqueId = "ID:" + queue + UNIQUE_ID_SEP + entity.getId() + apiWithSep + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+        sendToQueue(queue, entity, properties, uniqueId);
+    }
+
+    private String getApiEncoded(String api) {
+        if (api != null) {
+            return  api.replace('/', '_').replace(':', '_').replace('?', '_');
+        }
+        return "";
+    }
+
+    public void sendToQueue(String queue, T entity, final Map<String, String> properties, String uniqueId) {
         if (!QUEUE_UNDEF.equals(queue) && !isDisableQueue()) {
-            template().send(queue, session -> {
+            MessageCreator messageCreator = session -> {
                 Message message = session.createObjectMessage(entity);
-                String uniqueId = "ID:" + queue + UNIQUE_ID_SEP +
-                        entity.getId() + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
-                properties.entrySet().forEach(entry -> {
+                properties.forEach((key, value) -> {
                     try {
-                        if (entry.getValue() instanceof String) {
-                            message.setStringProperty(entry.getKey(), entry.getValue());
-                        }
+                        if (value != null) message.setStringProperty(key, value);
                     } catch (JMSException e) {
                         logger.error(ExceptionUtils.getStackTrace(e));
                     }
                 });
-                message.setStringProperty("_HQ_DUPL_ID", uniqueId);
-                message.setJMSMessageID(uniqueId);
-                logger.info("JMSMessageID: " + uniqueId + " - Farm " + entity.getName());
+                defineUniqueId(message, uniqueId);
+
+                logger.info("JMSMessageID: " + uniqueId + " - " + entity.getClass().getSimpleName() + " " + entity.getName());
                 return message;
-            });
+            };
+            try {
+                template().send(queue, messageCreator);
+            } catch (Exception e) {
+                ErrorLogger.logError(e, this.getClass());
+            }
         }
+    }
+
+    private void defineUniqueId(Message message, String uniqueId) throws JMSException {
+        message.setStringProperty("_HQ_DUPL_ID", uniqueId);
+        message.setJMSMessageID(uniqueId);
+        message.setStringProperty(HDR_DUPLICATE_DETECTION_ID.toString(), uniqueId);
     }
 }
