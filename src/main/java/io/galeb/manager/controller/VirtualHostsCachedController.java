@@ -70,6 +70,8 @@ public class VirtualHostsCachedController {
     private static final String PROP_HEALTHY  = "healthy";
     private static final String PROP_FULLHASH = "fullhash";
 
+    private static final String PROP_DISCOVERED_MEMBERS_SIZE = "discoveredMembersSize";
+
     private static final Log LOGGER = LogFactory.getLog(VirtualHostsCachedController.class);
 
     private final HashAlgorithm sha256 = new HashAlgorithm(HashAlgorithm.HashType.SHA256);
@@ -92,9 +94,8 @@ public class VirtualHostsCachedController {
                                   @RequestHeader(value = "If-None-Match", required = false) String etag,
                                   @RequestHeader(value = "X-Galeb-LocalIP", required = false) String routerLocalIP,
                                   @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
-        routerMap.put(routerGroupId, routerLocalIP);
         final Environment environment = envFindByName(envname);
-        final ResponseEntity result = findByEnvironmentName(environment);
+        final ResponseEntity result = getVirtualhostsByEnvironment(environment, routerGroupId, routerLocalIP);
         if (Optional.ofNullable(environment.getProperties().get(PROP_FULLHASH)).orElse("").equals(etag)) {
             LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
             return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
@@ -116,10 +117,12 @@ public class VirtualHostsCachedController {
     }
 
     @Transactional
-    private ResponseEntity findByEnvironmentName(Environment environment) throws Exception {
+    private ResponseEntity getVirtualhostsByEnvironment(Environment environment, String routerGroupId, String routerLocalIP) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        List<VirtualHost> virtualHosts = getVirtualHosts(environment.getName());
+        int numRouters = calcNumRouters(routerGroupId, routerLocalIP);
+        forceNewEtagIfNumRoutersChanged(routerGroupId, numRouters, environment);
+        List<VirtualHost> virtualHosts = getVirtualHosts(environment.getName(), numRouters);
         saveEtag(environment, virtualHosts);
         SystemUserService.runAs(currentUser);
         if (virtualHosts == null || virtualHosts.isEmpty()) {
@@ -127,6 +130,16 @@ public class VirtualHostsCachedController {
         }
         Resources resourceRoot = new Resources<>(virtualHosts);
         return new ResponseEntity<>(resourceRoot, OK);
+    }
+
+    private void forceNewEtagIfNumRoutersChanged(String routerGroupId, int newNumRouters, final Environment environment) {
+        int oldNumRouters = routerMap.count(routerGroupId);
+        if (oldNumRouters != newNumRouters) environment.getProperties().remove(PROP_FULLHASH);
+    }
+
+    private int calcNumRouters(String routerGroupId, String routerLocalIP) {
+        routerMap.put(routerGroupId, routerLocalIP);
+        return routerMap.count(routerGroupId);
     }
 
     private void saveEtag(Environment environment, List<VirtualHost> virtualHosts) {
@@ -152,9 +165,9 @@ public class VirtualHostsCachedController {
     }
 
     @Cacheable("virtualhosts")
-    public List<VirtualHost> getVirtualHosts(String envname) {
+    public List<VirtualHost> getVirtualHosts(String envname, int numRouters) {
         return virtualHostRepository.findByEnvironmentName(envname)
-                    .stream().map(this::copyVirtualHost).collect(Collectors.toList());
+                    .stream().map(virtualHost -> copyVirtualHost(virtualHost, numRouters)).collect(Collectors.toList());
     }
 
     private String buildFullHash(final VirtualHost virtualHost) {
@@ -175,7 +188,7 @@ public class VirtualHostsCachedController {
         return sha256.hash(key).asString();
     }
 
-    private VirtualHost copyVirtualHost(final VirtualHost virtualHost) {
+    private VirtualHost copyVirtualHost(final VirtualHost virtualHost, int numRouters) {
         final Environment enviroment = getEnvironment(virtualHost);
         final Project project = getProject(virtualHost);
         final Rule virtualHostRuleDefault = virtualHost.getRuleDefault();
@@ -206,7 +219,7 @@ public class VirtualHostsCachedController {
             }
         };
         if (virtualHostRuleDefault != null) {
-            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool());
+            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), numRouters);
             final Rule ruleDefault = copyRule(virtualHostRuleDefault, poolDefault, virtualHost);
             virtualHostCopy.setRuleDefault(ruleDefault);
         }
@@ -217,7 +230,7 @@ public class VirtualHostsCachedController {
         virtualHostCopy.setAliases(virtualHost.getAliases());
         virtualHostCopy.setRulesOrdered(virtualHost.getRulesOrdered());
 
-        final Set<Rule> rules = copyRules(virtualHost);
+        final Set<Rule> rules = copyRules(virtualHost, numRouters);
         virtualHostCopy.setRules(rules);
         virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy));
         return virtualHostCopy;
@@ -360,9 +373,9 @@ public class VirtualHostsCachedController {
     }
 
     @Cacheable("rules")
-    public Set<Rule> copyRules(final VirtualHost virtualHost) {
+    public Set<Rule> copyRules(final VirtualHost virtualHost, int numRouters) {
         return virtualHost.getRules().stream()
-                .map(rule -> copyRule(rule, copyPool(rule.getPool()), virtualHost))
+                .map(rule -> copyRule(rule, copyPool(rule.getPool(), numRouters), virtualHost))
                 .collect(Collectors.toSet());
     }
 
@@ -406,7 +419,8 @@ public class VirtualHostsCachedController {
     }
 
     @Cacheable("pool")
-    public Pool copyPool(final Pool pool) {
+    public Pool copyPool(final Pool pool, int numRouters) {
+        //        newDiscoveredMembersSize = Math.max(externalDataService.members().size(), 1);
         final Pool poolCopy = new Pool(pool.getName()) {
             @Override
             public long getId() {
@@ -505,6 +519,7 @@ public class VirtualHostsCachedController {
             }
         }
         poolCopy.setProperties(pool.getProperties());
+        poolCopy.getProperties().put(PROP_DISCOVERED_MEMBERS_SIZE, String.valueOf(numRouters));
         poolCopy.setTargets(copyTargets(pool));
         return poolCopy;
     }

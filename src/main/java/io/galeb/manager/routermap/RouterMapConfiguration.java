@@ -47,8 +47,12 @@ public class RouterMapConfiguration {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(RegisterExpirable::getLocalIp).collect(Collectors.toSet())));
         }
 
+        public int count(String groupId) {
+            return routers.computeIfAbsent(groupId, routers -> new HashSet<>()).size();
+        }
+
         @Scheduled(fixedDelay = 30000)
-        public void cleanup() {
+        public void gc() {
             synchronized (routers) {
                 for (Map.Entry<String, Set<RegisterExpirable>> e : routers.entrySet()) {
                     Set<RegisterExpirable> expiredList = e.getValue().stream()
