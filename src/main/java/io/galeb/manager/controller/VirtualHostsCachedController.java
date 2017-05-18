@@ -30,6 +30,7 @@ import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
+import io.galeb.manager.routermap.RouterMapConfiguration;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
@@ -75,15 +76,23 @@ public class VirtualHostsCachedController {
 
     private final VirtualHostRepository virtualHostRepository;
     private final EnvironmentRepository environmentRepository;
+    private final RouterMapConfiguration.RouterMap routerMap;
 
     @Autowired
-    public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository, EnvironmentRepository environmentRepository) {
+    public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository,
+                                        EnvironmentRepository environmentRepository,
+                                        RouterMapConfiguration.RouterMap routerMap) {
         this.virtualHostRepository = virtualHostRepository;
         this.environmentRepository = environmentRepository;
+        this.routerMap = routerMap;
     }
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
-    public ResponseEntity showall(@PathVariable String envname, @RequestHeader(value = "If-None-Match", required = false) String etag) throws Exception {
+    public ResponseEntity showall(@PathVariable String envname,
+                                  @RequestHeader(value = "If-None-Match", required = false) String etag,
+                                  @RequestHeader(value = "X-Galeb-LocalIP", required = false) String routerLocalIP,
+                                  @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
+        routerMap.put(routerGroupId, routerLocalIP);
         final Environment environment = envFindByName(envname);
         final ResponseEntity result = findByEnvironmentName(environment);
         if (Optional.ofNullable(environment.getProperties().get(PROP_FULLHASH)).orElse("").equals(etag)) {
