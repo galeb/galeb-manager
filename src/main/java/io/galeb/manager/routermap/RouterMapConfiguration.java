@@ -59,6 +59,9 @@ public class RouterMapConfiguration {
                             .filter(r -> r.getTimestamp() < System.currentTimeMillis() - 30000)
                             .collect(Collectors.toSet());
                     routers.get(e.getKey()).removeAll(expiredList);
+                    if (routers.get(e.getKey()).isEmpty()) {
+                        routers.remove(e.getKey());
+                    }
                 }
             }
         }
