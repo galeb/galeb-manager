@@ -36,7 +36,7 @@ public class RoutersController {
         this.routerMap = routerMap;
     }
 
-    @RequestMapping(value="/", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.GET)
     public String routerMap() {
         return gson.toJson(routerMap.get());
     }
