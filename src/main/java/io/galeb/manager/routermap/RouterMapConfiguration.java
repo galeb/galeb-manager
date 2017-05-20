@@ -36,6 +36,9 @@ public class RouterMapConfiguration {
     }
 
     public class RouterMap {
+
+        public static final int REGISTER_TTL = 120000; // ms
+
         private final ConcurrentHashMap<String, Set<RegisterExpirable>> routers = new ConcurrentHashMap<>();
 
         public synchronized void put(String groupId, String localIp) {
@@ -51,12 +54,12 @@ public class RouterMapConfiguration {
             return routers.computeIfAbsent(groupId, routers -> new HashSet<>()).size();
         }
 
-        @Scheduled(fixedDelay = 30000)
+        @Scheduled(fixedDelay = REGISTER_TTL)
         public void gc() {
             synchronized (routers) {
                 for (Map.Entry<String, Set<RegisterExpirable>> e : routers.entrySet()) {
                     Set<RegisterExpirable> expiredList = e.getValue().stream()
-                            .filter(r -> r.getTimestamp() < System.currentTimeMillis() - 30000)
+                            .filter(r -> r.getTimestamp() < System.currentTimeMillis() - REGISTER_TTL)
                             .collect(Collectors.toSet());
                     routers.get(e.getKey()).removeAll(expiredList);
                     if (routers.get(e.getKey()).isEmpty()) {
