@@ -17,17 +17,9 @@
 package io.galeb.manager.controller;
 
 import io.galeb.core.util.consistenthash.HashAlgorithm;
-import io.galeb.manager.entity.AbstractEntity;
-import io.galeb.manager.entity.BalancePolicy;
-import io.galeb.manager.entity.BalancePolicyType;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Pool;
-import io.galeb.manager.entity.Project;
-import io.galeb.manager.entity.Rule;
-import io.galeb.manager.entity.RuleOrder;
-import io.galeb.manager.entity.RuleType;
-import io.galeb.manager.entity.Target;
-import io.galeb.manager.entity.VirtualHost;
+import io.galeb.manager.common.ErrorLogger;
+import io.galeb.manager.entity.*;
+import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.routermap.RouterMapConfiguration;
@@ -53,13 +45,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -90,87 +84,98 @@ public class VirtualHostsCachedController {
     }
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
-    public ResponseEntity showall(@PathVariable String envname,
-                                  @RequestHeader(value = "If-None-Match", required = false) String etag,
+    public synchronized ResponseEntity showall(@PathVariable String envname,
+                                  @RequestHeader(value = "If-None-Match", required = false) String routerEtag,
                                   @RequestHeader(value = "X-Galeb-LocalIP", required = false) String routerLocalIP,
                                   @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
-        final Environment environment = envFindByName(envname);
-        final ResponseEntity result = getVirtualhostsByEnvironment(environment, routerGroupId, routerLocalIP);
-        if (Optional.ofNullable(environment.getProperties().get(PROP_FULLHASH)).orElse("").equals(etag)) {
-            LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
-            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
-        }
-        return result;
+        return buildResponse(envname, routerGroupId, routerLocalIP, routerEtag);
     }
 
-    @SuppressWarnings("ConstantConditions")
-    private Environment envFindByName(String envname) {
+    @Transactional
+    private ResponseEntity buildResponse(String envname, String routerGroupId, String routerLocalIP, String routerEtag) throws Exception {
+        int numRouters = 1;
+        boolean isOk = true;
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
+        final List<VirtualHost> virtualHosts = new ArrayList<>();
+        try {
+            if (routerGroupId != null && routerLocalIP != null) {
+                numRouters = routerMap.put(routerGroupId, routerLocalIP);
+            }
+            final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
+            virtualHosts.addAll(getVirtualHosts(virtualHostStream, numRouters));
+            if (!routerUpdateIsNecessary(envname, routerEtag, virtualHosts)) {
+                LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
+            }
+            if (virtualHosts.isEmpty()) {
+                throw new VirtualHostsEmptyException();
+            }
+        } catch (Exception e) {
+            ErrorLogger.logError(e, this.getClass());
+            isOk = false;
+        } finally {
+            SystemUserService.runAs(currentUser);
+        }
+        return isOk ? new ResponseEntity<>(new Resources<>(virtualHosts), OK) : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+
+    private Environment envFindByName(String envname) {
         final Page<Environment> envPage = environmentRepository.findByName(envname, new PageRequest(0, 1));
-        SystemUserService.runAs(currentUser);
         Environment environment = null;
         if (envPage.hasContent()) {
-            environment = StreamSupport.stream(envPage.spliterator(), false).findAny().get();
+            environment = envPage.iterator().next();
         }
         return environment;
     }
 
-    @Transactional
-    private ResponseEntity getVirtualhostsByEnvironment(Environment environment, String routerGroupId, String routerLocalIP) throws Exception {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        int numRouters = calcNumRouters(routerGroupId, routerLocalIP);
-        forceNewEtagIfNumRoutersChanged(routerGroupId, numRouters, environment);
-        List<VirtualHost> virtualHosts = getVirtualHosts(environment.getName(), numRouters);
-        saveEtag(environment, virtualHosts);
-        SystemUserService.runAs(currentUser);
-        if (virtualHosts == null || virtualHosts.isEmpty()) {
-            throw new VirtualHostNotFoundException();
+    private boolean routerUpdateIsNecessary(String envname, String routerEtag, final List<VirtualHost> virtualHosts) {
+        final Environment environment = envFindByName(envname);
+        String newEtag = newEtag(virtualHosts);
+        String persistedEtag = environment.getProperties().get(PROP_FULLHASH);
+        if (!newEtag.equals(persistedEtag)) {
+            try {
+                updateEtag(environment, newEtag);
+            } catch (Exception e) {
+                ErrorLogger.logError(e, this.getClass());
+                return false;
+            }
         }
-        Resources resourceRoot = new Resources<>(virtualHosts);
-        return new ResponseEntity<>(resourceRoot, OK);
+        return Objects.isNull(routerEtag) || !newEtag.equals(routerEtag);
     }
 
-    private void forceNewEtagIfNumRoutersChanged(String routerGroupId, int newNumRouters, final Environment environment) {
-        int oldNumRouters = routerMap.count(routerGroupId);
-        if (oldNumRouters != newNumRouters) environment.getProperties().remove(PROP_FULLHASH);
-    }
-
-    private int calcNumRouters(String routerGroupId, String routerLocalIP) {
-        routerMap.put(routerGroupId, routerLocalIP);
-        return routerMap.count(routerGroupId);
-    }
-
-    private void saveEtag(Environment environment, List<VirtualHost> virtualHosts) {
-        String etag = etag(virtualHosts);
-        String oldEtag = environment.getProperties().get(PROP_FULLHASH);
-        if (!etag.equals(oldEtag)) {
-            LOGGER.warn("Environment: saving new etag " + etag);
-            environment.getProperties().put(PROP_FULLHASH, etag);
+    private void updateEtag(final Environment environment, String etag) throws Exception {
+        environment.getProperties().put(PROP_FULLHASH, etag);
+        try {
             environmentRepository.saveAndFlush(environment);
+            LOGGER.warn("Environment " + environment.getName() + ": updated fullhash to " + etag);
+        } catch (Exception e) {
+            LOGGER.error("Environment " + environment.getName() + ": FAIL to update fullhash to " + etag);
+            throw e;
+        } finally {
+            environmentRepository.flush();
         }
     }
 
-    private String etag(List<VirtualHost> virtualHosts) {
+    private String newEtag(List<VirtualHost> virtualHosts) {
         String key = virtualHosts.stream().map(this::getFullHash)
                                  .sorted()
                                  .distinct()
                                  .collect(Collectors.joining());
-        return sha256.hash(key).asString();
+        return key == null || "".equals(key) ? "" : sha256.hash(key).asString();
     }
 
     private String getFullHash(VirtualHost v) {
         return Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse("");
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("virtualhosts")
-    public List<VirtualHost> getVirtualHosts(String envname, int numRouters) {
-        return virtualHostRepository.findByEnvironmentName(envname)
-                    .stream().map(virtualHost -> copyVirtualHost(virtualHost, numRouters)).collect(Collectors.toList());
+    public List<VirtualHost> getVirtualHosts(final Stream<VirtualHost> virtualHostStream, final int numRouters) throws Exception {
+        return virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters)).collect(Collectors.toList());
     }
 
-    private String buildFullHash(final VirtualHost virtualHost) {
+    private String buildFullHash(final VirtualHost virtualHost, int numRouters) {
         final List<String> keys = new ArrayList<>();
         keys.add(virtualHost.getLastModifiedAt().toString());
         Rule ruleDefault = virtualHost.getRuleDefault();
@@ -184,7 +189,7 @@ public class VirtualHostsCachedController {
             rule.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
                     .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
         });
-        String key = String.join("", keys);
+        String key = String.join("", keys) + numRouters;
         return sha256.hash(key).asString();
     }
 
@@ -232,10 +237,11 @@ public class VirtualHostsCachedController {
 
         final Set<Rule> rules = copyRules(virtualHost, numRouters);
         virtualHostCopy.setRules(rules);
-        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy));
+        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy, numRouters));
         return virtualHostCopy;
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("project")
     public Project getProject(VirtualHost virtualHost) {
         return new Project(virtualHost.getProject().getName()) {
@@ -271,6 +277,7 @@ public class VirtualHostsCachedController {
         };
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("environment")
     public Environment getEnvironment(VirtualHost virtualHost) {
         return new Environment(virtualHost.getEnvironment().getName()) {
@@ -372,6 +379,7 @@ public class VirtualHostsCachedController {
         return ruleCopy;
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("rules")
     public Set<Rule> copyRules(final VirtualHost virtualHost, int numRouters) {
         return virtualHost.getRules().stream()
@@ -379,12 +387,15 @@ public class VirtualHostsCachedController {
                 .collect(Collectors.toSet());
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("targets")
     public Set<Target> copyTargets(final Pool pool) {
-        // Send only Targets OK (property "healthy":"OK")
+        // Send only Targets OK (property "healthy":"OK" or status OK or status PENDING)
         return pool.getTargets().stream().filter(target -> {
-            String targetHealthy = target.getProperties().get(PROP_HEALTHY);
-            return "OK".equals(targetHealthy);
+            final String targetHealthy = target.getProperties().get(PROP_HEALTHY);
+            final EntityStatus targetStatus = target.getStatus();
+            final EntityStatus[] validStatus = {EntityStatus.OK, EntityStatus.PENDING};
+            return "OK".equals(targetHealthy) || Arrays.stream(validStatus).anyMatch(e -> e == targetStatus);
         }).map(target -> {
             Target targetCopy = new Target(target.getName()) {
                 @Override
@@ -418,6 +429,7 @@ public class VirtualHostsCachedController {
         }).collect(Collectors.toSet());
     }
 
+    @SuppressWarnings("WeakerAccess")
     @Cacheable("pool")
     public Pool copyPool(final Pool pool, int numRouters) {
         //        newDiscoveredMembersSize = Math.max(externalDataService.members().size(), 1);
@@ -524,8 +536,8 @@ public class VirtualHostsCachedController {
         return poolCopy;
     }
 
-    @ResponseStatus(value= HttpStatus.NOT_FOUND, reason = "Virtualhost not found in this environment")
-    private class VirtualHostNotFoundException extends Exception
+    @ResponseStatus(value= HttpStatus.NOT_FOUND, reason = "Virtualhosts empty in this environment")
+    private class VirtualHostsEmptyException extends Exception
     {
         private static final long serialVersionUID = 1L;
     }

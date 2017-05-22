@@ -20,11 +20,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -39,10 +40,19 @@ public class RouterMapConfiguration {
 
         public static final int REGISTER_TTL = 120000; // ms
 
-        private final ConcurrentHashMap<String, Set<RegisterExpirable>> routers = new ConcurrentHashMap<>();
+        private final Map<String, Set<RegisterExpirable>> routers = Collections.synchronizedMap(new HashMap<String, Set<RegisterExpirable>>());
+        private final Object syncronizer = new Object();
 
-        public synchronized void put(String groupId, String localIp) {
-            routers.computeIfAbsent(groupId, routers -> new HashSet<>()).add(new RegisterExpirable(localIp, System.currentTimeMillis()));
+        public synchronized int put(String groupId, String localIp) {
+            final int numRouters;
+            synchronized (syncronizer) {
+                final Set<RegisterExpirable> registerExpirables = routers.computeIfAbsent(groupId, routers -> new HashSet<>());
+                final RegisterExpirable registerExpirable = new RegisterExpirable(localIp, System.currentTimeMillis());
+                registerExpirables.remove(registerExpirable);
+                registerExpirables.add(registerExpirable);
+                numRouters = count(groupId);
+            }
+            return numRouters;
         }
 
         public Map<String, Set<String>> get() {
@@ -50,13 +60,13 @@ public class RouterMapConfiguration {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(RegisterExpirable::getLocalIp).collect(Collectors.toSet())));
         }
 
-        public int count(String groupId) {
+        private int count(String groupId) {
             return routers.computeIfAbsent(groupId, routers -> new HashSet<>()).size();
         }
 
         @Scheduled(fixedDelay = REGISTER_TTL)
         public void gc() {
-            synchronized (routers) {
+            synchronized (syncronizer) {
                 for (Map.Entry<String, Set<RegisterExpirable>> e : routers.entrySet()) {
                     Set<RegisterExpirable> expiredList = e.getValue().stream()
                             .filter(r -> r.getTimestamp() < System.currentTimeMillis() - REGISTER_TTL)
