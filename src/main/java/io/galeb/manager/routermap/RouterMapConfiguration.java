@@ -16,20 +16,26 @@
 
 package io.galeb.manager.routermap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class RouterMapConfiguration {
+
+    private final StringRedisTemplate redisTemplate;
+
+    @Autowired
+    public RouterMapConfiguration(StringRedisTemplate redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     @Bean
     public RouterMap routerMap() {
@@ -38,77 +44,25 @@ public class RouterMapConfiguration {
 
     public class RouterMap {
 
-        public static final int REGISTER_TTL = 120000; // ms
-
-        private final Map<String, Set<RegisterExpirable>> routers = Collections.synchronizedMap(new HashMap<String, Set<RegisterExpirable>>());
-        private final Object syncronizer = new Object();
+        private static final String ROUTER_PREFIX = "routers:";
+        private static final int    REGISTER_TTL  = 30000; // ms
 
         public synchronized int put(String groupId, String localIp) {
-            final int numRouters;
-            synchronized (syncronizer) {
-                final Set<RegisterExpirable> registerExpirables = routers.computeIfAbsent(groupId, routers -> new HashSet<>());
-                final RegisterExpirable registerExpirable = new RegisterExpirable(localIp, System.currentTimeMillis());
-                registerExpirables.remove(registerExpirable);
-                registerExpirables.add(registerExpirable);
-                numRouters = count(groupId);
-            }
-            return numRouters;
+            String key = ROUTER_PREFIX + groupId + ":" + localIp;
+            redisTemplate.opsForValue().set(key, groupId, REGISTER_TTL, TimeUnit.MILLISECONDS);
+            return redisTemplate.keys(ROUTER_PREFIX + groupId + "*").size();
         }
 
         public Map<String, Set<String>> get() {
-            return routers.entrySet().stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(RegisterExpirable::getLocalIp).collect(Collectors.toSet())));
-        }
-
-        private int count(String groupId) {
-            return routers.computeIfAbsent(groupId, routers -> new HashSet<>()).size();
-        }
-
-        @Scheduled(fixedDelay = REGISTER_TTL)
-        public void gc() {
-            synchronized (syncronizer) {
-                for (Map.Entry<String, Set<RegisterExpirable>> e : routers.entrySet()) {
-                    Set<RegisterExpirable> expiredList = e.getValue().stream()
-                            .filter(r -> r.getTimestamp() < System.currentTimeMillis() - REGISTER_TTL)
-                            .collect(Collectors.toSet());
-                    routers.get(e.getKey()).removeAll(expiredList);
-                    if (routers.get(e.getKey()).isEmpty()) {
-                        routers.remove(e.getKey());
-                    }
-                }
-            }
+            final Map<String, Set<String>> routers = new HashMap<>();
+            redisTemplate.keys(ROUTER_PREFIX + "*").forEach(key -> {
+                String groupIdWithLocalIp = key.replaceFirst(ROUTER_PREFIX, "");
+                int groupIdIndex = groupIdWithLocalIp.indexOf(":");
+                String groupId = groupIdWithLocalIp.substring(0, groupIdIndex - 1);
+                String localIp = groupIdWithLocalIp.substring(groupIdIndex + 1, groupIdWithLocalIp.length());
+                routers.computeIfAbsent(groupId, s -> new HashSet<>()).add(localIp);
+            });
+            return routers;
         }
     }
-
-    private class RegisterExpirable {
-        private final String localIp;
-        private final long timestamp;
-
-        RegisterExpirable(String localIp, long timestamp) {
-            this.localIp = localIp;
-            this.timestamp = timestamp;
-        }
-
-        String getLocalIp() {
-            return localIp;
-        }
-
-        long getTimestamp() {
-            return timestamp;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            RegisterExpirable that = (RegisterExpirable) o;
-            return Objects.equals(localIp, that.localIp);
-        }
-
-        @Override
-        public int hashCode() {
-            return localIp.hashCode();
-        }
-    }
-
 }
