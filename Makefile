@@ -10,7 +10,7 @@ test:
 	mvn test
 
 clean:
-	mvn clean; rm -f galeb-manager-${VERSION}-1.el7.noarch.rpm
+	mvn clean; rm -f galeb-manager-${VERSION}-1.el6.noarch.rpm
 
 dist: galeb-manager
 	type fpm > /dev/null 2>&1 && \
@@ -19,12 +19,12 @@ dist: galeb-manager
       -t rpm \
       -n "galeb-manager" \
       -v ${VERSION} \
-      --iteration 1.el7 \
+      --iteration 1.el6 \
       -a noarch \
       --rpm-os linux \
       --prefix /opt/galeb/manager/lib \
       -m '<galeb@corp.globo.com>' \
       --vendor 'Globo.com' \
       --description 'Galeb manager service' \
-      -f -p ../galeb-manager-${VERSION}-1.el7.noarch.rpm galeb-manager-${VERSION}-SNAPSHOT.jar && \
+      -f -p ../galeb-manager-${VERSION}-1.el6.noarch.rpm galeb-manager-${VERSION}-SNAPSHOT.jar && \
   cd -; \
