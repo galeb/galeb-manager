@@ -61,6 +61,8 @@ public class HealthCheckService {
     private static final int    PAGE_SIZE             = 100;
     private static final Log    LOGGER                = LogFactory.getLog(HealthCheckService.class);
 
+    private final Gson gson = new Gson();
+
     @PersistenceContext
     private EntityManager em;
 
@@ -117,7 +119,7 @@ public class HealthCheckService {
                 counter.incrementAndGet();
                 String json = "{}";
                 try {
-                    json = new Gson().toJson(copyTarget(target), Target.class);
+                    json = gson.toJson(copyTarget(target), Target.class);
                 } catch (Exception e) {
                     LOGGER.error(ExceptionUtils.getStackTrace(e));
                 }
