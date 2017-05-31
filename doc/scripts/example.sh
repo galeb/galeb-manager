@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PROTOCOL="http"
-SERVER="localhost:8000"
+SERVER="api.galeb.qa02.globoi.com"
 HEADER="Content-Type: application/json;charset=UTF-8"
 TEAM_NAME='xxxxx'
 ADMIN_TEAM_NAME='AdminTeam'
@@ -11,16 +11,16 @@ RULETYPE_NAME='UrlPath'
 FARM_NAME='farm1'
 BALANCEPOLICYTYPE_NAME='RoundRobin'
 BALANCEPOLICY_NAME='RoundRobin'
-DOMAIN="${FARM_NAME}.localhost"
-API='http://localhost:9090'
+DOMAIN="galeb-lab-be2-router-1.rjocta012aq2be-29.cp.globoi.com"
+API='galeb-lab-be2-api-1.rjocta012aq2be-29.cp.globoi.com:9000'
 
 PROJECT_NAME='xxxxxx'
 VIRTUALHOST_NAME='test.localhost'
 RULE_NAME="rule_of_$VIRTUALHOST_NAME"
 POOL_NAME="pool_of_$VIRTUALHOST_NAME"
-BACKENDIP='127.0.0.1'
+BACKENDIP='10.248.92.81'
 BACKEND_STARTPORT=8081
-BACKEND_ENDPORT=8084
+BACKEND_ENDPORT=8081
 
 TOKEN=""
 
@@ -261,7 +261,7 @@ createBackendPool() {
               "balancePolicy": "'${PROTOCOL}'://'${SERVER}'/balancepolicy/'${BALANCEPOLICY_ID}'",
               "properties": {
                   "hcPath": "/",
-                  "hcBody": "OK",
+                  "hcBody": "A",
                   "hcStatusCode": 200
               }
           }' \
@@ -433,22 +433,23 @@ defineRuleOrderToVirtualHost() {
 
 
 ###
-if [ "x$1" == "xadmin" ] ; then
+#if [ "x$1" == "xadmin" ] ; then
 
 ## ADMIN CONTEXT
 
 # LOGIN WITH INTERNAL ADMIN ACCOUNT
-loginAccount '(internal admin)' admin password
+loginAccount '(internal admin)' m.monteiro
 
 # CREATE A TEAM
 createTeam ${TOKEN} ${ADMIN_TEAM_NAME}
 
 # CREATE A ACCOUNT WITH ADMIN ROLE
-echo -n 'Enter a loginAccount with admin role (it will be created, if it does not exist): '
-read ADMIN_LOGIN
-createAccount ${TOKEN} \
-              '"ROLE_USER","ROLE_ADMIN"' ${ADMIN_TEAM_NAME} ${ADMIN_LOGIN}
+#echo -n 'Enter a loginAccount with admin role (it will be created, if it does not exist): '
+#read ADMIN_LOGIN
+#createAccount ${TOKEN} \
+#              '"ROLE_USER","ROLE_ADMIN"' ${ADMIN_TEAM_NAME} ${ADMIN_LOGIN}
 
+ADMIN_LOGIN=m.monteiro
 ADMIN_ACCOUNT_ID="$(getId ${TOKEN} account ${ADMIN_LOGIN})"
 
 # LOGOUT INTERNAL ADMIN
@@ -461,13 +462,13 @@ loginAccount '(new admin)' ${ADMIN_LOGIN}
 # CREATE A TEAM
 createTeam ${TOKEN} ${TEAM_NAME}
 
-echo -n 'Enter a loginAccount with user role (it will be created, if it does not exist): '
-read USER_LOGIN
-if [ "x$USER_LOGIN" != "x$ADMIN_LOGIN" ]; then
-  # CREATE A ACCOUNT WITH USER ROLE ONLY
-  createAccount ${TOKEN} '"ROLE_USER"' ${TEAM_NAME} ${USER_LOGIN}
-  USER_ACCOUNT_ID="$(getId ${TOKEN} account ${USER_LOGIN})"
-else
+#echo -n 'Enter a loginAccount with user role (it will be created, if it does not exist): '
+#read USER_LOGIN
+#if [ "x$USER_LOGIN" != "x$ADMIN_LOGIN" ]; then
+#  # CREATE A ACCOUNT WITH USER ROLE ONLY
+#  createAccount ${TOKEN} '"ROLE_USER"' ${TEAM_NAME} ${USER_LOGIN}
+#  USER_ACCOUNT_ID="$(getId ${TOKEN} account ${USER_LOGIN})"
+#else
   # MODIFY ADMIN ACCOUNT TEAMS
   ADMIN_TEAM_ID="$(getId ${TOKEN} team ${ADMIN_TEAM_NAME})"
   TEAM_ID="$(getId ${TOKEN} team ${TEAM_NAME})"
@@ -475,7 +476,7 @@ else
        -d '{ "teams": [ "'${PROTOCOL}'://'${SERVER}'/team/'${ADMIN_TEAM_ID}'",
                         "'${PROTOCOL}'://'${SERVER}'/team/'${TEAM_ID}'" ] }' \
        -b ${TOKEN} ${PROTOCOL}://${SERVER}/account/${ADMIN_ACCOUNT_ID}
-fi
+#fi
 
 # CREATE A PROVIDER
 createProvider ${TOKEN} ${PROVIDER_NAME}
@@ -502,16 +503,17 @@ createBalancePolicy ${TOKEN} ${BALANCEPOLICY_NAME}
 # LOGOUT NEW ADMIN ACCOUNT
 logoutAccount ${TOKEN}
 
-fi # END ADMIN CONTEXT
+#fi # END ADMIN CONTEXT
 ####
 
 ### USER CONTEXT
 
+USER_LOGIN=$ADMIN_LOGIN
 # LOGIN WITH USER ACCOUNT
-if [ "x$USER_LOGIN" == "x" ]; then
-  echo -n 'Enter a loginAccount with user role: '
-  read USER_LOGIN
-fi
+#if [ "x$USER_LOGIN" == "x" ]; then
+#  echo -n 'Enter a loginAccount with user role: '
+#  read USER_LOGIN
+#fi
 loginAccount '(user)' ${USER_LOGIN}
 
 # CREATE A PROJECT
@@ -530,13 +532,15 @@ done
 
 # CREATE A RULE (Virtualhost and Pool is required)
 createRule ${TOKEN} ${RULE_NAME}_1
-createRule ${TOKEN} ${RULE_NAME}_2
-createRule ${TOKEN} ${RULE_NAME}_3
-createRule ${TOKEN} ${RULE_NAME}_4
+#createRule ${TOKEN} ${RULE_NAME}_2
+#createRule ${TOKEN} ${RULE_NAME}_3
+#createRule ${TOKEN} ${RULE_NAME}_4
 
-defineRuleDefaultToVirtualHost ${TOKEN} ${VIRTUALHOST_NAME} ${RULE_NAME}_3
+defineRuleDefaultToVirtualHost ${TOKEN} ${VIRTUALHOST_NAME} ${RULE_NAME}_1
 
 ####
+
+exit
 
 # Wait
 for x in $(seq 1 5);do echo -n .;sleep 1;done;echo
