@@ -100,7 +100,7 @@ public class VirtualHostsCachedController {
         final List<VirtualHost> virtualHosts = new ArrayList<>();
         try {
             if (routerGroupId != null && routerLocalIP != null) {
-                numRouters = routerMap.put(routerGroupId, routerLocalIP);
+                numRouters = routerMap.put(routerGroupId, routerLocalIP, routerEtag);
             }
             final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
             virtualHosts.addAll(getVirtualHosts(virtualHostStream, numRouters));

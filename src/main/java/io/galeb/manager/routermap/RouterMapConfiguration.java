@@ -16,6 +16,7 @@
 
 package io.galeb.manager.routermap;
 
+import com.google.gson.annotations.SerializedName;
 import io.galeb.manager.common.ErrorLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,10 +44,10 @@ public class RouterMapConfiguration {
             this.redisTemplate = redisTemplate;
         }
 
-        public synchronized int put(String groupId, String localIp) {
+        public synchronized int put(String groupId, String localIp, String etag) {
             String key = ROUTER_PREFIX + groupId + ":" + localIp;
             try {
-                redisTemplate.opsForValue().set(key, groupId, REGISTER_TTL, TimeUnit.MILLISECONDS);
+                redisTemplate.opsForValue().set(key, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
                 return redisTemplate.keys(ROUTER_PREFIX + groupId + "*").size();
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
@@ -54,21 +55,96 @@ public class RouterMapConfiguration {
             return 1;
         }
 
-        public synchronized Map<String, Set<String>> get() {
+        public synchronized Set<Env> get() {
             try {
-                final Map<String, Set<String>> routers = new HashMap<>();
+                final Map<String, Set<Router>> routerMap = new HashMap<>();
+                final Set<Env> envs = new HashSet<>();
                 redisTemplate.keys(ROUTER_PREFIX + "*").forEach(key -> {
+                    String etag = redisTemplate.opsForValue().get(key);
+                    long expire = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
                     String groupIdWithLocalIp = key.replaceFirst(ROUTER_PREFIX, "");
                     int groupIdIndex = groupIdWithLocalIp.indexOf(":");
                     String groupId = groupIdWithLocalIp.substring(0, groupIdIndex);
                     String localIp = groupIdWithLocalIp.substring(groupIdIndex + 1, groupIdWithLocalIp.length());
-                    routers.computeIfAbsent(groupId, s -> new HashSet<>()).add(localIp);
+                    routerMap.computeIfAbsent(groupId, s -> new HashSet<>()).add(new Router(localIp, etag, expire));
                 });
-                return routers;
+                routerMap.forEach((env, routers) -> envs.add(new Env(env, routers)));
+                return envs;
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
             }
-            return Collections.emptyMap();
+            return Collections.emptySet();
+        }
+    }
+
+    @SuppressWarnings({"unused", "WeakerAccess"})
+    public class Env {
+        private final String envName;
+        private final Set<Router> routers;
+
+        public Env(String envName, Set<Router> routers) {
+            this.envName = envName;
+            this.routers = routers;
+        }
+
+        @SerializedName("name")
+        public String getEnvName() {
+            return envName;
+        }
+
+        public Set<Router> getRouters() {
+            return routers;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Env env = (Env) o;
+            return Objects.equals(envName, env.envName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(envName);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public class Router {
+        private final String localIp;
+        private final String etag;
+        private final long expire;
+
+        public Router(String localIp, String etag, long expire) {
+            this.localIp = localIp;
+            this.etag = etag;
+            this.expire = expire;
+        }
+
+        public String getLocalIp() {
+            return localIp;
+        }
+
+        public String getEtag() {
+            return etag;
+        }
+
+        public long getExpire() {
+            return expire;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Router router = (Router) o;
+            return Objects.equals(localIp, router.localIp);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(localIp);
         }
     }
 }
