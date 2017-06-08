@@ -9,18 +9,10 @@ machine:
     version: oraclejdk8
   services:
     - redis
-    - docker
 
 dependencies:
   pre:
-    - docker info
-    - docker pull vromero/activemq-artemis:1.5.4
-    - docker run -d --name mybroker -p 61616:61616 -e "ARTEMIS_USERNAME=guest" -e "ARTEMIS_PASSWORD=guest" -e "ARTEMIS_MIN_MEMORY=512M" -e "ARTEMIS_MAX_MEMORY=1024M" -e "ARTEMIS_PERF_JOURNAL=AUTO" vromero/activemq-artemis:1.5.4
-
-test:
-  post:
-    - docker stop mybroker || true
-    - docker rm mybroker || true
+    - bash ./install-and-run-artemis.sh
 
 environment:
     LOGLEVEL: WARN

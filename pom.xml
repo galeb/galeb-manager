@@ -5,7 +5,7 @@
 
     <groupId>io.galeb</groupId>
     <artifactId>galeb-manager</artifactId>
-    <version>1.0.23-SNAPSHOT</version>
+    <version>1.0.25-SNAPSHOT</version>
 
     <organization>
         <name>globo.com</name>
@@ -291,6 +291,20 @@
                       -DIGNITE_JETTY_PORT=50001
                       -Dmanagement.port=9001
                       -Dspring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
+                      -XX:+PerfDisableSharedMem
+                      -XX:NewRatio=2
+                      -XX:+UseG1GC
+                      -XX:+UnlockExperimentalVMOptions
+                      -XX:+HeapDumpOnOutOfMemoryError
+                      -XX:-DisableExplicitGC
+                      -Xnoclassgc
+                      -XX:+UseNUMA
+                      -XX:+UseFastAccessorMethods
+                      -XX:ReservedCodeCacheSize=48m
+                      -XX:+UseStringCache
+                      -XX:+UseStringDeduplication
+                      -XX:MaxGCPauseMillis=200
+                      -XX:GCPauseIntervalMillis=8000
                   </jvmArguments>
                 </configuration>
             </plugin>
