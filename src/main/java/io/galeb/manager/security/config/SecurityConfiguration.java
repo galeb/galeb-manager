@@ -156,7 +156,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
-        http.authorizeRequests().antMatchers(HttpMethod.GET, "/healthcheck").permitAll();
+        http.authorizeRequests().antMatchers(HttpMethod.GET, "/healthcheck","/virtualhostscached/*").permitAll();
         http.authorizeRequests().anyRequest().fullyAuthenticated()
             .and()
             .logout().deleteCookies("JSESSIONID","SPRING_SECURITY_REMEMBER_ME_COOKIE")
