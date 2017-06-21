@@ -16,6 +16,7 @@
 
 package io.galeb.manager.controller;
 
+import io.galeb.core.model.Backend;
 import io.galeb.core.util.consistenthash.HashAlgorithm;
 import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.*;
@@ -94,7 +95,6 @@ public class VirtualHostsCachedController {
     @Transactional
     private ResponseEntity buildResponse(String envname, String routerGroupId, String routerLocalIP, String routerEtag) throws Exception {
         int numRouters = 1;
-        boolean isOk = true;
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final List<VirtualHost> virtualHosts = new ArrayList<>();
@@ -108,16 +108,16 @@ public class VirtualHostsCachedController {
                 LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
             }
-            if (virtualHosts.isEmpty()) {
-                throw new VirtualHostsEmptyException();
-            }
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
-            isOk = false;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {
             SystemUserService.runAs(currentUser);
         }
-        return isOk ? new ResponseEntity<>(new Resources<>(virtualHosts), OK) : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        if (virtualHosts.isEmpty()) {
+            throw new VirtualHostsEmptyException();
+        }
+        return new ResponseEntity<>(new Resources<>(virtualHosts), OK);
     }
 
     private Environment envFindByName(String envname) {
@@ -422,6 +422,9 @@ public class VirtualHostsCachedController {
                 public int getHash() {
                     return target.getHash();
                 }
+
+                @Override
+                public Backend.Health getHealthy() { return target.getHealthy(); }
             };
             targetCopy.setId(target.getId());
             targetCopy.setProperties(target.getProperties());
