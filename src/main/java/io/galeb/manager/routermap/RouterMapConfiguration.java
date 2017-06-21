@@ -44,7 +44,7 @@ public class RouterMapConfiguration {
             this.redisTemplate = redisTemplate;
         }
 
-        public synchronized int put(String groupId, String localIp, String etag) {
+        public int put(String groupId, String localIp, String etag) {
             String key = ROUTER_PREFIX + groupId + ":" + localIp;
             try {
                 redisTemplate.opsForValue().set(key, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
@@ -55,7 +55,7 @@ public class RouterMapConfiguration {
             return 1;
         }
 
-        public synchronized Set<Env> get() {
+        public Set<Env> get() {
             try {
                 final Map<String, Set<Router>> routerMap = new HashMap<>();
                 final Set<Env> envs = new HashSet<>();
