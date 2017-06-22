@@ -422,9 +422,6 @@ public class VirtualHostsCachedController {
                 public int getHash() {
                     return target.getHash();
                 }
-
-                @Override
-                public Backend.Health getHealthy() { return target.getHealthy(); }
             };
             targetCopy.setId(target.getId());
             targetCopy.setProperties(target.getProperties());
