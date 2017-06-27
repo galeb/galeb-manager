@@ -86,19 +86,27 @@ public class VirtualHostsCachedController {
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
     public synchronized ResponseEntity showall(@PathVariable String envname,
-                                  @RequestHeader(value = "If-None-Match", required = false) String routerEtag) throws Exception {
-        return buildResponse(envname, routerEtag);
+                                  @RequestHeader(value = "If-None-Match", required = false) String routerEtag,
+                                  @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
+        return buildResponse(envname, routerGroupId, routerEtag);
     }
 
     @Transactional
-    private ResponseEntity buildResponse(String envname, String routerEtag) throws Exception {
+    private ResponseEntity buildResponse(String envname, String routerGroupId, String routerEtag) throws Exception {
         int numRouters = 1;
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final List<VirtualHost> virtualHosts = new ArrayList<>();
         try {
-            if (routerEtag != null) {
-                numRouters = routerMap.get(envname).stream().mapToInt(e -> e.getGroupIDs().stream().mapToInt(r -> r.getRouters().size()).sum()).sum();
+            if (routerEtag != null && routerGroupId != null) {
+                numRouters = routerMap.get(envname)
+                                      .stream()
+                                      .mapToInt(e -> e.getGroupIDs()
+                                                      .stream()
+                                                      .filter(g -> g.getGroupID().equals(routerGroupId))
+                                                      .mapToInt(r -> r.getRouters().size())
+                                                      .sum())
+                                      .sum();
             }
             final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
             virtualHosts.addAll(getVirtualHosts(virtualHostStream, numRouters));
