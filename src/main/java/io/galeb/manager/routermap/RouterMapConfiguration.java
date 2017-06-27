@@ -55,7 +55,7 @@ public class RouterMapConfiguration {
                 Set<String> keysGroupId = redisTemplate.keys(key_prefix_env + ":*");
                 List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
                 boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
-                redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqual));
+                redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqual), REGISTER_TTL, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
             }
