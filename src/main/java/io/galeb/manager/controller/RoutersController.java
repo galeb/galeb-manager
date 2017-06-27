@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import io.galeb.manager.routermap.RouterMapConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +33,7 @@ public class RoutersController {
     private final Gson gson = new Gson();
     private final RouterMapConfiguration.RouterMap routerMap;
 
+
     @Autowired
     public RoutersController(RouterMapConfiguration.RouterMap routerMap) {
         this.routerMap = routerMap;
@@ -39,5 +42,14 @@ public class RoutersController {
     @RequestMapping(method = RequestMethod.GET)
     public String routerMap() {
         return gson.toJson(routerMap.get());
+    }
+
+    @RequestMapping(method = RequestMethod.POST)
+    public ResponseEntity<?> headRouterMap(@RequestHeader(value = "X-Galeb-LocalIP") String routerLocalIP,
+                                @RequestHeader(value = "X-Galeb-GroupID") String routerGroupId,
+                                @RequestHeader(value = "X-Galeb-Environment") String envname,
+                                @RequestHeader(value = "If-None-Match") String etag) throws Exception {
+        routerMap.put(routerGroupId, routerLocalIP, etag, envname);
+        return ResponseEntity.ok().build();
     }
 }

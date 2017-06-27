@@ -18,6 +18,7 @@ package io.galeb.manager.routermap;
 
 import com.google.gson.annotations.SerializedName;
 import io.galeb.manager.common.ErrorLogger;
+import io.galeb.manager.entity.AbstractEntity;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -36,55 +37,80 @@ public class RouterMapConfiguration {
     public class RouterMap {
 
         private static final String ROUTER_PREFIX = "routers:";
+        private static final String KEY_ROUTER_SYNC = "sync_etag:";
         private static final int    REGISTER_TTL  = 30000; // ms
 
         private final StringRedisTemplate redisTemplate;
 
         public RouterMap(final StringRedisTemplate redisTemplate) {
             this.redisTemplate = redisTemplate;
+            AbstractEntity.routerMap = this;
         }
 
-        public int put(String groupId, String localIp, String etag) {
-            String key = ROUTER_PREFIX + groupId + ":" + localIp;
+        public void put(String groupId, String localIp, String etag, String envname) {
+            String key_prefix_env = ROUTER_PREFIX + envname;
+            String key_full = key_prefix_env + ":" + groupId + ":" + localIp;
             try {
-                redisTemplate.opsForValue().set(key, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
-                return redisTemplate.keys(ROUTER_PREFIX + groupId + "*").size();
+                redisTemplate.opsForValue().set(key_full, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
+                Set<String> keysGroupId = redisTemplate.keys(key_prefix_env + ":*");
+                List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
+                boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
+                redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqual));
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
             }
-            return 1;
         }
 
         public Set<Env> get() {
+            return get(null);
+        }
+
+        public Set<Env> get(String envname) {
             try {
                 final Map<String, Set<Router>> routerMap = new HashMap<>();
                 final Set<Env> envs = new HashSet<>();
-                redisTemplate.keys(ROUTER_PREFIX + "*").forEach(key -> {
+                final Set<GroupID> groupIDs = new HashSet<>();
+                String key_envname = envname == null ? "*" : envname;
+                redisTemplate.keys(ROUTER_PREFIX + key_envname + ":*").forEach(key -> {
                     String etag = redisTemplate.opsForValue().get(key);
                     long expire = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
-                    String groupIdWithLocalIp = key.replaceFirst(ROUTER_PREFIX, "");
-                    int groupIdIndex = groupIdWithLocalIp.indexOf(":");
-                    String groupId = groupIdWithLocalIp.substring(0, groupIdIndex);
-                    String localIp = groupIdWithLocalIp.substring(groupIdIndex + 1, groupIdWithLocalIp.length());
-                    routerMap.computeIfAbsent(groupId, s -> new HashSet<>()).add(new Router(localIp, etag, expire));
+                    String envGroupIdWithLocalIp = key.replaceAll(ROUTER_PREFIX, "");
+                    String[] key_splited = envGroupIdWithLocalIp.split(":");
+                    String env = key_splited[0];
+                    String groupId = key_splited[1];
+                    String localIp = key_splited[2];
+
+                    Set<Router> map = routerMap.computeIfAbsent(groupId, s -> new HashSet<>());
+                    map.add(new Router(localIp, etag, expire));
+                    routerMap.put(groupId, map);
+
+                    groupIDs.add(new GroupID(groupId, map));
+
+                    envs.add(new Env(env, groupIDs));
                 });
-                routerMap.forEach((env, routers) -> envs.add(new Env(env, routers)));
                 return envs;
             } catch (Exception e) {
                 ErrorLogger.logError(e, this.getClass());
             }
             return Collections.emptySet();
         }
+
+        public Optional<Boolean> isAllRoutersSyncByEnv(String env) {
+            String value = redisTemplate.opsForValue().get(KEY_ROUTER_SYNC + env);
+            return Optional.ofNullable(value == null ? null : Boolean.valueOf(value));
+        }
+
     }
+
 
     @SuppressWarnings({"unused", "WeakerAccess"})
     public class Env {
         private final String envName;
-        private final Set<Router> routers;
+        private final Set<GroupID> groupIDs;
 
-        public Env(String envName, Set<Router> routers) {
+        public Env(String envName, Set<GroupID> groupIDs) {
             this.envName = envName;
-            this.routers = routers;
+            this.groupIDs = groupIDs;
         }
 
         @SerializedName("name")
@@ -92,8 +118,8 @@ public class RouterMapConfiguration {
             return envName;
         }
 
-        public Set<Router> getRouters() {
-            return routers;
+        public Set<GroupID> getGroupIDs() {
+            return groupIDs;
         }
 
         @Override
@@ -107,6 +133,31 @@ public class RouterMapConfiguration {
         @Override
         public int hashCode() {
             return Objects.hash(envName);
+        }
+    }
+
+    public class GroupID {
+        private final String groupID;
+        private final Set<Router> routers;
+
+        public GroupID(String groupID, Set<Router> routers) {
+            this.routers = routers;
+            this.groupID = groupID;
+        }
+
+        public Set<Router> getRouters() { return routers; }
+        public String getGroupID() { return groupID; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            GroupID groupObj = (GroupID) o;
+            return Objects.equals(getGroupID(), groupObj.getGroupID());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getGroupID());
         }
     }
 

@@ -86,21 +86,19 @@ public class VirtualHostsCachedController {
 
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
     public synchronized ResponseEntity showall(@PathVariable String envname,
-                                  @RequestHeader(value = "If-None-Match", required = false) String routerEtag,
-                                  @RequestHeader(value = "X-Galeb-LocalIP", required = false) String routerLocalIP,
-                                  @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
-        return buildResponse(envname, routerGroupId, routerLocalIP, routerEtag);
+                                  @RequestHeader(value = "If-None-Match", required = false) String routerEtag) throws Exception {
+        return buildResponse(envname, routerEtag);
     }
 
     @Transactional
-    private ResponseEntity buildResponse(String envname, String routerGroupId, String routerLocalIP, String routerEtag) throws Exception {
+    private ResponseEntity buildResponse(String envname, String routerEtag) throws Exception {
         int numRouters = 1;
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final List<VirtualHost> virtualHosts = new ArrayList<>();
         try {
-            if (routerGroupId != null && routerLocalIP != null) {
-                numRouters = routerMap.put(routerGroupId, routerLocalIP, routerEtag);
+            if (routerEtag != null) {
+                numRouters = routerMap.get(envname).stream().mapToInt(e -> e.getGroupIDs().stream().mapToInt(r -> r.getRouters().size()).sum()).sum();
             }
             final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
             virtualHosts.addAll(getVirtualHosts(virtualHostStream, numRouters));
