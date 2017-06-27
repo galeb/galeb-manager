@@ -54,4 +54,9 @@ public class BalancePolicyType extends AbstractEntity<BalancePolicyType> {
         }
         return this;
     }
+
+    @Override
+    public String getEnvName() {
+        return null;
+    }
 }

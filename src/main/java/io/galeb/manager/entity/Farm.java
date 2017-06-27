@@ -132,8 +132,8 @@ public class Farm extends AbstractEntity<Farm> {
     }
 
     @Override
-    public EntityStatus getStatus() {
-        return getStatusFromMap();
+    public String getEnvName() {
+        return getEnvironment().getName();
     }
 
     @JsonIgnore

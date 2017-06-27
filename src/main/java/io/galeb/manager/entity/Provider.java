@@ -74,4 +74,8 @@ public class Provider extends AbstractEntity<Provider> {
         return this;
     }
 
+    @Override
+    public String getEnvName() {
+        return null;
+    }
 }

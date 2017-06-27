@@ -186,7 +186,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
     }
 
     @Override
-    public EntityStatus getStatus() {
-        return getStatusFromMap();
+    public String getEnvName() {
+        return getPool().getEnvName();
     }
 }

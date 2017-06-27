@@ -156,8 +156,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
     }
 
     @Override
-    public EntityStatus getStatus() {
-        return getStatusFromMap();
+    public String getEnvName() {
+        return getEnvironment().getName();
     }
-
 }

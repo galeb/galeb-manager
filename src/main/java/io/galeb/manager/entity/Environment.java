@@ -57,4 +57,9 @@ public class Environment extends AbstractEntity<Environment> {
     protected Environment() {
         //
     }
+
+    @Override
+    public String getEnvName() {
+        return getName();
+    }
 }

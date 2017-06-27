@@ -169,7 +169,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
     }
 
     @Override
-    public EntityStatus getStatus() {
-        return getStatusFromMap();
+    public String getEnvName() {
+        return getEnvironment().getName();
     }
 }

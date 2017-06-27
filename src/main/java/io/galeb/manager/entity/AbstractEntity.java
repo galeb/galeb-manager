@@ -19,11 +19,9 @@
 package io.galeb.manager.entity;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import javax.annotation.PostConstruct;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -37,13 +35,15 @@ import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 
-import com.google.common.base.Enums;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.common.JsonCustomProperties;
+import io.galeb.manager.routermap.RouterMapConfiguration;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -54,7 +54,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.galeb.manager.security.config.SpringSecurityAuditorAware;
-import org.springframework.util.CollectionUtils;
 
 @MappedSuperclass
 @JsonCustomProperties
@@ -72,7 +71,14 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     @Transient
+    @JsonIgnore
+    public abstract String getEnvName();
+
+    @Transient
     protected DistMap distMap = null;
+
+    @Transient
+    public static RouterMapConfiguration.RouterMap routerMap;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -200,7 +206,27 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     public EntityStatus getStatus() {
-        return EntityStatus.OK;
+        try {
+            String value = getValueDistMap();
+            Optional<Boolean> sync = routerMap.isAllRoutersSyncByEnv(getEnvName());
+            if (value != null && sync.isPresent()) {
+                EntityStatus statusDistMap = getEntityStatusFromValueMap(value);
+                return (statusDistMap.equals(EntityStatus.OK) && sync.get()) ? EntityStatus.OK : EntityStatus.PENDING;
+            }
+            if (value == null && !sync.isPresent()) {
+                return EntityStatus.PENDING;
+            }
+            if (value == null) {
+                return sync.get() ? EntityStatus.OK : EntityStatus.PENDING;
+            }
+            if (!sync.isPresent()) {
+                return getEntityStatusFromValueMap(value);
+            }
+        } catch (Exception e) {
+            LOGGER.error(e);
+            LOGGER.error(ExceptionUtils.getFullStackTrace(e));
+        }
+        return EntityStatus.PENDING;
     }
 
     public boolean isSaveOnly() {
@@ -267,20 +293,22 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         }
     }
 
-    @JsonIgnore
-    protected EntityStatus getStatusFromMap() {
+    private String getValueDistMap() {
         if (distMap == null) {
             distMap = new DistMap();
         }
-        String value = distMap.get(this);
-        if (value == null) {
-            return EntityStatus.PENDING;
-        }
+        return distMap.get(this);
+    }
+
+    private EntityStatus getEntityStatusFromValueMap(String value) {
+        EntityStatus statusDistMap;
         boolean valueIsStatus = Arrays.stream(EntityStatus.values()).filter(st -> st.toString().equals(value)).findFirst().isPresent();
         if (valueIsStatus) {
-            return EntityStatus.valueOf(value);
+            statusDistMap = EntityStatus.valueOf(value);
+        } else {
+            Entity entity = (Entity) JsonObject.fromJson(value, Entity.class);
+            statusDistMap = (entity.getVersion() == getHash()) ? EntityStatus.OK : EntityStatus.PENDING;
         }
-        Entity entity = (Entity) JsonObject.fromJson(value, Entity.class);
-        return (entity.getVersion() == getHash()) ? EntityStatus.OK : EntityStatus.PENDING;
+        return statusDistMap;
     }
 }
