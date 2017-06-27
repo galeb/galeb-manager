@@ -100,6 +100,9 @@ public class RouterMapConfiguration {
             return Optional.ofNullable(value == null ? null : Boolean.valueOf(value));
         }
 
+        public void releaseSync(String envname) {
+            redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname, Boolean.FALSE.toString(), REGISTER_TTL, TimeUnit.MILLISECONDS);
+        }
     }
 
 

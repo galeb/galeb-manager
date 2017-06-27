@@ -293,6 +293,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         }
     }
 
+    public void releaseSync() {
+        routerMap.releaseSync(getEnvName());
+    }
+
     private String getValueDistMap() {
         if (distMap == null) {
             distMap = new DistMap();
