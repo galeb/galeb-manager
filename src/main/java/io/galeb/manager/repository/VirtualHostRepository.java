@@ -30,6 +30,7 @@ import io.galeb.manager.entity.VirtualHost;
 import org.springframework.transaction.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 import static io.galeb.manager.repository.CommonJpaFilters.*;
 
@@ -86,5 +87,10 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     @Override
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     List<Rule> getRulesFromVirtualHostName(@Param("name") String name);
+
+    @Modifying
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    Set<String> getAllNames(long farmId);
 
 }
