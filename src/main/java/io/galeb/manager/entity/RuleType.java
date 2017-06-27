@@ -54,9 +54,4 @@ public class RuleType extends AbstractEntity<RuleType> {
         }
         return this;
     }
-
-    @Override
-    public String getEnvName() {
-        return null;
-    }
 }

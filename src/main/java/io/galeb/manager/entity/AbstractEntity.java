@@ -63,6 +63,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     private static final Log LOGGER = LogFactory.getLog(AbstractEntity.class);
 
+    @Transient
+    @JsonIgnore
+    private final String DEFAULT_ENVNAME_NULL = "NULL";
+
     public enum EntityStatus {
         PENDING,
         OK,
@@ -72,7 +76,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @Transient
     @JsonIgnore
-    public abstract String getEnvName();
+    public String getEnvName() {
+        return DEFAULT_ENVNAME_NULL;
+    }
 
     @Transient
     protected DistMap distMap = null;
@@ -213,13 +219,9 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
                 EntityStatus statusDistMap = getEntityStatusFromValueMap(value);
                 return (statusDistMap.equals(EntityStatus.OK) && sync.get()) ? EntityStatus.OK : EntityStatus.PENDING;
             }
-            if (value == null && !sync.isPresent()) {
-                return EntityStatus.PENDING;
-            }
             if (value == null) {
-                return sync.get() ? EntityStatus.OK : EntityStatus.PENDING;
-            }
-            if (!sync.isPresent()) {
+                return EntityStatus.PENDING;
+            } else if (!sync.isPresent()) {
                 return getEntityStatusFromValueMap(value);
             }
         } catch (Exception e) {

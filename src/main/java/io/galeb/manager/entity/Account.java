@@ -122,9 +122,4 @@ public class Account extends AbstractEntity<Account> {
         return this;
     }
 
-    @Override
-    public String getEnvName() {
-        return null;
-    }
-
 }

@@ -73,9 +73,4 @@ public class Provider extends AbstractEntity<Provider> {
         this.provisioning = provisioning;
         return this;
     }
-
-    @Override
-    public String getEnvName() {
-        return null;
-    }
 }

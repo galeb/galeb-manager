@@ -74,9 +74,4 @@ public class Project extends AbstractEntity<Project> {
         }
         return this;
     }
-
-    @Override
-    public String getEnvName() {
-        return null;
-    }
 }
