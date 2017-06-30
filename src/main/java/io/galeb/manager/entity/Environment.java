@@ -58,8 +58,8 @@ public class Environment extends AbstractEntity<Environment> {
         //
     }
 
-    @Override
-    public String getEnvName() {
-        return getName();
+    @JsonIgnore
+    protected Farm getFarm(long farmId) {
+        return farms.stream().filter(f -> f.getId() == farmId).findAny().orElse(getFakeFarm());
     }
 }

@@ -18,10 +18,18 @@
 
 package io.galeb.manager.entity;
 
-import java.io.Serializable;
-import java.util.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.manager.common.JsonCustomProperties;
+import io.galeb.manager.security.config.SpringSecurityAuditorAware;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.FetchType;
@@ -34,38 +42,18 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-
-import io.galeb.core.json.JsonObject;
-import io.galeb.core.model.Entity;
-import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.common.JsonCustomProperties;
-import io.galeb.manager.routermap.RouterMapConfiguration;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import io.galeb.manager.security.config.SpringSecurityAuditorAware;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @MappedSuperclass
 @JsonCustomProperties
-public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
+public abstract class AbstractEntity<T extends AbstractEntity<?>> extends AbstractEntitySyncronizable implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
 
     private static final Log LOGGER = LogFactory.getLog(AbstractEntity.class);
-
-    @Transient
-    @JsonIgnore
-    private final String DEFAULT_ENVNAME_NULL = "NULL";
 
     public enum EntityStatus {
         PENDING,
@@ -76,15 +64,10 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
 
     @Transient
     @JsonIgnore
-    public String getEnvName() {
-        return DEFAULT_ENVNAME_NULL;
+    @Override
+    protected AbstractEntity entity() {
+        return this;
     }
-
-    @Transient
-    protected DistMap distMap = null;
-
-    @Transient
-    public static RouterMapConfiguration.RouterMap routerMap;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -212,23 +195,7 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
     }
 
     public EntityStatus getStatus() {
-        try {
-            String value = getValueDistMap();
-            Optional<Boolean> sync = routerMap.isAllRoutersSyncByEnv(getEnvName());
-            if (value != null && sync.isPresent()) {
-                EntityStatus statusDistMap = getEntityStatusFromValueMap(value);
-                return (statusDistMap.equals(EntityStatus.OK) && sync.get()) ? EntityStatus.OK : EntityStatus.PENDING;
-            }
-            if (value == null) {
-                return EntityStatus.PENDING;
-            } else if (!sync.isPresent()) {
-                return getEntityStatusFromValueMap(value);
-            }
-        } catch (Exception e) {
-            LOGGER.error(e);
-            LOGGER.error(ExceptionUtils.getFullStackTrace(e));
-        }
-        return EntityStatus.PENDING;
+        return EntityStatus.OK;
     }
 
     public boolean isSaveOnly() {
@@ -293,28 +260,5 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         } else {
             hash = 0;
         }
-    }
-
-    public void releaseSync() {
-        routerMap.releaseSync(getEnvName());
-    }
-
-    private String getValueDistMap() {
-        if (distMap == null) {
-            distMap = new DistMap();
-        }
-        return distMap.get(this);
-    }
-
-    private EntityStatus getEntityStatusFromValueMap(String value) {
-        EntityStatus statusDistMap;
-        boolean valueIsStatus = Arrays.stream(EntityStatus.values()).filter(st -> st.toString().equals(value)).findFirst().isPresent();
-        if (valueIsStatus) {
-            statusDistMap = EntityStatus.valueOf(value);
-        } else {
-            Entity entity = (Entity) JsonObject.fromJson(value, Entity.class);
-            statusDistMap = (entity.getVersion() == getHash()) ? EntityStatus.OK : EntityStatus.PENDING;
-        }
-        return statusDistMap;
     }
 }

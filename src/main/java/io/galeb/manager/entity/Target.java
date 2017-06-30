@@ -27,14 +27,10 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
-import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.galeb.core.json.JsonObject;
-import io.galeb.core.model.Backend;
-import io.galeb.manager.cache.DistMap;
 
 @Entity
 @JsonInclude(NON_NULL)
@@ -128,7 +124,19 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     @Override
-    public String getEnvName() {
+    public EntityStatus getStatus() {
+        return super.getDynamicStatus();
+    }
+
+    @Override
+    @JsonIgnore
+    protected String getEnvName() {
         return getEnvironment().getName();
+    }
+
+    @Override
+    @JsonIgnore
+    public Farm getFarm() {
+        return environment.getFarm(farmId);
     }
 }
