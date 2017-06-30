@@ -22,7 +22,7 @@ import io.galeb.manager.entity.*;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.routermap.RouterMapConfiguration;
+import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
@@ -72,12 +72,12 @@ public class VirtualHostsCachedController {
 
     private final VirtualHostRepository virtualHostRepository;
     private final EnvironmentRepository environmentRepository;
-    private final RouterMapConfiguration.RouterMap routerMap;
+    private final RouterMap routerMap;
 
     @Autowired
     public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository,
                                         EnvironmentRepository environmentRepository,
-                                        RouterMapConfiguration.RouterMap routerMap) {
+                                        RouterMap routerMap) {
         this.virtualHostRepository = virtualHostRepository;
         this.environmentRepository = environmentRepository;
         this.routerMap = routerMap;
@@ -86,21 +86,26 @@ public class VirtualHostsCachedController {
     @RequestMapping(value="/{envname:.+}", method = RequestMethod.GET)
     public synchronized ResponseEntity showall(@PathVariable String envname,
                                   @RequestHeader(value = "If-None-Match", required = false) String routerEtag,
-                                  @RequestHeader(value = "X-Galeb-LocalIP", required = false) String routerLocalIP,
                                   @RequestHeader(value = "X-Galeb-GroupID", required = false) String routerGroupId) throws Exception {
-        return buildResponse(envname, routerGroupId, routerLocalIP, routerEtag);
+        return buildResponse(envname, routerGroupId, routerEtag);
     }
 
     @Transactional
-    private ResponseEntity buildResponse(String envname, String routerGroupId, String routerLocalIP, String routerEtag) throws Exception {
+    private ResponseEntity buildResponse(String envname, String routerGroupId, String routerEtag) throws Exception {
         int numRouters = 1;
-        boolean isOk = true;
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final List<VirtualHost> virtualHosts = new ArrayList<>();
         try {
-            if (routerGroupId != null && routerLocalIP != null) {
-                numRouters = routerMap.put(routerGroupId, routerLocalIP, routerEtag);
+            if (routerEtag != null && routerGroupId != null) {
+                numRouters = routerMap.get(envname)
+                                      .stream()
+                                      .mapToInt(e -> e.getGroupIDs()
+                                                      .stream()
+                                                      .filter(g -> g.getGroupID().equals(routerGroupId))
+                                                      .mapToInt(r -> r.getRouters().size())
+                                                      .sum())
+                                      .sum();
             }
             final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
             virtualHosts.addAll(getVirtualHosts(virtualHostStream, numRouters));
@@ -108,16 +113,16 @@ public class VirtualHostsCachedController {
                 LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
             }
-            if (virtualHosts.isEmpty()) {
-                throw new VirtualHostsEmptyException();
-            }
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
-            isOk = false;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } finally {
             SystemUserService.runAs(currentUser);
         }
-        return isOk ? new ResponseEntity<>(new Resources<>(virtualHosts), OK) : ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        if (virtualHosts.isEmpty()) {
+            throw new VirtualHostsEmptyException();
+        }
+        return new ResponseEntity<>(new Resources<>(virtualHosts), OK);
     }
 
     private Environment envFindByName(String envname) {
@@ -537,7 +542,7 @@ public class VirtualHostsCachedController {
     }
 
     @ResponseStatus(value= HttpStatus.NOT_FOUND, reason = "Virtualhosts empty in this environment")
-    private class VirtualHostsEmptyException extends Exception
+    private static class VirtualHostsEmptyException extends Exception
     {
         private static final long serialVersionUID = 1L;
     }
