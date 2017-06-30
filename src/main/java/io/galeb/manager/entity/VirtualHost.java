@@ -18,13 +18,22 @@
 
 package io.galeb.manager.entity;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.ForeignKey;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.util.Assert;
-
-import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "virtualhost", uniqueConstraints = { @UniqueConstraint(name = "UK_name_virtualhost", columnNames = { "name" }) })
@@ -155,6 +164,19 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @Override
     public EntityStatus getStatus() {
-        return getStatusFromMap();
+        return super.getDynamicStatus();
     }
+
+    @Override
+    @JsonIgnore
+    protected String getEnvName() {
+        return getEnvironment().getName();
+    }
+
+    @Override
+    @JsonIgnore
+    public Farm getFarm() {
+        return environment.getFarm(farmId);
+    }
+
 }

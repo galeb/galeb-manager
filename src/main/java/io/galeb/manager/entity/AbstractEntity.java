@@ -18,11 +18,17 @@
 
 package io.galeb.manager.entity;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.galeb.manager.common.JsonCustomProperties;
+import io.galeb.manager.security.config.SpringSecurityAuditorAware;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.util.Assert;
 
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -36,29 +42,14 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-
-import com.google.common.base.Enums;
-import io.galeb.core.json.JsonObject;
-import io.galeb.core.model.Entity;
-import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.common.JsonCustomProperties;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import io.galeb.manager.security.config.SpringSecurityAuditorAware;
-import org.springframework.util.CollectionUtils;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @MappedSuperclass
 @JsonCustomProperties
-public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Serializable {
+public abstract class AbstractEntity<T extends AbstractEntity<?>> extends AbstractEntitySyncronizable implements Serializable {
 
     private static final long serialVersionUID = 4521414292400791447L;
 
@@ -70,9 +61,6 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         ERROR,
         UNKNOWN
     }
-
-    @Transient
-    protected DistMap distMap = null;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -265,22 +253,5 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> implements Ser
         } else {
             hash = 0;
         }
-    }
-
-    @JsonIgnore
-    protected EntityStatus getStatusFromMap() {
-        if (distMap == null) {
-            distMap = new DistMap();
-        }
-        String value = distMap.get(this);
-        if (value == null) {
-            return EntityStatus.PENDING;
-        }
-        boolean valueIsStatus = Arrays.stream(EntityStatus.values()).filter(st -> st.toString().equals(value)).findFirst().isPresent();
-        if (valueIsStatus) {
-            return EntityStatus.valueOf(value);
-        }
-        Entity entity = (Entity) JsonObject.fromJson(value, Entity.class);
-        return (entity.getVersion() == getHash()) ? EntityStatus.OK : EntityStatus.PENDING;
     }
 }

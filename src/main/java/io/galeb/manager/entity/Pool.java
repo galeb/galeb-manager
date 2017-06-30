@@ -157,7 +157,19 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
 
     @Override
     public EntityStatus getStatus() {
-        return getStatusFromMap();
+        return super.getDynamicStatus();
+    }
+
+    @Override
+    @JsonIgnore
+    protected String getEnvName() {
+        return getEnvironment().getName();
+    }
+
+    @Override
+    @JsonIgnore
+    public Farm getFarm() {
+        return environment.getFarm(farmId);
     }
 
 }

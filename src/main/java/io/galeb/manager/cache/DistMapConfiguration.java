@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package io.galeb.manager.configurations;
+package io.galeb.manager.cache;
 
-import com.github.ziplet.filter.compression.CompressingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.servlet.Filter;
-
 @Configuration
-public class CompressingConfiguration {
+public class DistMapConfiguration {
 
     @Bean
-    public Filter compressingFilter() {
-        return new CompressingFilter();
+    public DistMap distMap() {
+        return DistMap.getInstance();
     }
 }
