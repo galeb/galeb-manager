@@ -23,6 +23,7 @@ import io.galeb.manager.cucumber.CucumberTest;
 import io.galeb.manager.cache.DistMapTest;
 import io.galeb.manager.engine.FarmDriverTest;
 import io.galeb.manager.engine.PoolDriverTest;
+import io.galeb.manager.entity.AbstractEntitySyncronizableTest;
 import org.apache.ignite.Ignite;
 import org.junit.AfterClass;
 import org.junit.runner.RunWith;
@@ -32,6 +33,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         FarmDriverTest.class,
         PoolDriverTest.class,
+        AbstractEntitySyncronizableTest.class,
         DistMapTest.class,
         CucumberTest.class
 })

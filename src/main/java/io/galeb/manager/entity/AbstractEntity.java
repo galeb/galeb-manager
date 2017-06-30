@@ -62,13 +62,6 @@ public abstract class AbstractEntity<T extends AbstractEntity<?>> extends Abstra
         UNKNOWN
     }
 
-    @Transient
-    @JsonIgnore
-    @Override
-    protected AbstractEntity entity() {
-        return this;
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;

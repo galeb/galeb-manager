@@ -44,12 +44,15 @@ public class DistMap implements Serializable {
 
     private static final DistMap INSTANCE = new DistMap();
 
-    public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
+    private static CacheFactory CACHE_FACTORY;
 
     public static final String DIST_MAP_FARM_ID_PROP = "DIST_MAP_FARM_ID_PROP";
     private static final Log LOGGER = LogFactory.getLog(DistMap.class);
 
     public static DistMap getInstance() {
+        if (CACHE_FACTORY == null) {
+            CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
+        }
         return INSTANCE;
     }
 

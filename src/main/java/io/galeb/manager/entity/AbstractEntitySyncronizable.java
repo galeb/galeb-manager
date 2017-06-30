@@ -32,32 +32,39 @@ public abstract class AbstractEntitySyncronizable {
     private static DistMap distMap;
     private static RouterMap routerMap;
 
-    private DistMap getDistMap() {
+    protected DistMap getDistMap() {
         if (distMap == null) {
             distMap = DistMap.getInstance();
         }
         return distMap;
     }
 
-    private RouterMap getRouterMap() {
+    protected RouterMap getRouterMap() {
         if (routerMap == null) {
             routerMap = RouterMap.getInstance();
         }
         return routerMap;
     }
 
-    protected abstract AbstractEntity entity();
-
     protected String getEnvName() { return "NULL"; }
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {
-            final AbstractEntity.EntityStatus distMapStatus;
             final RouterMap.State routerMapState = getRouterMap().state(getEnvName());
-            final String valueFromDistMap = getValueDistMap();
-            return (valueFromDistMap == null && farmEnabled()) ||
-                    (distMapStatus = getEntityStatusFromValueMap(valueFromDistMap)) != AbstractEntity.EntityStatus.OK ||
-                    routerMapState == RouterMap.State.NOSYNC ? AbstractEntity.EntityStatus.PENDING : distMapStatus;
+            boolean resultG4 = routerMapState != RouterMap.State.NOSYNC;
+            if (farmEnabled()) {
+                final String valueFromDistMap = getValueDistMap();
+                AbstractEntity.EntityStatus entityStatusFromValueMap = getEntityStatusFromValueMap(valueFromDistMap);
+                if (valueFromDistMap != null) {
+                    if (entityStatusFromValueMap == AbstractEntity.EntityStatus.OK) {
+                        return resultG4 ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
+                    }
+                    return entityStatusFromValueMap;
+                } else {
+                    return AbstractEntity.EntityStatus.PENDING;
+                }
+            }
+            return routerMapState == RouterMap.State.SYNC ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getFullStackTrace(e));
         }
@@ -66,7 +73,7 @@ public abstract class AbstractEntitySyncronizable {
 
     private String getValueDistMap() {
         if (farmEnabled()) {
-            return getDistMap().get(entity());
+            return getDistMap().get((AbstractEntity<?>)this);
         }
         return null;
     }
@@ -79,14 +86,15 @@ public abstract class AbstractEntitySyncronizable {
             statusDistMap = AbstractEntity.EntityStatus.valueOf(value);
         } else {
             Entity entity = (Entity) JsonObject.fromJson(value, Entity.class);
-            statusDistMap = (entity.getVersion() == entity().getHash()) ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
+            statusDistMap = (entity.getVersion() == ((AbstractEntity<?>)this).getHash()) ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
         }
         return statusDistMap;
     }
 
     @SuppressWarnings("unchecked")
     private boolean farmEnabled() {
-        return this instanceof WithFarmID && ((WithFarmID)this).getFarm().isAutoReload();
+        final Farm farm = this instanceof WithFarmID ? ((WithFarmID) this).getFarm() : this instanceof Farm ? (Farm) this : null;
+        return farm != null && farm.isAutoReload();
     }
 
     public void releaseSync() {
