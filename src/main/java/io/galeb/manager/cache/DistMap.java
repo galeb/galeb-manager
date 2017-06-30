@@ -27,10 +27,8 @@ import io.galeb.manager.entity.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
-
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.Set;
@@ -42,13 +40,22 @@ import static io.galeb.manager.engine.listeners.AbstractEngine.SEPARATOR;
 import static io.galeb.manager.engine.util.ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP;
 import static java.util.stream.Collectors.toSet;
 
-@Service
 public class DistMap implements Serializable {
+
+    private static final DistMap INSTANCE = new DistMap();
 
     public static final CacheFactory CACHE_FACTORY = IgniteCacheFactory.getInstance().start();
 
     public static final String DIST_MAP_FARM_ID_PROP = "DIST_MAP_FARM_ID_PROP";
     private static final Log LOGGER = LogFactory.getLog(DistMap.class);
+
+    public static DistMap getInstance() {
+        return INSTANCE;
+    }
+
+    private DistMap() {
+        //
+    }
 
     /**
      * Returns all values by cache name of distributed map
@@ -196,4 +203,5 @@ public class DistMap implements Serializable {
 
         });
     }
+
 }
