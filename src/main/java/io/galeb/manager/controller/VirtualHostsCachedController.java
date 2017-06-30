@@ -16,14 +16,13 @@
 
 package io.galeb.manager.controller;
 
-import io.galeb.core.model.Backend;
 import io.galeb.core.util.consistenthash.HashAlgorithm;
 import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.*;
 import io.galeb.manager.entity.AbstractEntity.EntityStatus;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.routermap.RouterMapConfiguration;
+import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
@@ -73,12 +72,12 @@ public class VirtualHostsCachedController {
 
     private final VirtualHostRepository virtualHostRepository;
     private final EnvironmentRepository environmentRepository;
-    private final RouterMapConfiguration.RouterMap routerMap;
+    private final RouterMap routerMap;
 
     @Autowired
     public VirtualHostsCachedController(VirtualHostRepository virtualHostRepository,
                                         EnvironmentRepository environmentRepository,
-                                        RouterMapConfiguration.RouterMap routerMap) {
+                                        RouterMap routerMap) {
         this.virtualHostRepository = virtualHostRepository;
         this.environmentRepository = environmentRepository;
         this.routerMap = routerMap;
@@ -543,7 +542,7 @@ public class VirtualHostsCachedController {
     }
 
     @ResponseStatus(value= HttpStatus.NOT_FOUND, reason = "Virtualhosts empty in this environment")
-    private class VirtualHostsEmptyException extends Exception
+    private static class VirtualHostsEmptyException extends Exception
     {
         private static final long serialVersionUID = 1L;
     }

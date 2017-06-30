@@ -17,7 +17,7 @@
 package io.galeb.manager.controller;
 
 import com.google.gson.Gson;
-import io.galeb.manager.routermap.RouterMapConfiguration;
+import io.galeb.manager.routermap.RouterMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,11 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoutersController {
 
     private final Gson gson = new Gson();
-    private final RouterMapConfiguration.RouterMap routerMap;
+    private final RouterMap routerMap;
 
 
     @Autowired
-    public RoutersController(RouterMapConfiguration.RouterMap routerMap) {
+    public RoutersController(RouterMap routerMap) {
         this.routerMap = routerMap;
     }
 
