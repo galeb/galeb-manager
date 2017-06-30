@@ -72,6 +72,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         virtualhost.setFarmId(-1L);
         updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterCreate
@@ -84,6 +85,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterSave
@@ -100,6 +102,21 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @HandleAfterDelete
     public void afterDelete(VirtualHost virtualhost) throws Exception {
         afterDelete(virtualhost, LOGGER);
+    }
+
+    private void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
+        final long farmId = virtualHost.getFarmId();
+        if (farmId == -1L) return;
+        final Set<String> aliases = virtualHost.getAliases();
+        final int sizeAliases = aliases.size();
+        boolean dup = aliases.contains(virtualHost.getName());
+        if (!dup) {
+            final Set<String> allNames = virtualHostRepository.getAllNames(farmId);
+            final int sizeAllNames = allNames.size();
+            allNames.addAll(aliases);
+            dup = allNames.size() != sizeAllNames + sizeAliases;
+        }
+        if (dup) throw new BadRequestException("Name already exists");
     }
 
     private void updateRuleOrder(VirtualHost virtualhost) {

@@ -29,16 +29,26 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+@SuppressWarnings("JpaQlInspection")
 @Repository
 public class VirtualHostRepositoryImpl implements VirtualHostRepositoryCustom {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostRepositoryImpl.class);
 
-    private static final String QUERY_GET_RULES = "SELECT DISTINCT r FROM Rule r " +
-                                                 "INNER JOIN r.parents p " +
-                                                 "WHERE p.name = :name";
+    private static final String QUERY_GET_RULES     = "SELECT DISTINCT r FROM Rule r " +
+                                                      "INNER JOIN r.parents p " +
+                                                      "WHERE p.name = :name";
+
+    private static final String QUERY_NAMES         = "SELECT DISTINCT v.name FROM virtualhost v " +
+                                                      "WHERE v.farm_id = :farm_id";
+
+    private static final String QUERY_ALIASES_NAMES = "SELECT DISTINCT a.aliases " +
+                                                      "FROM virtualhost v, virtual_host_aliases a " +
+                                                      "WHERE v.id = a.virtual_host AND v.farm_id = :farm_id";
 
     @PersistenceContext
     private EntityManager em;
@@ -52,5 +62,18 @@ public class VirtualHostRepositoryImpl implements VirtualHostRepositoryCustom {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
             return Collections.emptyList();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Set<String> getAllNames(long farmId) {
+        Set<String> allnames = new HashSet<>();
+        try {
+            allnames.addAll(em.createNativeQuery(QUERY_NAMES).setParameter("farm_id", farmId).getResultList());
+            allnames.addAll(em.createNativeQuery(QUERY_ALIASES_NAMES).setParameter("farm_id", farmId).getResultList());
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+        }
+        return allnames;
     }
 }
