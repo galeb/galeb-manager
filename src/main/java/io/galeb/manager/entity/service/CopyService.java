@@ -63,16 +63,17 @@ public class CopyService {
     }
 
     @SuppressWarnings("WeakerAccess")
-    @Cacheable("virtualhosts")
     @Transactional
     public List<VirtualHost> getVirtualHosts(String envname, String routerGroupId) throws Exception {
         final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
-        return virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, routerGroupId))
+        int numRouters = getNumRouters(envname, routerGroupId);
+        return virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters))
                         .filter(Objects::nonNull)
                         .collect(Collectors.toList());
     }
 
-    public VirtualHost copyVirtualHost(final VirtualHost virtualHost, String routerGroupId) {
+    @Cacheable("virtualhosts")
+    public VirtualHost copyVirtualHost(final VirtualHost virtualHost, int numRouters) {
         final Environment enviroment = getEnvironment(virtualHost);
         if (enviroment == null) return null;
         final Project project = getProject(virtualHost);
@@ -104,7 +105,7 @@ public class CopyService {
             }
         };
         if (virtualHostRuleDefault != null) {
-            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), enviroment.getName(), routerGroupId);
+            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), enviroment.getName(), numRouters);
             final Rule ruleDefault = copyRule(virtualHostRuleDefault, poolDefault, virtualHost);
             virtualHostCopy.setRuleDefault(ruleDefault);
         }
@@ -115,9 +116,9 @@ public class CopyService {
         virtualHostCopy.setAliases(virtualHost.getAliases());
         virtualHostCopy.setRulesOrdered(virtualHost.getRulesOrdered());
 
-        final Set<Rule> rules = copyRules(virtualHost, routerGroupId);
+        final Set<Rule> rules = copyRules(virtualHost, numRouters);
         virtualHostCopy.setRules(rules);
-        virtualHostCopy.getProperties().put(PROP_FULLHASH, etagService.buildFullHash(virtualHostCopy, getNumRouters(enviroment.getName(), routerGroupId)));
+        virtualHostCopy.getProperties().put(PROP_FULLHASH, etagService.buildFullHash(virtualHostCopy, numRouters));
         return virtualHostCopy;
     }
 
@@ -261,9 +262,9 @@ public class CopyService {
 
     @SuppressWarnings("WeakerAccess")
     @Cacheable("rules")
-    public Set<Rule> copyRules(final VirtualHost virtualHost, String routerGroupId) {
+    public Set<Rule> copyRules(final VirtualHost virtualHost, int numRouters) {
         return virtualHost.getRules().stream()
-                .map(rule -> copyRule(rule, copyPool(rule.getPool(), virtualHost.getEnvironment().getName(), routerGroupId), virtualHost))
+                .map(rule -> copyRule(rule, copyPool(rule.getPool(), virtualHost.getEnvironment().getName(), numRouters), virtualHost))
                 .collect(Collectors.toSet());
     }
 
@@ -311,7 +312,7 @@ public class CopyService {
 
     @SuppressWarnings("WeakerAccess")
     @Cacheable("pool")
-    public Pool copyPool(final Pool pool, String envname, String routerGroupId) {
+    public Pool copyPool(final Pool pool, String envname, int numRouters) {
         final Pool poolCopy = new Pool(pool.getName()) {
             @Override
             public long getId() {
@@ -409,7 +410,6 @@ public class CopyService {
                 poolCopy.setBalancePolicy(balancePolicy);
             }
         }
-        int numRouters = getNumRouters(envname, routerGroupId);
         poolCopy.setProperties(pool.getProperties());
         poolCopy.getProperties().put(PROP_DISCOVERED_MEMBERS_SIZE, String.valueOf(numRouters));
         poolCopy.setTargets(copyTargets(pool));
