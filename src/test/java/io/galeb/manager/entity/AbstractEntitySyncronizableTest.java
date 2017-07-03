@@ -64,7 +64,13 @@ public class AbstractEntitySyncronizableTest {
             new Object[]{true,  OK,      NOSYNC, PENDING}, //15
             new Object[]{true,  PENDING, NOSYNC, PENDING}, //16
             new Object[]{true,  OK,      SYNC,   OK},      //17
-            new Object[]{true,  PENDING, SYNC,   PENDING}  //18
+            new Object[]{true,  PENDING, SYNC,   PENDING}, //18
+            new Object[]{false, ERROR,   EMPTY,  PENDING}, //19
+            new Object[]{false, ERROR,   SYNC,   OK},      //20
+            new Object[]{false, ERROR,   NOSYNC, PENDING}, //21
+            new Object[]{true,  ERROR,   EMPTY,  ERROR},   //22
+            new Object[]{true,  ERROR,   SYNC,   ERROR},   //23
+            new Object[]{true,  ERROR,   NOSYNC, ERROR}    //24
             );
 
     public Farm getFarmTest() {
@@ -81,15 +87,13 @@ public class AbstractEntitySyncronizableTest {
 
     @Before
     public void setup() {
-        entity = new VirtualHost() {
+        entity = new AbstractEntityWithFarmId() {
             @Override
             protected DistMap getDistMap() { return getDistMapTest(); }
             @Override
             protected RouterMap getRouterMap() { return getRouterMapTest(); }
             @Override
             protected String getEnvName() { return "NULL"; }
-            @Override
-            public Farm getFarm() { return getFarmTest(); }
         };
         farm = new Farm() {
             @Override
@@ -108,14 +112,23 @@ public class AbstractEntitySyncronizableTest {
 
     @Test
     public void checkEntityTruthTable() {
+        checkTruthTable(entity);
+    }
+
+    @Test
+    public void checkFarmTruthTable() {
+        checkTruthTable(farm);
+    }
+
+    private void checkTruthTable(AbstractEntity abstractEntity) {
         final AtomicInteger linePos = new AtomicInteger(0);
         truthTable.forEach(f -> {
             int line = linePos.incrementAndGet();
             farm.setAutoReload((boolean) f[0]);
-            when(distMap.get(entity)).thenReturn(f[1] == null ? null : (f[1]).toString());
+            when(distMap.get(abstractEntity)).thenReturn(f[1] == null ? null : (f[1]).toString());
             when(routerMap.state(anyString())).thenReturn((RouterMap.State) f[2]);
             try {
-                assertThat(entity.getDynamicStatus(), equalTo((AbstractEntity.EntityStatus) f[3]));
+                assertThat(abstractEntity.getDynamicStatus(), equalTo((AbstractEntity.EntityStatus) f[3]));
             } catch (AssertionError e) {
                 System.out.println(e.getMessage() + " in line " + line);
                 throw e;
@@ -123,20 +136,9 @@ public class AbstractEntitySyncronizableTest {
         });
     }
 
-    @Test
-    public void checkFarmTruthTable() {
-        final AtomicInteger linePos = new AtomicInteger(0);
-        truthTable.forEach(f -> {
-            int line = linePos.incrementAndGet();
-            farm.setAutoReload((boolean) f[0]);
-            when(distMap.get(farm)).thenReturn(f[1] == null ? null : (f[1]).toString());
-            when(routerMap.state(anyString())).thenReturn((RouterMap.State) f[2]);
-            try {
-                assertThat(farm.getDynamicStatus(), equalTo((AbstractEntity.EntityStatus) f[3]));
-            } catch (AssertionError e) {
-                System.out.println(e.getMessage() + " in line " + line);
-                throw e;
-            }
-        });
+    private class AbstractEntityWithFarmId extends AbstractEntity implements WithFarmID {
+        @Override public long getFarmId() { return 0; }
+        @Override public AbstractEntity<?> setFarmId(long farmId) { return null; }
+        @Override public Farm getFarm() { return getFarmTest(); }
     }
 }
