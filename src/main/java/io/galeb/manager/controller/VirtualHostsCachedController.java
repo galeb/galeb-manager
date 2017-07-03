@@ -17,19 +17,13 @@
 package io.galeb.manager.controller;
 
 import io.galeb.manager.common.ErrorLogger;
-import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.entity.service.CopyService;
 import io.galeb.manager.entity.service.EtagService;
-import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Resources;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,8 +33,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
@@ -49,13 +41,10 @@ public class VirtualHostsCachedController {
 
     private static final Log LOGGER = LogFactory.getLog(VirtualHostsCachedController.class);
 
-    private final CopyService copyService;
     private final EtagService etagService;
 
     @Autowired
-    public VirtualHostsCachedController(CopyService copyService,
-                                        EtagService etagService) {
-        this.copyService = copyService;
+    public VirtualHostsCachedController(EtagService etagService) {
         this.etagService = etagService;
     }
 
@@ -72,25 +61,23 @@ public class VirtualHostsCachedController {
         Assert.notNull(routerGroupId, "GroupID undefined");
         Assert.notNull(routerEtag, "etag undefined");
 
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        final List<VirtualHost> virtualHosts;
         try {
-            virtualHosts = copyService.getVirtualHosts(envname, routerGroupId);
-            if (!etagService.routerUpdateIsNecessary(envname, routerEtag, virtualHosts)) {
+            String responseBody = etagService.responseBody(envname, routerGroupId, routerEtag);
+            if (HttpStatus.NOT_MODIFIED.name().equals(responseBody)) {
                 LOGGER.warn("If-None-Match header matchs with internal etag, then ignoring request");
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).build();
             }
+            if (HttpStatus.NOT_FOUND.name().equals(responseBody)) {
+                LOGGER.warn("responseBody is empty");
+                throw new VirtualHostsEmptyException();
+            }
+            return new ResponseEntity<>(responseBody, OK);
+        } catch (VirtualHostsEmptyException virtualHostsEmptyException) {
+            throw virtualHostsEmptyException;
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        } finally {
-            SystemUserService.runAs(currentUser);
         }
-        if (virtualHosts.isEmpty()) {
-            throw new VirtualHostsEmptyException();
-        }
-        return new ResponseEntity<>(new Resources<>(virtualHosts), OK);
     }
 
     @ResponseStatus(value= HttpStatus.NOT_FOUND, reason = "Virtualhosts empty in this environment")
