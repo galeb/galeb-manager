@@ -93,7 +93,7 @@ public class AbstractEntitySyncronizableTest {
             @Override
             protected RouterMap getRouterMap() { return getRouterMapTest(); }
             @Override
-            protected String getEnvName() { return "NULL"; }
+            public String getEnvName() { return "NULL"; }
         };
         farm = new Farm() {
             @Override

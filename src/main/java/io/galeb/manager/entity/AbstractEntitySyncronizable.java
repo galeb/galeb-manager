@@ -29,6 +29,11 @@ public abstract class AbstractEntitySyncronizable {
 
     private static final Log LOGGER = LogFactory.getLog(AbstractEntitySyncronizable.class);
 
+    public static final String PREFIX_HAS_CHANGE = "haschange";
+    public static final String PREFIX_LAST_ETAG  = "last_etag";
+    public static final String PREFIX_ETAG       = "etag";
+    public static final String PROP_FULLHASH     = "fullhash";
+
     private static DistMap distMap;
     private static RouterMap routerMap;
 
@@ -46,7 +51,7 @@ public abstract class AbstractEntitySyncronizable {
         return routerMap;
     }
 
-    protected String getEnvName() { return "NULL"; }
+    public String getEnvName() { return "NULL"; }
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {

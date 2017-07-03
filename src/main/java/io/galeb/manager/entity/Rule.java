@@ -193,7 +193,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     @Override
     @JsonIgnore
-    protected String getEnvName() {
+    public String getEnvName() {
         return getPool().getEnvName();
     }
 

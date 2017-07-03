@@ -162,7 +162,7 @@ public class Pool extends AbstractEntity<Pool> implements WithFarmID<Pool> {
 
     @Override
     @JsonIgnore
-    protected String getEnvName() {
+    public String getEnvName() {
         return getEnvironment().getName();
     }
 

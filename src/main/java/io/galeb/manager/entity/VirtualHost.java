@@ -169,7 +169,7 @@ public class VirtualHost extends AbstractEntity<VirtualHost> implements WithFarm
 
     @Override
     @JsonIgnore
-    protected String getEnvName() {
+    public String getEnvName() {
         return getEnvironment().getName();
     }
 
