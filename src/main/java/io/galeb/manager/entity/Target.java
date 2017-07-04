@@ -130,7 +130,7 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     @Override
     @JsonIgnore
-    protected String getEnvName() {
+    public String getEnvName() {
         return getEnvironment().getName();
     }
 
