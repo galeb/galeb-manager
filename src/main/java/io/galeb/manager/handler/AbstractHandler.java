@@ -21,13 +21,31 @@ package io.galeb.manager.handler;
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import io.galeb.manager.entity.AbstractEntity;
 
+import static io.galeb.manager.entity.AbstractEntitySyncronizable.PREFIX_HAS_CHANGE;
+
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
     protected abstract void setBestFarm(T entity) throws Exception;
+
+    protected StringRedisTemplate template() {
+        // ugly, but NULL is the default
+        return null;
+    }
+
+    private void registerEnv(T entity) {
+        if (template() != null) {
+            String env = entity.getEnvName();
+            String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
+            final ValueOperations<String, String> valueOperations = template().opsForValue();
+            valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
+        }
+    }
 
     public void beforeCreate(T entity, Log logger) throws Exception {
         entity.releaseSync();
@@ -39,6 +57,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterCreate(T entity, Log logger) throws Exception {
+        registerEnv(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterCreate");
     }
 
@@ -57,6 +76,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterSave(T entity, Log logger) throws Exception {
+        registerEnv(entity);
         String entityTypeName = entity.getClass().getSimpleName();
         logger.info(entityTypeName+": HandleAfterSave");
         if (entity.isSaveOnly()) {
@@ -70,6 +90,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterDelete(T entity, Log logger) throws Exception {
+        registerEnv(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterDelete");
     }
 

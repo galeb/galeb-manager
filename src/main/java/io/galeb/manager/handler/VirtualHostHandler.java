@@ -27,6 +27,7 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -53,6 +54,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
+    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -134,5 +136,10 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
                 virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
             });
         }
+    }
+
+    @Override
+    protected StringRedisTemplate template() {
+        return template;
     }
 }
