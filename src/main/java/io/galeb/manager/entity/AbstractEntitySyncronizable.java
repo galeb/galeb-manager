@@ -16,6 +16,7 @@
 
 package io.galeb.manager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Enums;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
@@ -51,6 +52,7 @@ public abstract class AbstractEntitySyncronizable {
         return routerMap;
     }
 
+    @JsonIgnore
     public String getEnvName() { return "NULL"; }
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
@@ -102,6 +104,7 @@ public abstract class AbstractEntitySyncronizable {
         return farm != null && farm.isAutoReload();
     }
 
+    @JsonIgnore
     public void releaseSync() {
         getRouterMap().releaseSync(getEnvName());
     }
