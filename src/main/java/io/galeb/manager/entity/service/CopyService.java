@@ -16,6 +16,11 @@
 
 package io.galeb.manager.entity.service;
 
+import com.google.common.base.Charsets;
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.BalancePolicy;
 import io.galeb.manager.entity.BalancePolicyType;
@@ -29,35 +34,45 @@ import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.routermap.RouterMap;
+import io.galeb.manager.security.services.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.transaction.Transactional;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.galeb.manager.entity.service.EtagService.PROP_FULLHASH;
+import static com.google.common.hash.Hashing.sha256;
+import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
 
 @Service
 public class CopyService {
 
     private static final String PROP_DISCOVERED_MEMBERS_SIZE = "discoveredMembersSize";
     private static final String PROP_HEALTHY  = "healthy";
-    private final EtagService etagService;
     private final RouterMap routerMap;
     private final VirtualHostRepository virtualHostRepository;
+    private final Gson gson = new GsonBuilder()
+            .serializeNulls()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .setExclusionStrategies(new GsonIgnoreExclusionStrategy())
+            .disableInnerClassSerialization().create();
 
     @Autowired
-    public CopyService(final EtagService etagService,
-                       final RouterMap routerMap,
+    public CopyService(final RouterMap routerMap,
                        final VirtualHostRepository virtualHostRepository) {
-        this.etagService = etagService;
         this.routerMap = routerMap;
         this.virtualHostRepository = virtualHostRepository;
     }
@@ -65,11 +80,15 @@ public class CopyService {
     @SuppressWarnings("WeakerAccess")
     @Transactional
     public List<VirtualHost> getVirtualHosts(String envname, String routerGroupId) throws Exception {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
         final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
         int numRouters = getNumRouters(envname, routerGroupId);
-        return virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+        List<VirtualHost> virtualhosts = virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters))
+                                            .filter(Objects::nonNull)
+                                            .collect(Collectors.toList());
+        SystemUserService.runAs(currentUser);
+        return virtualhosts;
     }
 
     @Cacheable("virtualhosts")
@@ -78,34 +97,11 @@ public class CopyService {
         if (enviroment == null) return null;
         final Project project = getProject(virtualHost);
         final Rule virtualHostRuleDefault = virtualHost.getRuleDefault();
-        final VirtualHost virtualHostCopy = new VirtualHost(virtualHost.getName(), enviroment, project) {
-            @Override
-            public Date getCreatedAt() {
-                return virtualHost.getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return virtualHost.getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return virtualHost.getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return virtualHost.getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return virtualHost.getHash();
-            }
-        };
+        final VirtualHost virtualHostCopy = gson.fromJson(gson.toJson(virtualHost), VirtualHost.class);
+        virtualHostCopy.setEnvironment(enviroment);
+        virtualHostCopy.setProject(project);
         if (virtualHostRuleDefault != null) {
-            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), enviroment.getName(), numRouters);
+            final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), numRouters);
             final Rule ruleDefault = copyRule(virtualHostRuleDefault, poolDefault, virtualHost);
             virtualHostCopy.setRuleDefault(ruleDefault);
         }
@@ -118,140 +114,29 @@ public class CopyService {
 
         final Set<Rule> rules = copyRules(virtualHost, numRouters);
         virtualHostCopy.setRules(rules);
-        virtualHostCopy.getProperties().put(PROP_FULLHASH, etagService.buildFullHash(virtualHostCopy, numRouters));
+        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy, numRouters));
         return virtualHostCopy;
     }
 
     @SuppressWarnings("WeakerAccess")
     @Cacheable("project")
-    public Project getProject(VirtualHost virtualHost) {
-        return new Project(virtualHost.getProject().getName()) {
-            @Override
-            public long getId() {
-                return virtualHost.getProject().getId();
-            }
-
-            @Override
-            public Date getCreatedAt() {
-                return virtualHost.getProject().getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return virtualHost.getProject().getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return virtualHost.getProject().getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return virtualHost.getProject().getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return virtualHost.getProject().getHash();
-            }
-        };
+    public Project getProject(final VirtualHost virtualHost) {
+        return gson.fromJson(gson.toJson(virtualHost.getProject()), Project.class);
     }
 
     @SuppressWarnings("WeakerAccess")
     @Cacheable("environment")
-    public Environment getEnvironment(VirtualHost virtualHost) {
-        return new Environment(virtualHost.getEnvironment().getName()) {
-            @Override
-            public long getId() {
-                return virtualHost.getEnvironment().getId();
-            }
-
-            @Override
-            public Date getCreatedAt() {
-                return virtualHost.getEnvironment().getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return virtualHost.getEnvironment().getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return virtualHost.getEnvironment().getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return virtualHost.getEnvironment().getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return virtualHost.getEnvironment().getHash();
-            }
-        };
+    public Environment getEnvironment(final VirtualHost virtualHost) {
+        final Environment environment = gson.fromJson(gson.toJson(virtualHost.getEnvironment()), Environment.class);
+        environment.getProperties().remove(PROP_FULLHASH);
+        return environment;
     }
 
     private Rule copyRule(final Rule rule, final Pool pool, final VirtualHost virtualhost) {
-        final RuleType ruleType = new RuleType(rule.getRuleType().getName()){
-            @Override
-            public long getId() {
-                return rule.getRuleType().getId();
-            }
-
-            @Override
-            public Date getCreatedAt() {
-                return rule.getRuleType().getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return rule.getRuleType().getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return rule.getRuleType().getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return rule.getRuleType().getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return rule.getRuleType().getHash();
-            }
-        };
-        final Rule ruleCopy = new Rule(rule.getName(), ruleType, pool) {
-            @Override
-            public Date getCreatedAt() {
-                return rule.getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return rule.getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return rule.getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return rule.getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return rule.getHash();
-            }
-        };
+        final RuleType ruleType = gson.fromJson(gson.toJson(rule.getRuleType()), RuleType.class);
+        final Rule ruleCopy = gson.fromJson(gson.toJson(rule), Rule.class);
+        ruleCopy.setRuleType(ruleType);
+        ruleCopy.setPool(pool);
         ruleCopy.setId(rule.getId());
         ruleCopy.setProperties(rule.getProperties());
         Integer ruleOrder = virtualhost.getRulesOrdered().stream()
@@ -264,7 +149,7 @@ public class CopyService {
     @Cacheable("rules")
     public Set<Rule> copyRules(final VirtualHost virtualHost, int numRouters) {
         return virtualHost.getRules().stream()
-                .map(rule -> copyRule(rule, copyPool(rule.getPool(), virtualHost.getEnvironment().getName(), numRouters), virtualHost))
+                .map(rule -> copyRule(rule, copyPool(rule.getPool(), numRouters), virtualHost))
                 .collect(Collectors.toSet());
     }
 
@@ -278,32 +163,7 @@ public class CopyService {
             final AbstractEntity.EntityStatus[] validStatus = {AbstractEntity.EntityStatus.OK, AbstractEntity.EntityStatus.PENDING};
             return "OK".equals(targetHealthy) || Arrays.stream(validStatus).anyMatch(e -> e == targetStatus);
         }).map(target -> {
-            Target targetCopy = new Target(target.getName()) {
-                @Override
-                public Date getCreatedAt() {
-                    return target.getCreatedAt();
-                }
-
-                @Override
-                public Date getLastModifiedAt() {
-                    return target.getLastModifiedAt();
-                }
-
-                @Override
-                public EntityStatus getStatus() {
-                    return target.getStatus();
-                }
-
-                @Override
-                public Long getVersion() {
-                    return target.getVersion();
-                }
-
-                @Override
-                public int getHash() {
-                    return target.getHash();
-                }
-            };
+            Target targetCopy = gson.fromJson(gson.toJson(target), Target.class);
             targetCopy.setId(target.getId());
             targetCopy.setProperties(target.getProperties());
             return targetCopy;
@@ -312,101 +172,15 @@ public class CopyService {
 
     @SuppressWarnings("WeakerAccess")
     @Cacheable("pool")
-    public Pool copyPool(final Pool pool, String envname, int numRouters) {
-        final Pool poolCopy = new Pool(pool.getName()) {
-            @Override
-            public long getId() {
-                return pool.getId();
-            }
-
-            @Override
-            public Date getCreatedAt() {
-                return pool.getCreatedAt();
-            }
-
-            @Override
-            public Date getLastModifiedAt() {
-                return pool.getLastModifiedAt();
-            }
-
-            @Override
-            public EntityStatus getStatus() {
-                return pool.getStatus();
-            }
-
-            @Override
-            public Long getVersion() {
-                return pool.getVersion();
-            }
-
-            @Override
-            public int getHash() {
-                return pool.getHash();
-            }
-        };
+    public Pool copyPool(final Pool pool, int numRouters) {
+        final Pool poolCopy = gson.fromJson(gson.toJson(pool), Pool.class);
         final BalancePolicy poolBalancePolicy = pool.getBalancePolicy();
         if (poolBalancePolicy != null) {
             final BalancePolicyType balancePolicyTypeOriginal = poolBalancePolicy.getBalancePolicyType();
             if (balancePolicyTypeOriginal != null) {
-                final BalancePolicyType balancePolicyType = new BalancePolicyType(balancePolicyTypeOriginal.getName()) {
-                    @Override
-                    public long getId() {
-                        return balancePolicyTypeOriginal.getId();
-                    }
-
-                    @Override
-                    public Date getCreatedAt() {
-                        return balancePolicyTypeOriginal.getCreatedAt();
-                    }
-
-                    @Override
-                    public Date getLastModifiedAt() {
-                        return balancePolicyTypeOriginal.getLastModifiedAt();
-                    }
-
-                    @Override
-                    public EntityStatus getStatus() {
-                        return balancePolicyTypeOriginal.getStatus();
-                    }
-
-                    @Override
-                    public Long getVersion() {
-                        return balancePolicyTypeOriginal.getVersion();
-                    }
-
-                    @Override
-                    public int getHash() {
-                        return balancePolicyTypeOriginal.getHash();
-                    }
-                };
-                BalancePolicy balancePolicy = new BalancePolicy(poolBalancePolicy.getName(), balancePolicyType) {
-                    private final BalancePolicy balancePolicyOriginal = poolBalancePolicy;
-
-                    @Override
-                    public Date getCreatedAt() {
-                        return balancePolicyOriginal.getCreatedAt();
-                    }
-
-                    @Override
-                    public Date getLastModifiedAt() {
-                        return balancePolicyOriginal.getLastModifiedAt();
-                    }
-
-                    @Override
-                    public EntityStatus getStatus() {
-                        return balancePolicyOriginal.getStatus();
-                    }
-
-                    @Override
-                    public Long getVersion() {
-                        return balancePolicyOriginal.getVersion();
-                    }
-
-                    @Override
-                    public int getHash() {
-                        return balancePolicyOriginal.getHash();
-                    }
-                };
+                final BalancePolicyType balancePolicyType = gson.fromJson(gson.toJson(balancePolicyTypeOriginal), BalancePolicyType.class);
+                BalancePolicy balancePolicy = gson.fromJson(gson.toJson(poolBalancePolicy), BalancePolicy.class);
+                balancePolicy.setBalancePolicyType(balancePolicyType);
                 poolCopy.setBalancePolicy(balancePolicy);
             }
         }
@@ -427,6 +201,43 @@ public class CopyService {
                         .sum())
                 .sum();
         return numRouters;
+    }
+
+    public String buildFullHash(final VirtualHost virtualHost, int numRouters) {
+        final List<String> keys = new ArrayList<>();
+        keys.add(virtualHost.getLastModifiedAt().toString());
+        Rule ruleDefault = virtualHost.getRuleDefault();
+        if (ruleDefault != null) {
+            keys.add(ruleDefault.getLastModifiedAt().toString());
+            keys.add(ruleDefault.getPool().getLastModifiedAt().toString());
+        }
+        virtualHost.getRules().stream().sorted(Comparator.comparing(AbstractEntity::getName)).forEach(rule -> {
+            keys.add(rule.getLastModifiedAt().toString());
+            keys.add(rule.getPool().getLastModifiedAt().toString());
+            rule.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
+                    .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
+        });
+        String key = String.join("", keys) + numRouters;
+        return sha256().hashString(key, Charsets.UTF_8).toString();
+    }
+
+    private class GsonIgnoreExclusionStrategy implements ExclusionStrategy {
+
+        @Override
+        public boolean shouldSkipField(FieldAttributes f) {
+            return f.getAnnotation(GsonIgnore.class) != null ||
+                   f.getAnnotation(ManyToOne.class)  != null ||
+                   f.getAnnotation(OneToMany.class)  != null ||
+                   f.getAnnotation(ManyToMany.class) != null;
+        }
+
+        @Override
+        public boolean shouldSkipClass(Class<?> clazz) {
+            return clazz.getAnnotation(GsonIgnore.class) != null ||
+                   clazz.getAnnotation(ManyToOne.class)  != null ||
+                   clazz.getAnnotation(OneToMany.class)  != null ||
+                   clazz.getAnnotation(ManyToMany.class) != null;
+        }
     }
 
 }
