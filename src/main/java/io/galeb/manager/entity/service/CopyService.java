@@ -203,7 +203,7 @@ public class CopyService {
         return numRouters;
     }
 
-    public String buildFullHash(final VirtualHost virtualHost, int numRouters) {
+    private String buildFullHash(final VirtualHost virtualHost, int numRouters) {
         final List<String> keys = new ArrayList<>();
         keys.add(virtualHost.getLastModifiedAt().toString());
         Rule ruleDefault = virtualHost.getRuleDefault();

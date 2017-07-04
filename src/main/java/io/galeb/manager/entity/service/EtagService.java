@@ -26,7 +26,6 @@ import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -133,7 +132,6 @@ public class EtagService {
         return "";
     }
 
-    @NotNull
     private String getLastEtagKey(String envname, boolean all) {
         return PREFIX_LAST_ETAG + ":" + envname + ":" + (all ? "*" : System.currentTimeMillis());
     }
@@ -162,7 +160,7 @@ public class EtagService {
         virtualHosts = virtualHosts.stream()
                 .map(v -> { v.getEnvironment().getProperties().put(PROP_FULLHASH, etag); return v; })
                 .collect(Collectors.toList());
-        persistToRedis(etag, envname, gson.toJson(new ResponseEntityJson(virtualHosts), ResponseEntityJson.class));
+        persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
         persistToDb(envname, etag);
         return etag;
     }
@@ -202,21 +200,12 @@ public class EtagService {
         return environment;
     }
 
-    private class ResponseEntityJson implements Serializable {
+    private class Virtualhosts implements Serializable {
         private static final long serialVersionUID = 1L;
-        public SimpleEmbeddedVirtualhosts _embedded;
+        public final VirtualHost[] virtualhosts;
 
-        ResponseEntityJson(final List<VirtualHost> virtualHosts) {
-            _embedded = new SimpleEmbeddedVirtualhosts(virtualHosts);
-        }
-
-        public class SimpleEmbeddedVirtualhosts implements Serializable {
-            private static final long serialVersionUID = 1L;
-            public VirtualHost[] s;
-
-            SimpleEmbeddedVirtualhosts(final List<VirtualHost> virtualHosts) {
-                s = virtualHosts.toArray(new VirtualHost[]{});
-            }
+        Virtualhosts(final VirtualHost[] virtualhosts) {
+            this.virtualhosts = virtualhosts;
         }
     }
 }
