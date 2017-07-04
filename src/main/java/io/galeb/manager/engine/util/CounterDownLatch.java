@@ -20,119 +20,69 @@
 
 package io.galeb.manager.engine.util;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import io.galeb.manager.scheduler.SchedulerConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
 
-import static java.lang.System.currentTimeMillis;
+import java.util.concurrent.TimeUnit;
 
+import static java.lang.System.getProperty;
+
+@Service
 public class CounterDownLatch {
 
-    private static final Map<String, Map.Entry<Long, Integer>> mapOfDiffCounters =
-                Collections.synchronizedMap(new HashMap<>());
+    private final long timeoutSyncFarm = Long.parseLong(getProperty(SchedulerConfiguration.GALEB_TIMEOUT_SYNC_FARM, String.valueOf(Integer.MAX_VALUE)));
 
-    private CounterDownLatch() {
-        // singleton?
+    private final StringRedisTemplate template;
+
+    @Autowired
+    public CounterDownLatch(StringRedisTemplate template) {
+        this.template = template;
     }
 
-    public static synchronized int decrementDiffCounter(String key) {
+    public synchronized int decrementDiffCounter(String key) {
         int oldValue = -1;
         if (checkContainsKey(key)) {
-           final Map.Entry entry = mapOfDiffCounters.get(key);
-            oldValue = (int) entry.getValue();
-            if (oldValue > 0 ) {
-                put(key, --oldValue);
-            } else {
-                oldValue = reset(key);
+            String value = template.opsForValue().get(key);
+            if (value != null) {
+                oldValue = Integer.parseInt(value);
+                if (oldValue > 0) {
+                    template.opsForValue().increment(key, -1L);
+                } else {
+                    put(key, 0);
+                }
             }
         }
         return oldValue;
     }
 
-    public static synchronized void refresh(String key) {
-        final Map.Entry entry = mapOfDiffCounters.get(key);
-        if (entry != null) {
-            int value = (Integer) entry.getValue();
-            put(key, value);
+    public synchronized void refresh(String key) {
+        template.expire(key, timeoutSyncFarm, TimeUnit.MILLISECONDS);
+    }
+
+    public synchronized Integer get(String key) {
+        String value = template.opsForValue().get(key);
+        if (value != null) {
+            return Integer.valueOf(value);
         }
+        return null;
     }
 
-    public static synchronized Integer get(String key) {
-        final Map.Entry entry = mapOfDiffCounters.get(key);
-        if (entry != null) {
-            return (Integer) entry.getValue();
-        } else {
-            return null;
-        }
+    public synchronized void put(String key, Integer value) {
+        template.opsForValue().set(key, String.valueOf(value), timeoutSyncFarm, TimeUnit.MILLISECONDS);
     }
 
-    public static synchronized Long getTimeOf(String key) {
-        final Map.Entry entry = mapOfDiffCounters.get(key);
-        if (entry != null) {
-            return (Long)entry.getKey();
-        } else {
-            return null;
-        }
+    public synchronized void remove(String key) {
+        template.delete(key);
     }
 
-    public static synchronized Integer put(String key, Integer value) {
-        final Map.Entry entry = mapOfDiffCounters.put(key, new KV(currentTimeMillis(), value));
-        return (Integer) (entry != null ? entry.getValue() : null);
+    public synchronized boolean checkContainsKey(String key) {
+        return template.hasKey(key);
     }
 
-    public static synchronized Integer remove(String key) {
-        final Map.Entry entry = mapOfDiffCounters.remove(key);
-        return (Integer) (entry != null ? entry.getValue() : null);
-    }
-
-    public static synchronized boolean checkContainsKey(String key) {
-        return mapOfDiffCounters.containsKey(key);
-    }
-
-    public static synchronized int reset(String key) {
+    public synchronized int reset(String key) {
         put(key, 0);
         return 0;
-    }
-
-    private static class KV implements Map.Entry<Long, Integer> {
-
-        private final long timestamp;
-        private int value;
-
-        public KV(Long timestamp, Integer value ) {
-            this.value = value;
-            this.timestamp = timestamp;
-        }
-
-        @Override
-        public Long getKey() {
-            return timestamp;
-        }
-
-        @Override
-        public Integer getValue() {
-            return value;
-        }
-
-        @Override
-        public Integer setValue(Integer value) {
-            int oldValue = this.value;
-            this.value = value;
-            return oldValue;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (o == null || getClass() != o.getClass()) return false;
-            KV kv = (KV) o;
-            return timestamp == kv.timestamp &&
-                   value == kv.value;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(timestamp, value);
-        }
     }
 }

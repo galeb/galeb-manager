@@ -20,6 +20,7 @@ package io.galeb.manager.engine.listeners;
 
 import io.galeb.core.model.BackendPool;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
@@ -50,6 +51,8 @@ import java.util.Optional;
 public class RuleEngine extends AbstractEngine<Rule> {
 
     private static final Log LOGGER = LogFactory.getLog(RuleEngine.class);
+
+    private CounterDownLatch counterDownLatch;
 
     @Override
     protected Log getLogger() {
@@ -198,5 +201,14 @@ public class RuleEngine extends AbstractEngine<Rule> {
     public RuleEngine setVirtualHostAliasBuilder(final VirtualHostAliasBuilder virtualHostAliasBuilder) {
         this.virtualHostAliasBuilder = virtualHostAliasBuilder;
         return this;
+    }
+
+    public CounterDownLatch counterDownLatch() {
+        return counterDownLatch;
+    }
+
+    @Autowired
+    public void setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        this.counterDownLatch = counterDownLatch;
     }
 }

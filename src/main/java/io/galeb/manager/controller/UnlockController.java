@@ -3,6 +3,7 @@ package io.galeb.manager.controller;
 import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.repository.FarmRepository;
@@ -24,12 +25,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class UnlockController {
 
     private static final Log LOGGER = LogFactory.getLog(UnlockController.class);
-    private final LockerManager lockerManager = new LockerManager();
+    private final LockerManager lockerManager;
 
-    @Autowired private FarmRepository farmRepository;
-    @Autowired private FarmQueue farmQueue;
-    @Autowired private StatusDistributed statusDist;
+    private final FarmRepository farmRepository;
+    private final StatusDistributed statusDist;
 
+    @Autowired
+    public UnlockController(FarmRepository farmRepository,
+                            StatusDistributed statusDist,
+                            CounterDownLatch counterDownLatch) {
+        this.farmRepository = farmRepository;
+        this.statusDist = statusDist;
+        lockerManager = new LockerManager().setCounterDownLatch(counterDownLatch);
+    }
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @RequestMapping(value="/{id}", method = RequestMethod.GET)

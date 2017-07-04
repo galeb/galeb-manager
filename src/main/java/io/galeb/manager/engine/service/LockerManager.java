@@ -28,6 +28,7 @@ import java.util.Arrays;
 public class LockerManager implements Serializable {
 
     private ClusterLocker locker = IgniteClusterLocker.getInstance().start();
+    private CounterDownLatch counterDownLatch;
 
     public void release(String lockId) {
         locker.release(lockId);
@@ -35,7 +36,7 @@ public class LockerManager implements Serializable {
 
     public void release(String lockId, final String[] apis) {
         release(lockId);
-        Arrays.stream(apis).forEach(CounterDownLatch::remove);
+        Arrays.stream(apis).forEach(counterDownLatch::remove);
     }
 
     public boolean lock(String lockId) {
@@ -46,5 +47,10 @@ public class LockerManager implements Serializable {
 
     public String name() {
         return locker.name();
+    }
+
+    public LockerManager setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        this.counterDownLatch = counterDownLatch;
+        return this;
     }
 }

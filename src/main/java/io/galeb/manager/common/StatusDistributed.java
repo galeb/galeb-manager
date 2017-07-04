@@ -23,7 +23,9 @@ package io.galeb.manager.common;
 import io.galeb.core.json.JsonObject;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.engine.service.LockerManager;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.LockStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.cache.Cache;
@@ -36,7 +38,12 @@ public final class StatusDistributed implements Serializable {
 
     private static final DistMap DIST_MAP = DistMap.getInstance();
 
-    private static final LockerManager lockerManager = new LockerManager();
+    private LockerManager lockerManager;
+
+    @Autowired
+    public void setCounterDownLatch(final CounterDownLatch counterDownLatch) {
+        lockerManager = new LockerManager().setCounterDownLatch(counterDownLatch);
+    }
 
     public List<LockStatus> getLockStatus(String farmIdName) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;

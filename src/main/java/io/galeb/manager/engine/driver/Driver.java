@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.util.CounterDownLatch;
 
 public interface Driver {
 
@@ -65,6 +66,14 @@ public interface Driver {
 
     default Map<String,Map<String,Map<String,String>>> getAll(Properties properties) throws Exception {
         return Collections.emptyMap();
+    }
+
+    default Driver setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        return this;
+    }
+
+    default CounterDownLatch counterDownLatch() {
+        return null;
     }
 
 }

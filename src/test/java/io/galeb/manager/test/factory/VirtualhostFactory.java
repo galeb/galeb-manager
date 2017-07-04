@@ -19,8 +19,6 @@
 package io.galeb.manager.test.factory;
 
 import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.engine.driver.DriverBuilder;
-import io.galeb.manager.engine.driver.impl.GalebV32Driver;
 import io.galeb.manager.engine.listeners.VirtualHostEngine;
 import io.galeb.manager.engine.util.VirtualHostAliasBuilder;
 import io.galeb.manager.entity.Environment;

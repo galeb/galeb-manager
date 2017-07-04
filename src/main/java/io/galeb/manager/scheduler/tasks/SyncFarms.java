@@ -60,14 +60,11 @@ public class SyncFarms {
     private static final Log   LOGGER         = LogFactory.getLog(SyncFarms.class);
     private static final long  SCHED_INTERVAL = 5000; //sec
 
-    @Autowired private FarmRepository        farmRepository;
-    @Autowired private FarmQueue             farmQueue;
-
-    private StatusDistributed statusDist = new StatusDistributed();
-
-    private final LockerManager lockerManager = new LockerManager();
-
-    private final long timeoutSyncFarm = Long.parseLong(getProperty(SchedulerConfiguration.GALEB_TIMEOUT_SYNC_FARM, String.valueOf(Long.MAX_VALUE)));
+    private final FarmRepository        farmRepository;
+    private final FarmQueue             farmQueue;
+    private final CounterDownLatch      counterDownLatch;
+    private final LockerManager lockerManager;
+    private final StatusDistributed statusDist;
 
     private boolean disableQueue = Boolean.valueOf(
             getProperty(JmsConfiguration.DISABLE_QUEUE,
@@ -81,6 +78,18 @@ public class SyncFarms {
     private static Map<String, Long> counterWithoutCommandCounterDown = new ConcurrentHashMap<>();
     private static int tryiesTimeoutSyncFarm = 0;
     private static int timeToAvoidReleaseToTest = 0;
+
+    @Autowired
+    public SyncFarms(FarmRepository farmRepository,
+                     FarmQueue farmQueue,
+                     CounterDownLatch counterDownLatch,
+                     StatusDistributed statusDist) {
+        this.farmRepository = farmRepository;
+        this.farmQueue = farmQueue;
+        this.counterDownLatch = counterDownLatch;
+        this.lockerManager = new LockerManager().setCounterDownLatch(counterDownLatch);
+        this.statusDist = statusDist;
+    }
 
     @Scheduled(fixedRate = SCHED_INTERVAL)
     private void task() {
@@ -132,7 +141,7 @@ public class SyncFarms {
             apisToSync.put(farm.idName(), apis);
         }
 
-        CommandCountDown comm = CommandCountDown.getCommandApplied(apis);
+        CommandCountDown comm = CommandCountDown.getCommandApplied(apis, counterDownLatch);
         switch (comm) {
             case SEND_TO_QUEUE:
                 if (farm.isAutoReload() && !disableQueue) {
@@ -150,7 +159,7 @@ public class SyncFarms {
                 releaseCounterWithoutCommand(farm);
                 Arrays.stream(apis).forEach(api -> {
                     String farmFull = farm.getName() + " [ " + api + " ] ";
-                    final Integer latchCount = CounterDownLatch.get(api);
+                    final Integer latchCount = counterDownLatch.get(api);
                     LOGGER.warn(farmStatusMsgPrefix + "Still synchronizing Farm " + farmFull + " (remains " + latchCount + " tasks)");
                 });
                 break;
@@ -169,7 +178,7 @@ public class SyncFarms {
         final AtomicBoolean applied = new AtomicBoolean(false);
         if (apis != null) {
             Arrays.stream(apis).forEach(api -> {
-                applied.set(applied.get() || (checkTimeoutCounterLatch(api) || checkLockFarmWithoutCounter(api, idFarm)));
+                applied.set(applied.get() || (checkLockFarmWithoutCounter(api, idFarm)));
             });
         }
         return applied.get();
@@ -178,17 +187,12 @@ public class SyncFarms {
     private boolean checkLockFarmWithoutCounter(String api, String idFarm) {
         Optional<LockStatus> lock = statusDist.getLockStatusLocal(idFarm);
         boolean isLock = lock.isPresent() && lock.get().isHasLock();
-        return !CounterDownLatch.checkContainsKey(api) && isLock;
-    }
-
-    private boolean checkTimeoutCounterLatch(String api) {
-        Long timeApi = CounterDownLatch.getTimeOf(api);
-        return timeApi != null && (currentTimeMillis() - timeApi) > timeoutSyncFarm;
+        return !counterDownLatch.checkContainsKey(api) && isLock;
     }
 
     private void verifyCounterWithoutCommand(Farm farm, String[] apis) {
         Arrays.stream(apis).forEach(api -> {
-            final Integer latchCount = CounterDownLatch.get(api);
+            final Integer latchCount = counterDownLatch.get(api);
             String farmFull = farm.getName() + " [ " + api + " ] ";
             LOGGER.warn("Without command to execute. Skip the sync farm " + farmFull + " (remains " + latchCount + " tasks)");
         });
@@ -210,12 +214,9 @@ public class SyncFarms {
     private void updateStatusDistributed(Farm farm, String[] apis) {
         final Map<String, Integer> countDownLatchOfApis = new HashMap<>();
         Arrays.stream(apis).forEach(api -> {
-            final Integer latchCount = CounterDownLatch.get(api);
+            final Integer latchCount = counterDownLatch.get(api);
             if (latchCount != null) {
-                final Long timeApi = CounterDownLatch.getTimeOf(api);
-                if (timeApi != null) {
-                    countDownLatchOfApis.put(api,latchCount);
-                }
+                countDownLatchOfApis.put(api,latchCount);
             }
         });
         statusDist.updateCountDownLatch(farm.idName(), countDownLatchOfApis);

@@ -86,6 +86,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     private TargetRepository targetRepository;
     private PoolRepository poolRepository;
     private QueueLocator queueLocator;
+    private CounterDownLatch counterDownLatch;
 
     private AtomicBoolean isReady = new AtomicBoolean(false);
 
@@ -160,7 +161,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
     @JmsListener(destination = FarmQueue.QUEUE_SYNC)
     public void sync(Farm farm) {
         if (lockerManager == null) {
-            lockerManager = new LockerManager();
+            lockerManager = new LockerManager().setCounterDownLatch(counterDownLatch);
         }
         if (getStatusDist() == null) {
             setStatusDist(new StatusDistributed());
@@ -168,7 +169,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
         if (lockerManager.lock(farm.idName())) {
             getStatusDist().updateNewStatus(farm.idName(), true);
             String apiWithSeparator = farm.getApi();
-            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> CounterDownLatch.put(api, -1));
+            Arrays.stream(apiWithSeparator.split(",")).forEach(api -> counterDownLatch.put(api, -1));
             EntityStatus statusConsolidated = getStatusConsolidated(farm, apiWithSeparator);
             getDistMap().put(farm, statusConsolidated.toString());
         } else {
@@ -216,7 +217,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                     + (currentTimeMillis() - diffStart) + " ms)";
             LOGGER.info(diffDurationMsg);
 
-            CounterDownLatch.put(api, diffSize);
+            counterDownLatch.put(api, diffSize);
 
             updateStatus(remoteMultiMap, farmId);
             if (diffSize == 0) {
@@ -232,7 +233,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
             }
 
         } catch (Exception e) {
-            CounterDownLatch.reset(api);
+            counterDownLatch.reset(api);
             LOGGER.error(ExceptionUtils.getStackTrace(e));
             LOGGER.error(FARM_STATUS_MSG_PREFIX + farmFull + " FAILED");
             statusMap.put(api, ERROR);
@@ -278,7 +279,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
             try {
 
-                CounterDownLatch.refresh(api);
+                counterDownLatch.refresh(api);
 
                 final Map<String, Object> attributes = diffEntrySet.getValue();
 
@@ -310,7 +311,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
 
                     if (entityFromRepository == null && action != REMOVE) {
                         LOGGER.error("Entity " + id + " (parent: " + parentId + ") NOT FOUND [" + managerEntityType + "]");
-                        CounterDownLatch.decrementDiffCounter(api);
+                        counterDownLatch.decrementDiffCounter(api);
                     } else {
                         AbstractEnqueuer queue = getQueueLocator().getQueue(managerEntityType);
                         if (action == REMOVE) {
@@ -339,7 +340,7 @@ public class FarmEngine extends AbstractEngine<Farm> {
                 }
             } catch (Exception e) {
                 LOGGER.error(ExceptionUtils.getStackTrace(e));
-                CounterDownLatch.decrementDiffCounter(api);
+                counterDownLatch.decrementDiffCounter(api);
             }
         });
     }
@@ -502,5 +503,14 @@ public class FarmEngine extends AbstractEngine<Farm> {
     public FarmEngine setQueueLocator(final QueueLocator queueLocator) {
         this.queueLocator = queueLocator;
         return this;
+    }
+
+    public CounterDownLatch counterDownLatch() {
+        return counterDownLatch;
+    }
+
+    @Autowired
+    public void setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        this.counterDownLatch = counterDownLatch;
     }
 }

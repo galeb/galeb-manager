@@ -25,6 +25,7 @@ import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.driver.DriverBuilder;
 import io.galeb.manager.engine.provisioning.Provisioning;
 import io.galeb.manager.engine.provisioning.impl.NullProvisioning;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.ManagerToFarmConverter;
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
@@ -56,6 +57,7 @@ public abstract class AbstractEngine<T> {
 
     public Driver getDriver(AbstractEntity<?> entity) {
         final Farm farm = findFarm(entity).orElse(null);
+        DriverBuilder.setCounterDownLatch(counterDownLatch());
         return entity != null ? DriverBuilder.getDriver(farm) :
                 (driver != null ? driver : DriverBuilder.getDriver(null));
     }
@@ -107,5 +109,7 @@ public abstract class AbstractEngine<T> {
         Class<?> internalEntityType = ManagerToFarmConverter.FARM_TO_MANAGER_ENTITY_MAP.get(farmEntityType);
         return internalEntityType != null ? internalEntityType.getSimpleName().toLowerCase() : null;
     }
+
+    protected abstract CounterDownLatch counterDownLatch();
 
 }

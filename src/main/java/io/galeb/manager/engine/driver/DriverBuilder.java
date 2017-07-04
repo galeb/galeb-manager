@@ -22,26 +22,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.galeb.manager.engine.driver.impl.*;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
 
 public class DriverBuilder {
 
-    private static Map<String, Driver> drivers = new HashMap<>();
-    static {
-        drivers.put(Driver.DEFAULT_DRIVER_NAME, new NullDriver());
-        drivers.put(GalebV32Driver.DRIVER_NAME, new GalebV32Driver());
-    }
+    private static CounterDownLatch counterDownLatch;
 
-    public static Driver addResource(Driver driver, Object resource) {
-        return driver.addResource(resource);
+    public static void setCounterDownLatch(CounterDownLatch c) {
+        counterDownLatch = c;
     }
 
     public static Driver build(String driverName) {
-        final Driver driver = drivers.get(driverName);
-        if (driver == null) {
-            return drivers.get(Driver.DEFAULT_DRIVER_NAME);
+        if (driverName.equals(GalebV32Driver.class.getSimpleName().replace("Driver",""))) {
+            return new GalebV32Driver().setCounterDownLatch(counterDownLatch);
         }
-        return driver;
+        return new NullDriver();
     }
 
     public static Driver getDriver(Farm farm) {

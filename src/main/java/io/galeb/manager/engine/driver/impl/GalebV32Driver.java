@@ -24,6 +24,7 @@ import io.galeb.core.model.Backend;
 import io.galeb.core.util.Constants;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.engine.util.DiffProcessor;
 import io.galeb.manager.httpclient.CommonHttpRequester;
 import io.galeb.manager.httpclient.FarmClient;
@@ -44,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.galeb.manager.engine.listeners.AbstractEngine.*;
-import static io.galeb.manager.engine.util.CounterDownLatch.decrementDiffCounter;
 
 public class GalebV32Driver implements Driver {
 
@@ -56,6 +56,8 @@ public class GalebV32Driver implements Driver {
 
     private Object resource = null;
 
+    private CounterDownLatch counterDownLatch;
+
     @Override
     public String toString() {
         return DRIVER_NAME;
@@ -65,6 +67,17 @@ public class GalebV32Driver implements Driver {
     public Driver addResource(Object resource) {
         this.resource = resource;
         return this;
+    }
+
+    @Override
+    public Driver setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        this.counterDownLatch = counterDownLatch;
+        return this;
+    }
+
+    @Override
+    public CounterDownLatch counterDownLatch() {
+        return counterDownLatch;
     }
 
     @Override
@@ -108,7 +121,9 @@ public class GalebV32Driver implements Driver {
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(api);
+            if (counterDownLatch() != null) {
+                counterDownLatch().decrementDiffCounter(api);
+            }
         }
         return result;
     }
@@ -128,7 +143,9 @@ public class GalebV32Driver implements Driver {
         } catch (RuntimeException|URISyntaxException e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(api);
+            if (counterDownLatch() != null) {
+                counterDownLatch().decrementDiffCounter(api);
+            }
         }
         return result;
     }
@@ -149,7 +166,9 @@ public class GalebV32Driver implements Driver {
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         } finally {
-            decrementDiffCounter(api);
+            if (counterDownLatch() != null) {
+                counterDownLatch().decrementDiffCounter(api);
+            }
         }
         return result;
     }

@@ -26,6 +26,7 @@ import io.galeb.manager.common.JsonMapper;
 import io.galeb.manager.common.Properties;
 import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
+import io.galeb.manager.engine.util.CounterDownLatch;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.queue.FarmQueue;
@@ -45,6 +46,8 @@ import java.util.Map;
 public class PoolEngine extends AbstractEngine<Pool> {
 
     private static final Log LOGGER = LogFactory.getLog(PoolEngine.class);
+
+    private CounterDownLatch counterDownLatch;
 
     @Override
     protected Log getLogger() {
@@ -134,5 +137,14 @@ public class PoolEngine extends AbstractEngine<Pool> {
     public PoolEngine setQueueLocator(final QueueLocator queueLocator) {
         this.queueLocator = queueLocator;
         return this;
+    }
+
+    public CounterDownLatch counterDownLatch() {
+        return counterDownLatch;
+    }
+
+    @Autowired
+    public void setCounterDownLatch(CounterDownLatch counterDownLatch) {
+        this.counterDownLatch = counterDownLatch;
     }
 }
