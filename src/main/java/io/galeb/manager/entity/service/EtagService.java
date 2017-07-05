@@ -17,6 +17,7 @@
 package io.galeb.manager.entity.service;
 
 import com.google.common.base.Charsets;
+import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.entity.Environment;
@@ -50,7 +51,7 @@ public class EtagService {
 
     private static final String CACHE_TTL = System.getProperty(EtagService.class.getName().toLowerCase(), "10"); // minutes
 
-    private final Gson gson = new GsonBuilder().serializeNulls().create();
+    private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").serializeNulls().create();
     private final EnvironmentRepository environmentRepository;
     private final StringRedisTemplate template;
     private final CopyService copyService;
