@@ -94,7 +94,7 @@ public class EtagService {
         return body;
     }
 
-    public String etag(String envname, int numRouters, boolean cache) {
+    private String etag(String envname, int numRouters, boolean cache) {
         String etag = "";
         if (cache) etag = getLastEtag(envname);
         if ("".equals(etag)) {
@@ -185,7 +185,6 @@ public class EtagService {
         return "";
     }
 
-    @Deprecated
     @Transactional
     private void persistToDb(String envname, String etag) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();

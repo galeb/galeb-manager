@@ -16,14 +16,23 @@
 
 package io.galeb.manager.routermap;
 
+import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.service.EtagService;
+import io.galeb.manager.repository.EnvironmentRepository;
+import io.galeb.manager.security.services.SystemUserService;
+import io.galeb.manager.security.user.CurrentUser;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
 
 public class RouterState {
 
@@ -38,18 +47,16 @@ public class RouterState {
     private static final String KEY_ROUTER_SYNC = "sync_etag:";
     private static final int    REGISTER_TTL    = 30000; // ms
 
-    private ConcurrentHashMap<String, Integer> routerCount = new ConcurrentHashMap<>();
-
     private StringRedisTemplate redisTemplate;
-    private EtagService etagService;
+    private EnvironmentRepository environmentRepository;
 
     public RouterState setRedisTemplate(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
         return this;
     }
 
-    public RouterState setEtagService(EtagService etagService) {
-        this.etagService = etagService;
+    public RouterState setEnviromentRepository(EnvironmentRepository enviromentRepository) {
+        this.environmentRepository = enviromentRepository;
         return this;
     }
 
@@ -58,23 +65,32 @@ public class RouterState {
 
         Set<String> keysGroupId = redisTemplate.keys(keyPrefixEnv + ":*");
         List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
-        routerCount.put(envname, Math.max(allValues.size(), 1));
         boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
-        redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqual), REGISTER_TTL, TimeUnit.MILLISECONDS);
+        if (allEqual && allValues != null && allValues.size() > 0) {
+            String etag = getEtagByEnvironment(envname);
+            boolean allEqualAndEtagMatch = allValues.get(0).equals(etag);
+            redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqualAndEtagMatch), REGISTER_TTL, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private String getEtagByEnvironment(String envname) {
+        Authentication currentUser = CurrentUser.getCurrentAuth();
+        SystemUserService.runAs();
+        final Page<Environment> envPage = environmentRepository.findByName(envname, new PageRequest(0, 1));
+        Environment environment = null;
+        if (envPage.hasContent()) {
+            environment = envPage.iterator().next();
+        }
+        String etag = environment == null ? "" :  environment.getProperties().getOrDefault(PROP_FULLHASH, "");
+        SystemUserService.runAs(currentUser);
+        return etag;
+
     }
 
     public State state(String environmentName) {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-        String etagFromRouter = "NEED GET ETAG FROM ROUTERMAP"; // TODO
-        String etag = getEtag(environmentName);
         String stateStrFromRedis = redisTemplate.opsForValue().get(KEY_ROUTER_SYNC + environmentName);
-        return stateStrFromRedis == null ? State.EMPTY : Boolean.valueOf(stateStrFromRedis) && etag.equals(etagFromRouter) ? State.SYNC : State.NOSYNC;
-    }
-
-    private String getEtag(String environmentName) {
-        // TODO: NumRouters Problem. Get from Environment.properties.fullhash best approach??
-        Integer numRouters = routerCount.get(environmentName);
-        return etagService.etag(environmentName, numRouters, true);
+        return stateStrFromRedis == null ? State.EMPTY : Boolean.valueOf(stateStrFromRedis) ? State.SYNC : State.NOSYNC;
     }
 
     public void releaseSync(String environmentName) {

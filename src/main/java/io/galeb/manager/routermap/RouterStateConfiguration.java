@@ -16,7 +16,7 @@
 
 package io.galeb.manager.routermap;
 
-import io.galeb.manager.entity.service.EtagService;
+import io.galeb.manager.repository.EnvironmentRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -25,7 +25,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class RouterStateConfiguration {
 
     @Bean
-    public RouterState routerState(StringRedisTemplate redisTemplate, EtagService etagService) {
-        return RouterState.INSTANCE.setRedisTemplate(redisTemplate).setEtagService(etagService);
+    public RouterState routerState(StringRedisTemplate redisTemplate, EnvironmentRepository environmentRepository) {
+        return RouterState.INSTANCE.setRedisTemplate(redisTemplate).setEnviromentRepository(environmentRepository);
     }
 }
