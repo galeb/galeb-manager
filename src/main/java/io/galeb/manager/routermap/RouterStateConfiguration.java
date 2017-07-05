@@ -16,16 +16,16 @@
 
 package io.galeb.manager.routermap;
 
+import io.galeb.manager.repository.EnvironmentRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration
-public class RouterMapConfiguration {
+public class RouterStateConfiguration {
 
     @Bean
-    public RouterMap routerMap(StringRedisTemplate redisTemplate, RouterState routerState) {
-        return RouterMap.getInstance().setTemplate(redisTemplate).setRouterState(routerState);
+    public RouterState routerState(StringRedisTemplate redisTemplate, EnvironmentRepository environmentRepository) {
+        return RouterState.INSTANCE.setRedisTemplate(redisTemplate).setEnviromentRepository(environmentRepository);
     }
-
 }

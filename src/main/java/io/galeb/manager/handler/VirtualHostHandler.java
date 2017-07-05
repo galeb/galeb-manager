@@ -27,6 +27,7 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -53,6 +54,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
+    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -72,6 +74,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         virtualhost.setFarmId(-1L);
         updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterCreate
@@ -84,6 +87,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, virtualHostRepository, LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterSave
@@ -102,6 +106,21 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
+    private void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
+        final long farmId = virtualHost.getFarmId();
+        if (farmId == -1L) return;
+        final Set<String> aliases = virtualHost.getAliases();
+        final int sizeAliases = aliases.size();
+        boolean dup = aliases.contains(virtualHost.getName());
+        if (!dup) {
+            final Set<String> allNames = virtualHostRepository.getAllNames(farmId);
+            final int sizeAllNames = allNames.size();
+            allNames.addAll(aliases);
+            dup = allNames.size() != sizeAllNames + sizeAliases;
+        }
+        if (dup) throw new BadRequestException("Name already exists");
+    }
+
     private void updateRuleOrder(VirtualHost virtualhost) {
         if (!virtualhost.getRules().isEmpty()) {
             final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
@@ -117,5 +136,10 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
                 virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
             });
         }
+    }
+
+    @Override
+    protected StringRedisTemplate template() {
+        return template;
     }
 }

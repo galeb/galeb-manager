@@ -124,17 +124,19 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
     }
 
     @Override
-    // TODO: When removed the Galeb 3 support, improve this approach.
     public EntityStatus getStatus() {
-        // TODO: [ATENTION] Potential Bug: If it has no more updates on the properties (database persisted)?
-        String propHealthy = getProperties().get("healthy");
-        EntityStatus statusFromMap = super.getStatusFromMap();
-        if (propHealthy == null || EntityStatus.ERROR.equals(statusFromMap)) return statusFromMap;
-        try {
-            return EntityStatus.valueOf(propHealthy);
-        } catch (IllegalArgumentException e) {
-            return EntityStatus.ERROR;
-        }
+        return super.getDynamicStatus();
     }
 
+    @Override
+    @JsonIgnore
+    public String getEnvName() {
+        return getEnvironment().getName();
+    }
+
+    @Override
+    @JsonIgnore
+    public Farm getFarm() {
+        return environment.getFarm(farmId);
+    }
 }

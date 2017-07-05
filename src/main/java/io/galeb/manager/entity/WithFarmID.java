@@ -6,4 +6,6 @@ public interface WithFarmID<T extends AbstractEntity<?>> {
 
     T setFarmId(long farmId);
 
+    Farm getFarm();
+
 }

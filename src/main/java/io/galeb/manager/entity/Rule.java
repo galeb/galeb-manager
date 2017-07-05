@@ -21,6 +21,7 @@ package io.galeb.manager.entity;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -187,6 +188,23 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
 
     @Override
     public EntityStatus getStatus() {
-        return getStatusFromMap();
+        return super.getDynamicStatus();
     }
+
+    @Override
+    @JsonIgnore
+    public String getEnvName() {
+        return getPool().getEnvName();
+    }
+
+    @Override
+    @JsonIgnore
+    public Farm getFarm() {
+        final Optional<VirtualHost> virtualHost;
+        if ((virtualHost = parents.stream().findAny()).isPresent()) {
+            return virtualHost.get().getEnvironment().getFarm(farmId);
+        }
+        return getFakeFarm();
+    }
+
 }
