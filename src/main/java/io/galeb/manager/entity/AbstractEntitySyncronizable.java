@@ -22,6 +22,7 @@ import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.routermap.RouterMap;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,7 +37,7 @@ public abstract class AbstractEntitySyncronizable {
     public static final String PROP_FULLHASH     = "fullhash";
 
     private static DistMap distMap;
-    private static RouterMap routerMap;
+    private static RouterState routerState;
 
     protected DistMap getDistMap() {
         if (distMap == null) {
@@ -45,11 +46,11 @@ public abstract class AbstractEntitySyncronizable {
         return distMap;
     }
 
-    protected RouterMap getRouterMap() {
-        if (routerMap == null) {
-            routerMap = RouterMap.getInstance();
+    protected RouterState getRouterState() {
+        if (routerState == null) {
+            routerState = RouterState.INSTANCE;
         }
-        return routerMap;
+        return routerState;
     }
 
     @JsonIgnore
@@ -57,8 +58,8 @@ public abstract class AbstractEntitySyncronizable {
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {
-            final RouterMap.State routerMapState = getRouterMap().state(getEnvName());
-            boolean resultG4 = routerMapState != RouterMap.State.NOSYNC;
+            final RouterState.State routerMapState = getRouterState().state(getEnvName());
+            boolean resultG4 = routerMapState != RouterState.State.NOSYNC;
             if (farmEnabled()) {
                 final String valueFromDistMap = getValueDistMap();
                 AbstractEntity.EntityStatus entityStatusFromValueMap = getEntityStatusFromValueMap(valueFromDistMap);
@@ -71,7 +72,7 @@ public abstract class AbstractEntitySyncronizable {
                     return AbstractEntity.EntityStatus.PENDING;
                 }
             }
-            return routerMapState == RouterMap.State.SYNC ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
+            return routerMapState == RouterState.State.SYNC ? AbstractEntity.EntityStatus.OK : AbstractEntity.EntityStatus.PENDING;
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getFullStackTrace(e));
         }
@@ -106,7 +107,7 @@ public abstract class AbstractEntitySyncronizable {
 
     @JsonIgnore
     public void releaseSync() {
-        getRouterMap().releaseSync(getEnvName());
+        getRouterState().releaseSync(getEnvName());
     }
 
     protected Farm getFakeFarm() {

@@ -18,6 +18,7 @@ package io.galeb.manager.entity;
 
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.routermap.RouterMap;
+import io.galeb.manager.routermap.RouterState;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.galeb.manager.entity.AbstractEntity.EntityStatus.*;
-import static io.galeb.manager.routermap.RouterMap.State.*;
+import static io.galeb.manager.routermap.RouterState.State.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
 
 public class AbstractEntitySyncronizableTest {
 
-    private RouterMap routerMap = mock(RouterMap.class);
+    private RouterState routerState = mock(RouterState.class);
     private DistMap distMap = mock(DistMap.class);
     private Farm farm;
     private AbstractEntity entity;
@@ -81,8 +82,8 @@ public class AbstractEntitySyncronizableTest {
         return distMap;
     }
 
-    public RouterMap getRouterMapTest() {
-        return routerMap;
+    public RouterState getRouterStateTest() {
+        return routerState;
     }
 
     @Before
@@ -91,7 +92,7 @@ public class AbstractEntitySyncronizableTest {
             @Override
             protected DistMap getDistMap() { return getDistMapTest(); }
             @Override
-            protected RouterMap getRouterMap() { return getRouterMapTest(); }
+            protected RouterState getRouterState() { return getRouterStateTest(); }
             @Override
             public String getEnvName() { return "NULL"; }
         };
@@ -99,7 +100,7 @@ public class AbstractEntitySyncronizableTest {
             @Override
             protected DistMap getDistMap() { return getDistMapTest(); }
             @Override
-            protected RouterMap getRouterMap() { return getRouterMapTest(); }
+            protected RouterState getRouterState() { return getRouterStateTest(); }
             @Override
             public String getEnvName() { return "NULL"; }
         };
@@ -126,7 +127,7 @@ public class AbstractEntitySyncronizableTest {
             int line = linePos.incrementAndGet();
             farm.setAutoReload((boolean) f[0]);
             when(distMap.get(abstractEntity)).thenReturn(f[1] == null ? null : (f[1]).toString());
-            when(routerMap.state(anyString())).thenReturn((RouterMap.State) f[2]);
+            when(routerState.state(anyString())).thenReturn((RouterState.State) f[2]);
             try {
                 assertThat(abstractEntity.getDynamicStatus(), equalTo((AbstractEntity.EntityStatus) f[3]));
             } catch (AssertionError e) {

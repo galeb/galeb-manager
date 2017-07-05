@@ -17,12 +17,13 @@
 package io.galeb.manager.entity.service;
 
 import com.google.common.base.Charsets;
-import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.EnvironmentRepository;
+import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.logging.Log;
@@ -55,29 +56,30 @@ public class EtagService {
     private final EnvironmentRepository environmentRepository;
     private final StringRedisTemplate template;
     private final CopyService copyService;
+    private final RouterMap routerMap;
 
     @Autowired
     public EtagService(final EnvironmentRepository environmentRepository,
                        final StringRedisTemplate template,
-                       final CopyService copyService) {
+                       final CopyService copyService,
+                       final RouterMap routerMap) {
         this.environmentRepository = environmentRepository;
         this.template = template;
         this.copyService = copyService;
+        this.routerMap = routerMap;
     }
 
     public String responseBody(String envname, String groupId, String routerEtag) throws Exception {
+        int numRouters = getNumRouters(envname, groupId);
         Set<String> changes = changes(envname);
         String etag;
         if (!changes.isEmpty()) {
             expireLastEtag(envname);
             expireChanges(changes);
             expireCache(envname);
-            etag = newEtag(envname, groupId);
+            etag = etag(envname, numRouters, false);
         } else {
-            etag = getLastEtag(envname);
-            if ("".equals(etag)) {
-                etag = newEtag(envname, groupId);
-            }
+            etag = etag(envname, numRouters, true);
         }
         if ("".equals(etag)) {
             return HttpStatus.NOT_FOUND.name();
@@ -90,6 +92,15 @@ public class EtagService {
             return HttpStatus.NOT_FOUND.name();
         }
         return body;
+    }
+
+    public String etag(String envname, int numRouters, boolean cache) {
+        String etag = "";
+        if (cache) etag = getLastEtag(envname);
+        if ("".equals(etag)) {
+            etag = newEtag(envname, numRouters);
+        }
+        return etag;
     }
 
     private Set<String> changes(String envname) {
@@ -148,22 +159,30 @@ public class EtagService {
         return PREFIX_ETAG + ":" + envname + ":" + etag;
     }
 
-    private String newEtag(String envname, String routerGroupID) throws Exception {
-        List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, routerGroupID);
-        if (virtualHosts == null || virtualHosts.isEmpty()) {
-            return "";
+    private String newEtag(String envname, int numRouters) {
+        try {
+            List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters);
+            if (virtualHosts == null || virtualHosts.isEmpty()) {
+                return "";
+            }
+            String key = virtualHosts.stream().map(this::getFullHash)
+                    .sorted()
+                    .distinct()
+                    .collect(Collectors.joining());
+            String etag = key == null || "".equals(key) ? "" : sha256().hashString(key, Charsets.UTF_8).toString();
+            virtualHosts = virtualHosts.stream()
+                    .map(v -> {
+                        v.getEnvironment().getProperties().put(PROP_FULLHASH, etag);
+                        return v;
+                    })
+                    .collect(Collectors.toList());
+            persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
+            persistToDb(envname, etag);
+            return etag;
+        } catch (Exception e) {
+            ErrorLogger.logError(e, this.getClass());
         }
-        String key = virtualHosts.stream().map(this::getFullHash)
-                .sorted()
-                .distinct()
-                .collect(Collectors.joining());
-        String etag = key == null || "".equals(key) ? "" : sha256().hashString(key, Charsets.UTF_8).toString();
-        virtualHosts = virtualHosts.stream()
-                .map(v -> { v.getEnvironment().getProperties().put(PROP_FULLHASH, etag); return v; })
-                .collect(Collectors.toList());
-        persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
-        persistToDb(envname, etag);
-        return etag;
+        return "";
     }
 
     @Deprecated
@@ -208,5 +227,18 @@ public class EtagService {
         Virtualhosts(final VirtualHost[] virtualhosts) {
             this.virtualhosts = virtualhosts;
         }
+    }
+
+    private int getNumRouters(final String envname, final String routerGroupIp) {
+        int numRouters;
+        numRouters = routerMap.get(envname)
+                .stream()
+                .mapToInt(e -> e.getGroupIDs()
+                        .stream()
+                        .filter(g -> g.getGroupID().equals(routerGroupIp))
+                        .mapToInt(r -> r.getRouters().size())
+                        .sum())
+                .sum();
+        return numRouters;
     }
 }
