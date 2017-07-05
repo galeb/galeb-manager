@@ -62,7 +62,6 @@ public class CopyService {
 
     private static final String PROP_DISCOVERED_MEMBERS_SIZE = "discoveredMembersSize";
     private static final String PROP_HEALTHY  = "healthy";
-    private final RouterMap routerMap;
     private final VirtualHostRepository virtualHostRepository;
     private final Gson gson = new GsonBuilder()
             .serializeNulls()
@@ -71,19 +70,16 @@ public class CopyService {
             .disableInnerClassSerialization().create();
 
     @Autowired
-    public CopyService(final RouterMap routerMap,
-                       final VirtualHostRepository virtualHostRepository) {
-        this.routerMap = routerMap;
+    public CopyService(final VirtualHostRepository virtualHostRepository) {
         this.virtualHostRepository = virtualHostRepository;
     }
 
     @SuppressWarnings("WeakerAccess")
     @Transactional
-    public List<VirtualHost> getVirtualHosts(String envname, String routerGroupId) throws Exception {
+    public List<VirtualHost> getVirtualHosts(String envname, int numRouters) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
-        int numRouters = getNumRouters(envname, routerGroupId);
         List<VirtualHost> virtualhosts = virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters))
                                             .filter(Objects::nonNull)
                                             .collect(Collectors.toList());
@@ -188,19 +184,6 @@ public class CopyService {
         poolCopy.getProperties().put(PROP_DISCOVERED_MEMBERS_SIZE, String.valueOf(numRouters));
         poolCopy.setTargets(copyTargets(pool));
         return poolCopy;
-    }
-
-    private int getNumRouters(final String envname, final String routerGroupIp) {
-        int numRouters;
-        numRouters = routerMap.get(envname)
-                .stream()
-                .mapToInt(e -> e.getGroupIDs()
-                        .stream()
-                        .filter(g -> g.getGroupID().equals(routerGroupIp))
-                        .mapToInt(r -> r.getRouters().size())
-                        .sum())
-                .sum();
-        return numRouters;
     }
 
     private String buildFullHash(final VirtualHost virtualHost, int numRouters) {

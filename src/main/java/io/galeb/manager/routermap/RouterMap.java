@@ -30,14 +30,8 @@ public class RouterMap {
     private static final RouterMap INSTANCE = new RouterMap();
 
     private static final String ROUTER_PREFIX = "routers:";
-    private static final String KEY_ROUTER_SYNC = "sync_etag:";
     private static final int    REGISTER_TTL  = 30000; // ms
-
-    public enum State {
-        EMPTY,
-        SYNC,
-        NOSYNC
-    }
+    public RouterState routerState;
 
     private StringRedisTemplate redisTemplate;
 
@@ -54,17 +48,19 @@ public class RouterMap {
         return this;
     }
 
+    public RouterMap setRouterState(final RouterState routerState) {
+        this.routerState = routerState;
+        return this;
+    }
+
     public void put(String groupId, String localIp, String etag, String envname) {
-        String key_prefix_env = ROUTER_PREFIX + envname;
-        String key_full = key_prefix_env + ":" + groupId + ":" + localIp;
+        String keyPrefixEnv = ROUTER_PREFIX + envname;
+        String keyFull = keyPrefixEnv + ":" + groupId + ":" + localIp;
         try {
             Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
 
-            redisTemplate.opsForValue().set(key_full, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
-            Set<String> keysGroupId = redisTemplate.keys(key_prefix_env + ":*");
-            List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
-            boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
-            redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqual), REGISTER_TTL, TimeUnit.MILLISECONDS);
+            redisTemplate.opsForValue().set(keyFull, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
+            routerState.updateRouterState(keyPrefixEnv, envname);
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
         }
@@ -106,16 +102,4 @@ public class RouterMap {
         return Collections.emptySet();
     }
 
-    public State state(String environmentName) {
-        Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
-        String stateStrFromRedis = redisTemplate.opsForValue().get(KEY_ROUTER_SYNC + environmentName);
-        return stateStrFromRedis == null ? State.EMPTY : Boolean.valueOf(stateStrFromRedis) ? State.SYNC : State.NOSYNC;
-    }
-
-    public void releaseSync(String environmentName) {
-        Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
-        redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + environmentName, Boolean.FALSE.toString(), REGISTER_TTL, TimeUnit.MILLISECONDS);
-    }
 }

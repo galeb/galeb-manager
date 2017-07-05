@@ -62,9 +62,6 @@ public class DistMapTest {
 
         String returnValue = mapDistributed.get(virtualHost);
         Assert.notNull(returnValue);
-
-        AbstractEntity.EntityStatus status = virtualHost.getStatus();
-        Assert.isTrue(status.equals(AbstractEntity.EntityStatus.OK));
     }
 
     @Test

@@ -86,6 +86,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void beforeDelete(T entity, Log logger) {
+        entity.releaseSync();
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeDelete");
     }
 
