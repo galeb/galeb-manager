@@ -27,6 +27,7 @@ import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
@@ -42,6 +43,9 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+
+import java.util.List;
+import java.util.Optional;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
@@ -96,7 +100,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeSave
     public void beforeSave(Target target) throws Exception {
-        distMap.remove(target);
+        if (hashChanged(target)) distMap.remove(target);
         setParentIfNull(target);
         beforeSave(target, targetRepository, LOGGER);
         setGlobalIfNecessary(target);
@@ -169,6 +173,11 @@ public class TargetHandler extends AbstractHandler<Target> {
         if (target.getParent() == null) {
             target.setParent(poolRepository.getNoParent());
         }
+    }
+
+    private boolean hashChanged(Target target) {
+        final Target targetPersisted = targetRepository.findOne(target.getId());
+        return targetPersisted != null && targetPersisted.getHash() != target.getHash();
     }
 
     @Override
