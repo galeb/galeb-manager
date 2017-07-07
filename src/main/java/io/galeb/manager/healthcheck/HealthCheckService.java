@@ -104,10 +104,20 @@ public class HealthCheckService {
     public void healthCallback(String targetStr) {
         try {
             final Target targetCopy = new Gson().fromJson(targetStr, Target.class);
-            final Target target = em.find(Target.class, targetCopy.getId());
-            target.setProperties(targetCopy.getProperties());
-            em.merge(target);
-            LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
+            if (targetCopy != null) {
+                final Target target = em.find(Target.class, targetCopy.getId());
+                if (target != null) {
+                    target.setProperties(targetCopy.getProperties());
+                    em.merge(target);
+                    LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
+                } else {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Target " + targetCopy.getId() + " from DB not found");
+                    }
+                }
+            } else {
+                LOGGER.error("Json parse failed. aborting.");
+            }
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
