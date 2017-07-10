@@ -32,6 +32,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
+
 @Entity
 @JsonInclude(NON_NULL)
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_parent_id_target", columnNames = { "name", "parent_id" }) })
@@ -63,6 +65,15 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
 
     protected Target() {
         //
+    }
+
+    @Override
+    public Target setProperties(Map<String, String> properties) {
+        if (getProperties() != null) {
+            getProperties().clear();
+            getProperties().putAll(properties);
+        }
+        return this;
     }
 
     public Environment getEnvironment() {

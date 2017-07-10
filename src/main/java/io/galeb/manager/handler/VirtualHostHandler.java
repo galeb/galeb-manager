@@ -18,6 +18,7 @@
 
 package io.galeb.manager.handler;
 
+import com.google.common.collect.Sets;
 import io.galeb.manager.cache.DistMap;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
@@ -27,6 +28,7 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
@@ -42,7 +44,10 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,6 +59,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
+    @SuppressWarnings("SpringJavaAutowiringInspection")
     @Autowired private StringRedisTemplate template;
 
     @Override
@@ -86,7 +92,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     public void beforeSave(VirtualHost virtualhost) throws Exception {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
-        beforeSave(virtualhost, virtualHostRepository, LOGGER);
+        beforeSave(virtualhost, getVirtualHostRepository(), LOGGER);
         checkDupOnAliases(virtualhost);
     }
 
@@ -106,19 +112,25 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
-    private void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
-        final long farmId = virtualHost.getFarmId();
-        if (farmId == -1L) return;
-        final Set<String> aliases = virtualHost.getAliases();
-        final int sizeAliases = aliases.size();
-        boolean dup = aliases.contains(virtualHost.getName());
-        if (!dup) {
-            final Set<String> allNames = virtualHostRepository.getAllNames(farmId);
-            final int sizeAllNames = allNames.size();
-            allNames.addAll(aliases);
-            dup = allNames.size() != sizeAllNames + sizeAliases;
+    public void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
+        final Set<String> changes = aliasesChanges(virtualHost);
+        if (!changes.isEmpty() && virtualHost.getAliases().containsAll(changes)) {
+            final long farmId = virtualHost.getFarmId();
+            if (farmId == -1L) return;
+            final Set<String> aliases = virtualHost.getAliases();
+            boolean dup = aliases.contains(virtualHost.getName());
+            if (!dup) {
+                final Set<String> allNames = getVirtualHostRepository().getAllNames(farmId);
+                final int sizeAllNames = allNames.size();
+                allNames.addAll(changes);
+                dup = allNames.size() != sizeAllNames + changes.size();
+            }
+            if (dup) throw new BadRequestException("Name already exists");
         }
-        if (dup) throw new BadRequestException("Name already exists");
+    }
+
+    protected VirtualHostRepository getVirtualHostRepository() {
+        return virtualHostRepository;
     }
 
     private void updateRuleOrder(VirtualHost virtualhost) {
@@ -136,6 +148,14 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
                 virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
             });
         }
+    }
+
+    public Set<String> aliasesChanges(final VirtualHost virtualHost) {
+        Set<String> aliases = virtualHost.getAliases();
+        List<VirtualHost> resultVirtualhosts = getVirtualHostRepository().findByName(virtualHost.getName(), new PageRequest(0, 1)).getContent();
+        Optional<VirtualHost> virtualHostPersisted = resultVirtualhosts != null && !resultVirtualhosts.isEmpty() ? resultVirtualhosts.stream().findAny() : Optional.empty();
+        Set<String> aliasesPersisted = virtualHostPersisted.map(VirtualHost::getAliases).orElseGet(Collections::emptySet);
+        return Sets.symmetricDifference(aliasesPersisted, aliases);
     }
 
     @Override
