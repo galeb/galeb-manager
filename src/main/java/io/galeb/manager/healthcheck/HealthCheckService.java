@@ -18,6 +18,7 @@ package io.galeb.manager.healthcheck;
 
 import com.google.gson.Gson;
 import io.galeb.manager.common.ErrorLogger;
+import io.galeb.manager.common.LoggerUtils;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.queue.JmsConfiguration;
@@ -49,6 +50,7 @@ import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
 import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTION_ID;
@@ -58,6 +60,7 @@ public class HealthCheckService {
 
     private static final String QUEUE_HEALTH_CALLBACK = "health-callback";
     private static final String QUEUE_GALEB_HEALTH    = "galeb-health";
+    private static final String QUEUE_PAGE_REQUEST    = "health-page-request";
     private static final int    PAGE_SIZE             = 100;
     private static final Log    LOGGER                = LogFactory.getLog(HealthCheckService.class);
 
@@ -68,6 +71,7 @@ public class HealthCheckService {
 
     private final TargetRepository targetRepository;
     private final JmsTemplate template;
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     @Autowired
     public HealthCheckService(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory, TargetRepository targetRepository) {
@@ -76,7 +80,7 @@ public class HealthCheckService {
     }
 
     @Scheduled(fixedDelay = 10000)
-    public void sendTargetsToQueue() {
+    public void schedPageRequestToQueue() {
         final String schedId = UUID.randomUUID().toString();
         LOGGER.info("[sch " + schedId + "] Sending targets to queue " + QUEUE_GALEB_HEALTH);
         long start = System.currentTimeMillis();
@@ -84,18 +88,39 @@ public class HealthCheckService {
         final Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final long size = targetRepository.count();
-        for (int page = 0; page <= size/PAGE_SIZE; page++) {
-            Page<Target> targetsPage = targetRepository.findAll(new PageRequest(page, PAGE_SIZE));
-            try {
-                StreamSupport.stream(targetsPage.spliterator(), false).forEach(target -> sendToQueue(target, counter));
-            } catch (Exception e) {
-                LOGGER.error(ExceptionUtils.getStackTrace(e));
-                break;
-            }
-        }
         SystemUserService.runAs(currentUser);
+        IntStream.rangeClosed(0, (int)(size/PAGE_SIZE)).forEach(page ->
+            template.send(QUEUE_PAGE_REQUEST, (session -> {
+                Message message = session.createTextMessage(String.valueOf(page));
+                defineUniqueId(message, String.valueOf(page));
+                return message;
+            }))
+        );
         LOGGER.info("[sch " + schedId + "] Sent " + counter.get() + " targets to queue " + QUEUE_GALEB_HEALTH + " " +
                 "[" + (System.currentTimeMillis() - start) + " ms] (before to start this task: " + size + " targets from db)");
+
+    }
+
+    @SuppressWarnings("unused")
+    @JmsListener(destination = QUEUE_PAGE_REQUEST)
+    public void sendTargetsToQueue(String pageStr) {
+        try {
+            int page = Integer.parseInt(pageStr);
+            if (page == 0) counter.set(0);
+            final Authentication currentUser = CurrentUser.getCurrentAuth();
+            SystemUserService.runAs();
+            final Page<Target> targetsPage = targetRepository.findAll(new PageRequest(page, PAGE_SIZE));
+            SystemUserService.runAs(currentUser);
+            if (targetsPage != null && targetsPage.hasContent()) {
+                try {
+                    StreamSupport.stream(targetsPage.spliterator(), false).forEach(target -> sendToQueue(target, counter));
+                } catch (Exception e) {
+                    LOGGER.error(ExceptionUtils.getStackTrace(e));
+                }
+            }
+        } catch (NumberFormatException e) {
+            ErrorLogger.logError(e, this.getClass());
+        }
     }
 
     @SuppressWarnings("unused")
