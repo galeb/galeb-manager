@@ -1,5 +1,7 @@
 package io.galeb.manager.entity;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 public interface WithFarmID<T extends AbstractEntity<?>> {
 
     long getFarmId();
@@ -7,11 +9,7 @@ public interface WithFarmID<T extends AbstractEntity<?>> {
     T setFarmId(long farmId);
 
     default Farm getFarm() {
-        return getFakeFarm();
-    }
-
-    default Farm getFakeFarm() {
-        return new Farm().setName("fake").setAutoReload(false);
+        throw new NotImplementedException();
     }
 
 }
