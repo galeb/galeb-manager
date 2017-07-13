@@ -17,7 +17,6 @@
 package io.galeb.manager.routermap;
 
 import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.service.EtagService;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
@@ -29,7 +28,6 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
@@ -66,7 +64,7 @@ public class RouterState {
         Set<String> keysGroupId = redisTemplate.keys(keyPrefixEnv + ":*");
         List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
         boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
-        if (allEqual && allValues != null && allValues.size() > 0) {
+        if (allEqual && allValues.size() > 0) {
             String etag = getEtagByEnvironment(envname);
             boolean allEqualAndEtagMatch = allValues.get(0).equals(etag);
             redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqualAndEtagMatch), REGISTER_TTL, TimeUnit.MILLISECONDS);
@@ -91,12 +89,6 @@ public class RouterState {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
         String stateStrFromRedis = redisTemplate.opsForValue().get(KEY_ROUTER_SYNC + environmentName);
         return stateStrFromRedis == null ? State.EMPTY : Boolean.valueOf(stateStrFromRedis) ? State.SYNC : State.NOSYNC;
-    }
-
-    public void releaseSync(String environmentName) {
-        Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
-        redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + environmentName, Boolean.FALSE.toString(), REGISTER_TTL, TimeUnit.MILLISECONDS);
     }
 
 }
