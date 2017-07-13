@@ -27,7 +27,6 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import sun.plugin.dom.exception.InvalidStateException;
 
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_environment", columnNames = { "name" }) })
