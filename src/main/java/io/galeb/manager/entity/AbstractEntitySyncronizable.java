@@ -80,14 +80,11 @@ public abstract class AbstractEntitySyncronizable {
     }
 
     private String getValueDistMap() {
-        if (farmEnabled()) {
-            return getDistMap().get((AbstractEntity<?>)this);
-        }
-        return null;
+        return getDistMap().get((AbstractEntity<?>)this);
     }
 
     private AbstractEntity.EntityStatus getEntityStatusFromValueMap(String value) {
-        if (value == null) return AbstractEntity.EntityStatus.OK;
+        if (value == null) return AbstractEntity.EntityStatus.PENDING;
         AbstractEntity.EntityStatus statusDistMap;
         boolean valueIsStatus = Enums.getIfPresent(AbstractEntity.EntityStatus.class, value).isPresent();
         if (valueIsStatus) {
@@ -103,14 +100,5 @@ public abstract class AbstractEntitySyncronizable {
     private boolean farmEnabled() {
         final Farm farm = this instanceof WithFarmID ? ((WithFarmID) this).getFarm() : this instanceof Farm ? (Farm) this : null;
         return farm != null && farm.isAutoReload();
-    }
-
-    @JsonIgnore
-    public void releaseSync() {
-        getRouterState().releaseSync(getEnvName());
-    }
-
-    protected Farm getFakeFarm() {
-        return new Farm().setName("fake").setAutoReload(false);
     }
 }

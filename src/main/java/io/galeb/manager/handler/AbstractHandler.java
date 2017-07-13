@@ -48,7 +48,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void beforeCreate(T entity, Log logger) throws Exception {
-        entity.releaseSync();
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
         setBestFarm(entity);
         if (entity instanceof WithFarmID && ((WithFarmID)entity).getFarmId() < 0) {
@@ -62,7 +61,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void beforeSave(T entity, PagingAndSortingRepository<T, Long> repository, Log logger) throws Exception {
-        entity.releaseSync();
         String entityTypeName = entity.getClass().getSimpleName();
         logger.info(entityTypeName+": HandleBeforeSave");
         if (entity.isSaveOnly()) {
@@ -86,7 +84,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void beforeDelete(T entity, Log logger) {
-        entity.releaseSync();
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeDelete");
     }
 

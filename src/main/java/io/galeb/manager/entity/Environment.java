@@ -27,6 +27,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import sun.plugin.dom.exception.InvalidStateException;
 
 @Entity
 @Table(uniqueConstraints = { @UniqueConstraint(name = "UK_name_environment", columnNames = { "name" }) })
@@ -60,6 +61,6 @@ public class Environment extends AbstractEntity<Environment> {
 
     @JsonIgnore
     protected Farm getFarm(long farmId) {
-        return farms.stream().filter(f -> f.getId() == farmId).findAny().orElse(getFakeFarm());
+        return farms.stream().filter(f -> f.getId() == farmId).findAny().orElseThrow(() -> new RuntimeException("Farm " + farmId + " not found"));
     }
 }

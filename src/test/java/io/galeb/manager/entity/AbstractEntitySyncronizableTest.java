@@ -17,7 +17,6 @@
 package io.galeb.manager.entity;
 
 import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.routermap.RouterState;
 import org.junit.Before;
 import org.junit.Test;
