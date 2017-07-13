@@ -80,10 +80,7 @@ public abstract class AbstractEntitySyncronizable {
     }
 
     private String getValueDistMap() {
-        if (farmEnabled()) {
-            return getDistMap().get((AbstractEntity<?>)this);
-        }
-        return null;
+        return getDistMap().get((AbstractEntity<?>)this);
     }
 
     private AbstractEntity.EntityStatus getEntityStatusFromValueMap(String value) {
@@ -103,9 +100,5 @@ public abstract class AbstractEntitySyncronizable {
     private boolean farmEnabled() {
         final Farm farm = this instanceof WithFarmID ? ((WithFarmID) this).getFarm() : this instanceof Farm ? (Farm) this : null;
         return farm != null && farm.isAutoReload();
-    }
-
-    protected Farm getFakeFarm() {
-        return new Farm().setName("fake").setAutoReload(false);
     }
 }

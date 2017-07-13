@@ -204,7 +204,7 @@ public class Rule extends AbstractEntity<Rule> implements WithFarmID<Rule>, With
         if ((virtualHost = parents.stream().findAny()).isPresent()) {
             return virtualHost.get().getEnvironment().getFarm(farmId);
         }
-        return getFakeFarm();
+        throw new RuntimeException("Farm " + farmId + " not found");
     }
 
 }

@@ -6,6 +6,12 @@ public interface WithFarmID<T extends AbstractEntity<?>> {
 
     T setFarmId(long farmId);
 
-    Farm getFarm();
+    default Farm getFarm() {
+        return getFakeFarm();
+    }
+
+    default Farm getFakeFarm() {
+        return new Farm().setName("fake").setAutoReload(false);
+    }
 
 }
