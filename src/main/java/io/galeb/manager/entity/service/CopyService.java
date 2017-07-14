@@ -33,7 +33,6 @@ import io.galeb.manager.entity.RuleType;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.VirtualHostRepository;
-import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +44,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.transaction.Transactional;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -152,12 +150,10 @@ public class CopyService {
     @SuppressWarnings("WeakerAccess")
     @Cacheable("targets")
     public Set<Target> copyTargets(final Pool pool) {
-        // Send only Targets OK (property "healthy":"OK" or status OK or status PENDING)
+        // Send only Targets OK (property "healthy":"OK")
         return pool.getTargets().stream().filter(target -> {
             final String targetHealthy = target.getProperties().get(PROP_HEALTHY);
-            final AbstractEntity.EntityStatus targetStatus = target.getStatus();
-            final AbstractEntity.EntityStatus[] validStatus = {AbstractEntity.EntityStatus.OK, AbstractEntity.EntityStatus.PENDING};
-            return "OK".equals(targetHealthy) || Arrays.stream(validStatus).anyMatch(e -> e == targetStatus);
+            return "OK".equals(targetHealthy);
         }).map(target -> {
             Target targetCopy = gson.fromJson(gson.toJson(target), Target.class);
             targetCopy.setId(target.getId());
