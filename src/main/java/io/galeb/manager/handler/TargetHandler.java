@@ -100,7 +100,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleBeforeSave
     public void beforeSave(Target target) throws Exception {
-        if (hashChanged(target)) distMap.remove(target);
+        distMap.remove(target);
         setParentIfNull(target);
         beforeSave(target, targetRepository, LOGGER);
         setGlobalIfNecessary(target);
@@ -173,11 +173,6 @@ public class TargetHandler extends AbstractHandler<Target> {
         if (target.getParent() == null) {
             target.setParent(poolRepository.getNoParent());
         }
-    }
-
-    private boolean hashChanged(Target target) {
-        final Target targetPersisted = targetRepository.findOne(target.getId());
-        return targetPersisted != null && targetPersisted.getHash() != target.getHash();
     }
 
     @Override
