@@ -39,6 +39,7 @@ import static org.apache.activemq.artemis.api.core.Message.HDR_DUPLICATE_DETECTI
 public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
 
     private static final String UNIQUE_ID_SEP = ".";
+    private static final Long FACTOR_TIME_EXPIRE_UNIQUE_ID = Long.valueOf(1000 * 60 * 12);
 
     private static final boolean DISABLE_QUEUE;
     static {
@@ -119,7 +120,12 @@ public abstract class AbstractEnqueuer<T extends AbstractEntity<?>> {
     public void sendToQueue(String queue, T entity, final Map<String, String> properties) {
         String api = getApiEncoded(properties.get(API_PROP));
         String apiWithSep = !"".equals(api) ? UNIQUE_ID_SEP + api : "";
-        String uniqueId = "ID:" + queue + UNIQUE_ID_SEP + entity.getId() + apiWithSep + UNIQUE_ID_SEP + entity.getLastModifiedAt().getTime();
+        String uniqueId = "ID:"
+                          + queue + UNIQUE_ID_SEP
+                          + entity.getId()
+                          + apiWithSep + UNIQUE_ID_SEP
+                          + entity.getLastModifiedAt().getTime() + UNIQUE_ID_SEP
+                          + (System.currentTimeMillis() / FACTOR_TIME_EXPIRE_UNIQUE_ID);
         sendToQueue(queue, entity, properties, uniqueId);
     }
 
