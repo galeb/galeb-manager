@@ -38,7 +38,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
         return null;
     }
 
-    private void registerEnv(T entity) {
+    private void registerHasChange(T entity) {
         if (template() != null) {
             String env = entity.getEnvName();
             String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
@@ -56,7 +56,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterCreate(T entity, Log logger) throws Exception {
-        registerEnv(entity);
+        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterCreate");
     }
 
@@ -74,7 +74,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterSave(T entity, Log logger) throws Exception {
-        registerEnv(entity);
+        registerHasChange(entity);
         String entityTypeName = entity.getClass().getSimpleName();
         logger.info(entityTypeName+": HandleAfterSave");
         if (entity.isSaveOnly()) {
@@ -88,7 +88,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterDelete(T entity, Log logger) throws Exception {
-        registerEnv(entity);
+        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterDelete");
     }
 

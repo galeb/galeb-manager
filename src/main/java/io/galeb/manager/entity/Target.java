@@ -67,15 +67,6 @@ public class Target extends AbstractEntity<Target> implements WithFarmID<Target>
         //
     }
 
-    @Override
-    public Target setProperties(Map<String, String> properties) {
-        if (getProperties() != null) {
-            getProperties().clear();
-            getProperties().putAll(properties);
-        }
-        return this;
-    }
-
     public Environment getEnvironment() {
         return environment;
     }
