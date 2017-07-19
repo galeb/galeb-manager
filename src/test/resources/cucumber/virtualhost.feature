@@ -56,13 +56,6 @@ Feature: VirtualHost Support
             | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 201
-        And a REST client authenticated as accountOne
-        When request json body has:
-            | name        | two                |
-            | environment | Environment=envOne |
-            | project     | Project=projOne    |
-        And send POST /virtualhost
-        Then the response status is 201
 
     Scenario: Create duplicated Virtualhost
         Given a REST client authenticated as accountOne
@@ -72,16 +65,6 @@ Feature: VirtualHost Support
             | project     | Project=projOne    |
         And send POST /virtualhost
         Then the response status is 409
-
-    Scenario: Update Virtualhost with alias name duplicated
-        Given a REST client authenticated as accountOne
-        When request json body has:
-            | name        | one                |
-            | aliases     | [ two ]            |
-            | environment | Environment=envOne |
-            | project     | Project=projOne    |
-        And send PATCH /virtualhost/1
-        Then the response status is 400
 
     Scenario: Create duplicated alias name (1)
         Given a REST client authenticated as accountOne
@@ -111,7 +94,7 @@ Feature: VirtualHost Support
 
     Scenario: Get null VirtualHost
         Given a REST client authenticated as accountOne
-        When send GET /virtualhost/3
+        When send GET /virtualhost/999
         Then the response status is 404
 
     Scenario: Update VirtualHost
