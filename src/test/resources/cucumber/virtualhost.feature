@@ -72,7 +72,7 @@ Feature: VirtualHost Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | three              |
-            | aliases     | [ "one" ]          |
+            | aliases     | [ one ]          |
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
@@ -82,7 +82,7 @@ Feature: VirtualHost Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | four               |
-            | aliases     | [ "four" ]         |
+            | aliases     | [ four ]         |
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
