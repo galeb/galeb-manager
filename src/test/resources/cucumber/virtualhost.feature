@@ -55,8 +55,6 @@ Feature: VirtualHost Support
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
-
-    Scenario: Create VirtualHost
         Then the response status is 201
 
     Scenario: Create duplicated Virtualhost
@@ -72,7 +70,7 @@ Feature: VirtualHost Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | three              |
-            | aliases     | [ "one" ]          |
+            | aliases     | [ one ]            |
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
@@ -82,7 +80,7 @@ Feature: VirtualHost Support
         Given a REST client authenticated as accountOne
         When request json body has:
             | name        | four               |
-            | aliases     | [ "four" ]         |
+            | aliases     | [ four ]         |
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
@@ -96,7 +94,7 @@ Feature: VirtualHost Support
 
     Scenario: Get null VirtualHost
         Given a REST client authenticated as accountOne
-        When send GET /virtualhost/2
+        When send GET /virtualhost/999
         Then the response status is 404
 
     Scenario: Update VirtualHost
@@ -158,7 +156,7 @@ Feature: VirtualHost Support
         Then the response status is 201
         And a REST client authenticated as accountOne
         When request json body has:
-          | name        | two             |
+          | name        | three           |
           | environment | Environment=two |
           | project     | Project=projOne |
         And send POST /virtualhost
