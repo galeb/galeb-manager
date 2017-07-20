@@ -176,8 +176,8 @@ public class EtagService {
                         return v;
                     })
                     .collect(Collectors.toList());
-            persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
             persistToDb(envname, etag);
+            persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
             return etag;
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
