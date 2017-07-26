@@ -31,6 +31,8 @@ public class RouterMap {
 
     private static final String ROUTER_PREFIX = "routers:";
     private static final int    REGISTER_TTL  = 30000; // ms
+    public static final String KEY_HASH_ETAG = "etag";
+    public static final String KEY_HASH_TIMESTAMP= "etag";
     public RouterState routerState;
 
     private StringRedisTemplate redisTemplate;
@@ -53,13 +55,17 @@ public class RouterMap {
         return this;
     }
 
-    public void put(String groupId, String localIp, String etag, String envname) {
+    public void put(String groupId, String localIp, String etag, String envname, String timestamp) {
         String keyPrefixEnv = ROUTER_PREFIX + envname;
         String keyFull = keyPrefixEnv + ":" + groupId + ":" + localIp;
         try {
             Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
-            redisTemplate.opsForValue().set(keyFull, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
+            Map<String, String> mapValues = new HashMap<String, String>() {{
+                put(KEY_HASH_ETAG, etag);
+                put(KEY_HASH_TIMESTAMP, timestamp);
+            }};
+            redisTemplate.opsForHash().putAll(keyFull, mapValues);
+            redisTemplate.expire(keyFull, REGISTER_TTL, TimeUnit.MILLISECONDS);
             routerState.updateRouterState(keyPrefixEnv, envname);
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
@@ -79,7 +85,7 @@ public class RouterMap {
             final Set<JsonSchema.GroupID> groupIDs = new HashSet<>();
             String key_envname = environmentName == null ? "*" : environmentName;
             redisTemplate.keys(ROUTER_PREFIX + key_envname + ":*").forEach(key -> {
-                String etag = redisTemplate.opsForValue().get(key);
+                String etag = (String)redisTemplate.opsForHash().get(key, KEY_HASH_ETAG);
                 long expire = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
                 String envGroupIdWithLocalIp = key.replaceAll(ROUTER_PREFIX, "");
                 String[] key_splited = envGroupIdWithLocalIp.split(":");

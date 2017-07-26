@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.service.EtagService;
 import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.services.SystemUserService;
@@ -68,11 +69,13 @@ public class HealthCheckService {
 
     private final TargetRepository targetRepository;
     private final JmsTemplate template;
+    private final EtagService etagService;
 
     @Autowired
-    public HealthCheckService(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory, TargetRepository targetRepository) {
+    public HealthCheckService(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory, TargetRepository targetRepository, EtagService etagService) {
         this.template = new JmsConfiguration.EfemeralJmsTemplate(connectionFactory);
         this.targetRepository = targetRepository;
+        this.etagService = etagService;
     }
 
     @Scheduled(fixedDelay = 10000)
@@ -109,6 +112,7 @@ public class HealthCheckService {
                 if (target != null) {
                     target.setProperties(targetCopy.getProperties());
                     em.merge(target);
+                    etagService.registerChanges(target);
                     LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
                 } else {
                     if (LOGGER.isDebugEnabled()) {

@@ -28,7 +28,6 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -52,7 +51,6 @@ public class RuleHandler extends AbstractHandler<Rule> {
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
     @Autowired private VirtualHostHandler virtualHostHandler;
-    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final Rule rule) throws Exception {
@@ -135,11 +133,6 @@ public class RuleHandler extends AbstractHandler<Rule> {
                 LOGGER.error(e);
             }
         });
-    }
-
-    @Override
-    protected StringRedisTemplate template() {
-        return template;
     }
 
     private enum After {

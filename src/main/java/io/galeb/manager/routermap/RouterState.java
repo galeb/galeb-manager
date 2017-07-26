@@ -16,16 +16,19 @@
 
 package io.galeb.manager.routermap;
 
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.Assert;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +45,6 @@ public class RouterState {
 
     public static final RouterState INSTANCE = new RouterState();
 
-    private static final String KEY_ROUTER_SYNC = "sync_etag:";
-    private static final int    REGISTER_TTL    = 30000; // ms
-
     private StringRedisTemplate redisTemplate;
     private EnvironmentRepository environmentRepository;
 
@@ -60,35 +60,25 @@ public class RouterState {
 
     public void updateRouterState(String keyPrefixEnv, String envname) {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
-        Set<String> keysGroupId = redisTemplate.keys(keyPrefixEnv + ":*");
-        List<String> allValues = redisTemplate.opsForValue().multiGet(keysGroupId);
-        boolean allEqual = allValues.stream().distinct().limit(2).count() <= 1;
-        if (allEqual && allValues.size() > 0) {
-            String etag = getEtagByEnvironment(envname);
-            boolean allEqualAndEtagMatch = allValues.get(0).equals(etag);
-            redisTemplate.opsForValue().set(KEY_ROUTER_SYNC + envname,String.valueOf(allEqualAndEtagMatch), REGISTER_TTL, TimeUnit.MILLISECONDS);
-        }
+        Set<Long> timestampsRouters = new HashSet<>();
+        redisTemplate.keys(keyPrefixEnv + ":*").stream().forEach(key -> {
+            timestampsRouters.add(Long.valueOf((String)redisTemplate.opsForHash().get(key, RouterMap.KEY_HASH_TIMESTAMP)));
+        });
+        redisTemplate.keys("sync:" + envname + ":*").forEach(key -> {
+            redisTemplate.opsForSet().members(key).forEach(t -> {
+                if (timestampsRouters.stream().filter(tr -> Long.valueOf(t) < tr).count() > 0) {
+                    redisTemplate.opsForSet().remove(key, t);
+                }
+            });
+        });
     }
 
-    private String getEtagByEnvironment(String envname) {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        final Page<Environment> envPage = environmentRepository.findByName(envname, new PageRequest(0, 1));
-        Environment environment = null;
-        if (envPage.hasContent()) {
-            environment = envPage.iterator().next();
-        }
-        String etag = environment == null ? "" :  environment.getProperties().getOrDefault(PROP_FULLHASH, "");
-        SystemUserService.runAs(currentUser);
-        return etag;
-
-    }
-
-    public State state(String environmentName) {
+    public State state(AbstractEntity entity) {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-        String stateStrFromRedis = redisTemplate.opsForValue().get(KEY_ROUTER_SYNC + environmentName);
-        return stateStrFromRedis == null ? State.EMPTY : Boolean.valueOf(stateStrFromRedis) ? State.SYNC : State.NOSYNC;
+        String keySuffix = entity == null ? "*" : entity.getEnvName() + ":" +  entity.getClass().getSimpleName().toLowerCase().concat(String.valueOf(entity.getId()));
+        boolean existsKey = redisTemplate.keys("sync:" + keySuffix)
+                                         .stream().count() > 0;
+        return existsKey ? State.NOSYNC : State.SYNC;
     }
 
 }

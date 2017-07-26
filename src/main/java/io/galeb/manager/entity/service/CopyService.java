@@ -35,6 +35,8 @@ import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.Authentication;
@@ -57,6 +59,9 @@ import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
 
 @Service
 public class CopyService {
+
+    private static final Log LOGGER = LogFactory.getLog(CopyService.class);
+
 
     private static final String PROP_DISCOVERED_MEMBERS_SIZE = "discoveredMembersSize";
     private static final String PROP_HEALTHY  = "healthy";
@@ -189,12 +194,18 @@ public class CopyService {
         if (ruleDefault != null) {
             keys.add(ruleDefault.getLastModifiedAt().toString());
             keys.add(ruleDefault.getPool().getLastModifiedAt().toString());
+            ruleDefault.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
+                    .forEach(target -> {
+                        keys.add(target.getLastModifiedAt().toString());
+                    });
         }
         virtualHost.getRules().stream().sorted(Comparator.comparing(AbstractEntity::getName)).forEach(rule -> {
             keys.add(rule.getLastModifiedAt().toString());
             keys.add(rule.getPool().getLastModifiedAt().toString());
             rule.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
-                    .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
+                    .forEach(target -> {
+                        keys.add(target.getLastModifiedAt().toString());
+                    });
         });
         String key = String.join("", keys) + numRouters;
         return sha256().hashString(key, Charsets.UTF_8).toString();

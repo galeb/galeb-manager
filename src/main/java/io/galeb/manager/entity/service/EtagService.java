@@ -20,6 +20,7 @@ import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.common.ErrorLogger;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.EnvironmentRepository;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -94,6 +96,13 @@ public class EtagService {
         return body;
     }
 
+    public void registerChanges(AbstractEntity entity) {
+        String env = entity.getEnvName();
+        String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
+        final ValueOperations<String, String> valueOperations = template.opsForValue();
+        valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
+    }
+
     private String etag(String envname, int numRouters, boolean cache) {
         String etag = "";
         if (cache) etag = getLastEtag(envname);
@@ -127,8 +136,6 @@ public class EtagService {
     }
 
     private void persistToRedis(String etag, String envname, String body) {
-        expireLastEtag(envname);
-        expireCache(envname);
         template.opsForValue().set(getLastEtagKey(envname, false), etag, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
         template.opsForValue().set(getEtagKey(etag, envname), body, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
     }
@@ -161,6 +168,9 @@ public class EtagService {
 
     private String newEtag(String envname, int numRouters) {
         try {
+            expireLastEtag(envname);
+            expireCache(envname);
+
             List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters);
             if (virtualHosts == null || virtualHosts.isEmpty()) {
                 return "";

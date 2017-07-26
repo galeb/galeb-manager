@@ -29,7 +29,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -60,7 +59,6 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
     @SuppressWarnings("SpringJavaAutowiringInspection")
-    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -156,10 +154,5 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         Optional<VirtualHost> virtualHostPersisted = resultVirtualhosts != null && !resultVirtualhosts.isEmpty() ? resultVirtualhosts.stream().findAny() : Optional.empty();
         Set<String> aliasesPersisted = virtualHostPersisted.map(VirtualHost::getAliases).orElseGet(Collections::emptySet);
         return Sets.symmetricDifference(aliasesPersisted, aliases);
-    }
-
-    @Override
-    protected StringRedisTemplate template() {
-        return template;
     }
 }

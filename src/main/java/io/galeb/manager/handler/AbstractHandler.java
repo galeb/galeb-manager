@@ -19,32 +19,26 @@
 package io.galeb.manager.handler;
 
 import io.galeb.manager.entity.WithFarmID;
+import io.galeb.manager.entity.service.EtagService;
 import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import io.galeb.manager.entity.AbstractEntity;
-
-import static io.galeb.manager.entity.AbstractEntitySyncronizable.PREFIX_HAS_CHANGE;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
     protected abstract void setBestFarm(T entity) throws Exception;
 
-    protected StringRedisTemplate template() {
-        // ugly, but NULL is the default
-        return null;
-    }
+    private static final Log LOGGER = LogFactory.getLog(AbstractHandler.class);
+
+    @Autowired
+    private EtagService etagService;
 
     private void registerHasChange(T entity) {
-        if (template() != null) {
-            String env = entity.getEnvName();
-            String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
-            final ValueOperations<String, String> valueOperations = template().opsForValue();
-            valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
-        }
+        etagService.registerChanges(entity);
     }
 
     public void beforeCreate(T entity, Log logger) throws Exception {
