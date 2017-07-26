@@ -20,6 +20,7 @@ import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.common.ErrorLogger;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.EnvironmentRepository;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -74,11 +76,13 @@ public class EtagService {
         Set<String> changes = changes(envname);
         String etag;
         if (!changes.isEmpty()) {
+            LOGGER.info("MUDANÇAS ACONTECERAM...");
             expireLastEtag(envname);
             expireChanges(changes);
             expireCache(envname);
             etag = etag(envname, numRouters, false);
         } else {
+            LOGGER.info("SEM MUDANÇAS...");
             etag = etag(envname, numRouters, true);
         }
         if ("".equals(etag)) {
@@ -94,11 +98,21 @@ public class EtagService {
         return body;
     }
 
+    public void registerChanges(AbstractEntity entity) {
+        String env = entity.getEnvName();
+        String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
+        final ValueOperations<String, String> valueOperations = template.opsForValue();
+        valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
+        LOGGER.info("Registrando mudanças no Redis com chave " + PREFIX_HAS_CHANGE + ":" + env + ":" + suffix + " e valor " + env);
+    }
+
     private String etag(String envname, int numRouters, boolean cache) {
         String etag = "";
         if (cache) etag = getLastEtag(envname);
         if ("".equals(etag)) {
+            LOGGER.info("GERANDO NOVA TAG");
             etag = newEtag(envname, numRouters);
+            LOGGER.info("NEW TAG -> " + etag);
         }
         return etag;
     }
@@ -114,7 +128,8 @@ public class EtagService {
 
     private void expire(String key) {
         if (template.hasKey(key)) {
-            template.expire(key, 100, TimeUnit.MILLISECONDS);
+//            template.expire(key, 100, TimeUnit.MILLISECONDS);
+            template.delete(key);
         }
     }
 
@@ -127,8 +142,6 @@ public class EtagService {
     }
 
     private void persistToRedis(String etag, String envname, String body) {
-        expireLastEtag(envname);
-        expireCache(envname);
         template.opsForValue().set(getLastEtagKey(envname, false), etag, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
         template.opsForValue().set(getEtagKey(etag, envname), body, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
     }
@@ -161,6 +174,9 @@ public class EtagService {
 
     private String newEtag(String envname, int numRouters) {
         try {
+            expireLastEtag(envname);
+            expireCache(envname);
+
             List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters);
             if (virtualHosts == null || virtualHosts.isEmpty()) {
                 return "";

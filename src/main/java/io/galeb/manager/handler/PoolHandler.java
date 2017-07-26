@@ -33,7 +33,6 @@ import io.galeb.manager.security.services.SystemUserService;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -51,7 +50,6 @@ public class PoolHandler extends AbstractHandler<Pool> {
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
     @Autowired private DistMap distMap;
-    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final Pool pool) throws Exception {
@@ -113,10 +111,5 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     private void setGlobalIfNecessary(Pool pool) {
         pool.setGlobal(pool.getRules().stream().map(Rule::isGlobal).filter(b -> b).count() > 0);
-    }
-
-    @Override
-    protected StringRedisTemplate template() {
-        return template;
     }
 }

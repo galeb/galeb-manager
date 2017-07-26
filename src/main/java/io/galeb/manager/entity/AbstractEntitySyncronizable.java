@@ -58,7 +58,7 @@ public abstract class AbstractEntitySyncronizable {
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {
-            final RouterState.State routerMapState = getRouterState().state(getEnvName());
+            final RouterState.State routerMapState = getRouterState().state((AbstractEntity<?>)this);
             boolean resultG4 = routerMapState != RouterState.State.NOSYNC;
             if (farmEnabled()) {
                 final String valueFromDistMap = getValueDistMap();

@@ -27,8 +27,6 @@ import io.galeb.manager.repository.PoolRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -43,10 +41,9 @@ import io.galeb.manager.repository.FarmRepository;
 import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
-
+@Component
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
 
@@ -56,7 +53,6 @@ public class TargetHandler extends AbstractHandler<Target> {
     @Autowired private PoolRepository poolRepository;
     @Autowired private FarmRepository farmRepository;
     @Autowired private DistMap distMap;
-    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final Target target) throws Exception {
@@ -173,10 +169,5 @@ public class TargetHandler extends AbstractHandler<Target> {
         if (target.getParent() == null) {
             target.setParent(poolRepository.getNoParent());
         }
-    }
-
-    @Override
-    protected StringRedisTemplate template() {
-        return template;
     }
 }
