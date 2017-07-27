@@ -48,8 +48,9 @@ public class RoutersController {
     public ResponseEntity<?> headRouterMap(@RequestHeader(value = "X-Galeb-LocalIP") String routerLocalIP,
                                 @RequestHeader(value = "X-Galeb-GroupID") String routerGroupId,
                                 @RequestHeader(value = "X-Galeb-Environment") String envname,
-                                @RequestHeader(value = "If-None-Match") String etag) throws Exception {
-        routerMap.put(routerGroupId, routerLocalIP, etag, envname);
+                                @RequestHeader(value = "If-None-Match") String etag,
+                                @RequestHeader(value = "X-Galeb-ETag-Time") String time) throws Exception {
+        routerMap.put(routerGroupId, routerLocalIP, etag, envname, time);
         return ResponseEntity.ok().build();
     }
 }

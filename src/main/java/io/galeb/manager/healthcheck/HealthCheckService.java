@@ -20,9 +20,9 @@ import com.google.gson.Gson;
 import io.galeb.manager.common.ErrorLogger;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
-import io.galeb.manager.entity.service.EtagService;
 import io.galeb.manager.queue.JmsConfiguration;
 import io.galeb.manager.repository.TargetRepository;
+import io.galeb.manager.routermap.RouterState;
 import io.galeb.manager.security.services.SystemUserService;
 import io.galeb.manager.security.user.CurrentUser;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -48,7 +48,6 @@ import javax.persistence.PersistenceContext;
 
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.StreamSupport;
 
@@ -69,13 +68,13 @@ public class HealthCheckService {
 
     private final TargetRepository targetRepository;
     private final JmsTemplate template;
-    private final EtagService etagService;
+    private final RouterState routerState;
 
     @Autowired
-    public HealthCheckService(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory, TargetRepository targetRepository, EtagService etagService) {
+    public HealthCheckService(@Value("#{jmsConnectionFactory}") ConnectionFactory connectionFactory, TargetRepository targetRepository, RouterState routerState) {
         this.template = new JmsConfiguration.EfemeralJmsTemplate(connectionFactory);
         this.targetRepository = targetRepository;
-        this.etagService = etagService;
+        this.routerState = routerState;
     }
 
     @Scheduled(fixedDelay = 10000)
@@ -112,7 +111,7 @@ public class HealthCheckService {
                 if (target != null) {
                     target.setProperties(targetCopy.getProperties());
                     em.merge(target);
-                    etagService.registerChanges(target);
+                    routerState.registerChanges(target);
                     LOGGER.warn("Healthcheck: target " + target.getName() + " updated. New status detailed: " + target.getProperties().get("status_detailed"));
                 } else {
                     if (LOGGER.isDebugEnabled()) {

@@ -19,10 +19,9 @@
 package io.galeb.manager.handler;
 
 import io.galeb.manager.entity.WithFarmID;
-import io.galeb.manager.entity.service.EtagService;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -32,13 +31,11 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
     protected abstract void setBestFarm(T entity) throws Exception;
 
-    private static final Log LOGGER = LogFactory.getLog(AbstractHandler.class);
-
     @Autowired
-    private EtagService etagService;
+    private RouterState routerState;
 
     private void registerHasChange(T entity) {
-        etagService.registerChanges(entity);
+        routerState.registerChanges(entity);
     }
 
     public void beforeCreate(T entity, Log logger) throws Exception {

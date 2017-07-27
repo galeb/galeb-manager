@@ -35,6 +35,7 @@ public abstract class AbstractEntitySyncronizable {
     public static final String PREFIX_LAST_ETAG  = "last_etag";
     public static final String PREFIX_ETAG       = "etag";
     public static final String PROP_FULLHASH     = "fullhash";
+    public static final String PROP_TIMEHASH     = "timehash";
 
     private static DistMap distMap;
     private static RouterState routerState;
@@ -58,8 +59,7 @@ public abstract class AbstractEntitySyncronizable {
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {
-            AbstractEntity entity = this instanceof Farm ? null : (AbstractEntity<?>)this;
-            final RouterState.State routerMapState = getRouterState().state(entity);
+            final RouterState.State routerMapState = getRouterState().state((AbstractEntity<?>)this);
             boolean resultG4 = routerMapState != RouterState.State.NOSYNC;
             if (farmEnabled()) {
                 final String valueFromDistMap = getValueDistMap();
@@ -102,4 +102,5 @@ public abstract class AbstractEntitySyncronizable {
         final Farm farm = this instanceof WithFarmID ? ((WithFarmID) this).getFarm() : this instanceof Farm ? (Farm) this : null;
         return farm != null && farm.isAutoReload();
     }
+
 }

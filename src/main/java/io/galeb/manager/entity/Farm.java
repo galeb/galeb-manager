@@ -22,6 +22,7 @@ import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.galeb.manager.common.StatusDistributed;
+import io.galeb.manager.routermap.RouterState;
 import org.springframework.util.Assert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

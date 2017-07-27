@@ -20,7 +20,6 @@ import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.common.ErrorLogger;
-import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.repository.EnvironmentRepository;
@@ -33,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -73,9 +71,10 @@ public class EtagService {
 
     public String responseBody(String envname, String groupId, String routerEtag) throws Exception {
         int numRouters = getNumRouters(envname, groupId);
-        Set<String> changes = changes(envname);
+        Set<String> changes = routerMap.routerState.changes(envname);
         String etag;
         if (!changes.isEmpty()) {
+            routerMap.routerState.addKeysSync(changes);
             expireLastEtag(envname);
             expireChanges(changes);
             expireCache(envname);
@@ -96,13 +95,6 @@ public class EtagService {
         return body;
     }
 
-    public void registerChanges(AbstractEntity entity) {
-        String env = entity.getEnvName();
-        String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
-        final ValueOperations<String, String> valueOperations = template.opsForValue();
-        valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
-    }
-
     private String etag(String envname, int numRouters, boolean cache) {
         String etag = "";
         if (cache) etag = getLastEtag(envname);
@@ -110,11 +102,6 @@ public class EtagService {
             etag = newEtag(envname, numRouters);
         }
         return etag;
-    }
-
-    private Set<String> changes(String envname) {
-        final Set<String> result = template.keys(PREFIX_HAS_CHANGE + ":" + envname + ":*");
-        return (result != null) ? result : Collections.emptySet();
     }
 
     private void expireChanges(Set<String> changes) {
@@ -180,13 +167,15 @@ public class EtagService {
                     .distinct()
                     .collect(Collectors.joining());
             String etag = key == null || "".equals(key) ? "" : sha256().hashString(key, Charsets.UTF_8).toString();
+            String time = String.valueOf(System.currentTimeMillis());
             virtualHosts = virtualHosts.stream()
                     .map(v -> {
                         v.getEnvironment().getProperties().put(PROP_FULLHASH, etag);
+                        v.getEnvironment().getProperties().put(PROP_TIMEHASH, time);
                         return v;
                     })
                     .collect(Collectors.toList());
-            persistToDb(envname, etag);
+            persistToDb(envname, etag, time);
             persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
             return etag;
         } catch (Exception e) {
@@ -196,10 +185,10 @@ public class EtagService {
     }
 
     @Transactional
-    private void persistToDb(String envname, String etag) throws Exception {
+    private void persistToDb(String envname, String etag, String time) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        updateEtag(envFindByName(envname), etag);
+        updateEtag(envFindByName(envname), etag, time);
         SystemUserService.runAs(currentUser);
     }
 
@@ -207,8 +196,9 @@ public class EtagService {
         return Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse("");
     }
 
-    public void updateEtag(final Environment environment, String etag) throws Exception {
+    public void updateEtag(final Environment environment, String etag, String time) throws Exception {
         environment.getProperties().put(PROP_FULLHASH, etag);
+        environment.getProperties().put(PROP_TIMEHASH, time);
         try {
             environmentRepository.saveAndFlush(environment);
             LOGGER.warn("Environment " + environment.getName() + ": updated fullhash to " + etag);
