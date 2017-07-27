@@ -186,7 +186,7 @@ public class EtagService {
     private void persistToDb(String envname, String etag) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
-        updateEtag(envFindByName(envname), etag, time);
+        updateEtag(envFindByName(envname), etag);
         SystemUserService.runAs(currentUser);
     }
 
@@ -194,7 +194,7 @@ public class EtagService {
         return Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse("");
     }
 
-    public void updateEtag(final Environment environment, String etag, String time) throws Exception {
+    public void updateEtag(final Environment environment, String etag) throws Exception {
         environment.getProperties().put(PROP_FULLHASH, etag);
         try {
             environmentRepository.saveAndFlush(environment);
