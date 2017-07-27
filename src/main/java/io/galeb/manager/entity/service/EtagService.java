@@ -167,15 +167,13 @@ public class EtagService {
                     .distinct()
                     .collect(Collectors.joining());
             String etag = key == null || "".equals(key) ? "" : sha256().hashString(key, Charsets.UTF_8).toString();
-            String time = String.valueOf(System.currentTimeMillis());
             virtualHosts = virtualHosts.stream()
                     .map(v -> {
                         v.getEnvironment().getProperties().put(PROP_FULLHASH, etag);
-                        v.getEnvironment().getProperties().put(PROP_TIMEHASH, time);
                         return v;
                     })
                     .collect(Collectors.toList());
-            persistToDb(envname, etag, time);
+            persistToDb(envname, etag);
             persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
             return etag;
         } catch (Exception e) {
@@ -185,7 +183,7 @@ public class EtagService {
     }
 
     @Transactional
-    private void persistToDb(String envname, String etag, String time) throws Exception {
+    private void persistToDb(String envname, String etag) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         updateEtag(envFindByName(envname), etag, time);
@@ -198,7 +196,6 @@ public class EtagService {
 
     public void updateEtag(final Environment environment, String etag, String time) throws Exception {
         environment.getProperties().put(PROP_FULLHASH, etag);
-        environment.getProperties().put(PROP_TIMEHASH, time);
         try {
             environmentRepository.saveAndFlush(environment);
             LOGGER.warn("Environment " + environment.getName() + ": updated fullhash to " + etag);
