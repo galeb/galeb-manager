@@ -32,7 +32,7 @@ public class RouterMap {
     private static final String ROUTER_PREFIX = "routers:";
     private static final int    REGISTER_TTL  = 30000; // ms
     public static final String KEY_HASH_ETAG = "etag";
-    public static final String KEY_HASH_TIMESTAMP= "etag";
+    public static final String KEY_HASH_TIMESTAMP= "timeetag";
     public RouterState routerState;
 
     private StringRedisTemplate redisTemplate;
