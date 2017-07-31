@@ -19,11 +19,9 @@
 package io.galeb.manager.handler;
 
 import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.entity.Environment;
-import io.galeb.manager.entity.Farm;
-import io.galeb.manager.entity.Project;
-import io.galeb.manager.entity.Target;
+import io.galeb.manager.entity.*;
 import io.galeb.manager.repository.PoolRepository;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +40,11 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
 
 @Component
 @RepositoryEventHandler(Target.class)
@@ -91,6 +94,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleAfterCreate
     public void afterCreate(Target target) throws Exception {
+        registerHasChange(target);
         afterCreate(target, LOGGER);
     }
 
@@ -104,6 +108,7 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleAfterSave
     public void afterSave(Target target) throws Exception {
+        registerHasChange(target);
         afterSave(target, LOGGER);
     }
 
@@ -115,7 +120,25 @@ public class TargetHandler extends AbstractHandler<Target> {
 
     @HandleAfterDelete
     public void afterDelete(Target target) throws Exception {
+        registerHasChange(target);
         afterDelete(target, LOGGER);
+        waitSync(target);
+    }
+
+    private void waitSync(Target target) throws InterruptedException {
+        if (routerState.isEmpty(target.getEnvName())) return;
+        Runnable task = () -> {
+            while (!routerState.state(target).equals(RouterState.State.SYNC)) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    LOGGER.error(e);
+                }
+            }
+        };
+        task.run();
+        Thread thread = new Thread(task);
+        TimeUnit.SECONDS.timedJoin(thread, 15);
     }
 
     private void setProject(Target target) throws Exception {

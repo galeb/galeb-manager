@@ -83,6 +83,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleAfterCreate
     public void afterCreate(VirtualHost virtualhost) throws Exception {
+        registerHasChange(virtualhost);
         afterCreate(virtualhost, LOGGER);
     }
 
@@ -96,6 +97,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleAfterSave
     public void afterSave(VirtualHost virtualhost) throws Exception {
+        registerHasChange(virtualhost);
         afterSave(virtualhost, LOGGER);
     }
 
@@ -107,6 +109,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     @HandleAfterDelete
     public void afterDelete(VirtualHost virtualhost) throws Exception {
+        registerHasChange(virtualhost);
         afterDelete(virtualhost, LOGGER);
     }
 

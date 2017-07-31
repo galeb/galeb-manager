@@ -32,9 +32,9 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     protected abstract void setBestFarm(T entity) throws Exception;
 
     @Autowired
-    private RouterState routerState;
+    protected RouterState routerState;
 
-    private void registerHasChange(T entity) {
+    protected void registerHasChange(T entity) {
         routerState.registerChanges(entity);
     }
 
@@ -47,7 +47,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterCreate(T entity, Log logger) throws Exception {
-        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterCreate");
     }
 
@@ -65,7 +64,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterSave(T entity, Log logger) throws Exception {
-        registerHasChange(entity);
         String entityTypeName = entity.getClass().getSimpleName();
         logger.info(entityTypeName+": HandleAfterSave");
         if (entity.isSaveOnly()) {
@@ -79,7 +77,6 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterDelete(T entity, Log logger) throws Exception {
-        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterDelete");
     }
 

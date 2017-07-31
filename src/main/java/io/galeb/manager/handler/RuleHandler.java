@@ -85,6 +85,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleAfterCreate
     public void afterCreate(Rule rule) throws Exception {
+        registerHasChange(rule);
         afterCreate(rule, LOGGER);
         updateRulesOrdered(rule, After.CREATE);
     }
@@ -98,6 +99,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleAfterSave
     public void afterSave(Rule rule) throws Exception {
+        registerHasChange(rule);
         afterSave(rule, LOGGER);
         updateRulesOrdered(rule, After.SAVE);
     }
@@ -110,6 +112,7 @@ public class RuleHandler extends AbstractHandler<Rule> {
 
     @HandleAfterDelete
     public void afterDelete(Rule rule) throws Exception {
+        registerHasChange(rule);
         afterDelete(rule, LOGGER);
         updateRulesOrdered(rule, After.DELETE);
     }

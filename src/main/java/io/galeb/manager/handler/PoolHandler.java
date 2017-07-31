@@ -75,6 +75,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleAfterCreate
     public void afterCreate(Pool pool) throws Exception {
+        registerHasChange(pool);
         afterCreate(pool, LOGGER);
     }
 
@@ -91,6 +92,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleAfterSave
     public void afterSave(Pool pool) throws Exception {
+        registerHasChange(pool);
         afterSave(pool, LOGGER);
     }
 
@@ -106,6 +108,7 @@ public class PoolHandler extends AbstractHandler<Pool> {
 
     @HandleAfterDelete
     public void afterDelete(Pool pool) throws Exception {
+        registerHasChange(pool);
         afterDelete(pool, LOGGER);
     }
 

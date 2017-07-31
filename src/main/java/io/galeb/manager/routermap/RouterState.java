@@ -77,8 +77,13 @@ public class RouterState {
         });
     }
 
+    public boolean isEmpty(String env) {
+        return redisTemplate.keys(RouterMap.ROUTER_PREFIX + env + ":*").isEmpty();
+    }
+
     public State state(AbstractEntity entity) {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
+        if (isEmpty(entity.getEnvName())) return State.EMPTY;
         boolean hasChange;
         if (entity instanceof Farm) {
             hasChange = !changes(entity.getEnvName()).isEmpty();
@@ -110,7 +115,6 @@ public class RouterState {
         final Set<String> result = redisTemplate.keys(PREFIX_HAS_CHANGE + ":" + entity.getEnvName() + ":" + entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":*");
         return (result != null) ? result : Collections.emptySet();
     }
-
 
     public boolean existsKeysSync(AbstractEntity entity) {
         String keySuffix = entity.getEnvName() + ":" +  entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId();
