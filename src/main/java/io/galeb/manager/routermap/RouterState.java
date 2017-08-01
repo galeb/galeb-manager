@@ -41,6 +41,8 @@ import static io.galeb.manager.entity.AbstractEntitySyncronizable.PROP_FULLHASH;
 
 public class RouterState {
 
+    public static final String SYNC_PREFIX = "sync:";
+
     public enum State {
         EMPTY,
         SYNC,
@@ -50,15 +52,9 @@ public class RouterState {
     public static final RouterState INSTANCE = new RouterState();
 
     private StringRedisTemplate redisTemplate;
-    private EnvironmentRepository environmentRepository;
 
     public RouterState setRedisTemplate(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
-        return this;
-    }
-
-    public RouterState setEnviromentRepository(EnvironmentRepository enviromentRepository) {
-        this.environmentRepository = enviromentRepository;
         return this;
     }
 
@@ -68,7 +64,7 @@ public class RouterState {
         redisTemplate.keys(keyPrefixEnv + ":*").stream().forEach(key -> {
             timestampsRouters.add(Long.valueOf((String)redisTemplate.opsForHash().get(key, RouterMap.KEY_HASH_TIMESTAMP)));
         });
-        redisTemplate.keys("sync:" + envname + ":*").forEach(key -> {
+        redisTemplate.keys(SYNC_PREFIX + envname + ":*").forEach(key -> {
             redisTemplate.opsForSet().members(key).forEach(t -> {
                 if (timestampsRouters.stream().filter(tr -> Long.valueOf(t) < tr).count() > 0) {
                     redisTemplate.opsForSet().remove(key, t);
@@ -118,7 +114,7 @@ public class RouterState {
 
     public boolean existsKeysSync(AbstractEntity entity) {
         String keySuffix = entity.getEnvName() + ":" +  entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId();
-        boolean existsKey = redisTemplate.keys("sync:" + keySuffix)
+        boolean existsKey = redisTemplate.keys(SYNC_PREFIX + keySuffix)
                 .stream().count() > 0;
         return existsKey;
     }
@@ -129,7 +125,7 @@ public class RouterState {
             String envname = changeSplited[1];
             String objname = changeSplited[2];
             String objid = changeSplited[3];
-            redisTemplate.opsForSet().add("sync:" + envname + ":" + objname + ":" + objid, String.valueOf(System.currentTimeMillis()));
+            redisTemplate.opsForSet().add(SYNC_PREFIX + envname + ":" + objname + ":" + objid, String.valueOf(System.currentTimeMillis()));
         });
     }
 
