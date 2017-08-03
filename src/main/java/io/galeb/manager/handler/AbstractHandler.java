@@ -20,30 +20,26 @@ package io.galeb.manager.handler;
 
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.logging.Log;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.PagingAndSortingRepository;
-
 import io.galeb.manager.entity.AbstractEntity;
-
-import static io.galeb.manager.entity.AbstractEntitySyncronizable.PREFIX_HAS_CHANGE;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
     protected abstract void setBestFarm(T entity) throws Exception;
 
-    protected StringRedisTemplate template() {
-        // ugly, but NULL is the default
-        return null;
+    @Autowired
+    protected RouterState routerState;
+
+    protected boolean canRegisterChanges() {
+        return false;
     }
 
     private void registerHasChange(T entity) {
-        if (template() != null) {
-            String env = entity.getEnvName();
-            String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
-            final ValueOperations<String, String> valueOperations = template().opsForValue();
-            valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + ":" + env + ":" + suffix, env);
+        if (canRegisterChanges()) {
+            routerState.registerChanges(entity);
         }
     }
 

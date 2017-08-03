@@ -126,7 +126,7 @@ public class AbstractEntitySyncronizableTest {
             int line = linePos.incrementAndGet();
             farm.setAutoReload((boolean) f[0]);
             when(distMap.get(abstractEntity)).thenReturn(f[1] == null ? null : (f[1]).toString());
-            when(routerState.state(anyString())).thenReturn((RouterState.State) f[2]);
+            when(routerState.state(abstractEntity)).thenReturn((RouterState.State) f[2]);
             try {
                 assertThat(abstractEntity.getDynamicStatus(), equalTo((AbstractEntity.EntityStatus) f[3]));
             } catch (AssertionError e) {

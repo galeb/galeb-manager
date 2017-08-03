@@ -19,27 +19,18 @@ package io.galeb.manager.entity.service;
 import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.galeb.manager.common.ErrorLogger;
-import io.galeb.manager.entity.Environment;
 import io.galeb.manager.entity.VirtualHost;
-import io.galeb.manager.repository.EnvironmentRepository;
 import io.galeb.manager.routermap.RouterMap;
-import io.galeb.manager.security.services.SystemUserService;
-import io.galeb.manager.security.user.CurrentUser;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.google.common.hash.Hashing.sha256;
@@ -50,20 +41,15 @@ public class EtagService {
 
     private static final Log LOGGER = LogFactory.getLog(EtagService.class);
 
-    private static final String CACHE_TTL = System.getProperty(EtagService.class.getName().toLowerCase(), "10"); // minutes
-
     private final Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").serializeNulls().create();
-    private final EnvironmentRepository environmentRepository;
     private final StringRedisTemplate template;
     private final CopyService copyService;
     private final RouterMap routerMap;
 
     @Autowired
-    public EtagService(final EnvironmentRepository environmentRepository,
-                       final StringRedisTemplate template,
+    public EtagService(final StringRedisTemplate template,
                        final CopyService copyService,
                        final RouterMap routerMap) {
-        this.environmentRepository = environmentRepository;
         this.template = template;
         this.copyService = copyService;
         this.routerMap = routerMap;
@@ -72,151 +58,94 @@ public class EtagService {
     public String responseBody(String envname, String groupId, String routerEtag) throws Exception {
         int numRouters = getNumRouters(envname, groupId);
         Set<String> changes = changes(envname);
-        String etag;
-        if (!changes.isEmpty()) {
-            expireLastEtag(envname);
-            expireChanges(changes);
-            expireCache(envname);
-            etag = etag(envname, numRouters, false);
-        } else {
-            etag = etag(envname, numRouters, true);
-        }
-        if ("".equals(etag)) {
-            return HttpStatus.NOT_FOUND.name();
-        }
-        if (routerEtag.equals(etag)) {
+        String lastETag = getLastEtag(envname);
+        String routerEtagParsed = routerEtag.split(":")[0];
+
+        if (changes.isEmpty() || isAllEtagEquals(getEtagChanges(changes), lastETag, routerEtagParsed)) {
             return HttpStatus.NOT_MODIFIED.name();
         }
-        String body = getBodyCached(etag, envname);
-        if ("".equals(body)) {
-            return HttpStatus.NOT_FOUND.name();
-        }
-        return body;
+
+        String etagChanges = getEtagChanges(changes);
+        String body = getBody(envname, etagChanges, changes, numRouters);
+        return "".equals(body) ? HttpStatus.NOT_FOUND.name() : body;
     }
 
-    private String etag(String envname, int numRouters, boolean cache) {
-        String etag = "";
-        if (cache) etag = getLastEtag(envname);
-        if ("".equals(etag)) {
-            etag = newEtag(envname, numRouters);
-        }
-        return etag;
+    private String getEtagChanges(Set<String> changes) {
+        String key = changes.stream().sorted().collect(Collectors.joining());
+        return sha256().hashString(key, Charsets.UTF_8).toString();
+    }
+
+    private String getBody(String envname, String newEtag, Set<String> changes, int numRouters) throws Exception {
+        Set<String> changesFiltered = emptyChanges(changes);
+        if (changesFiltered.isEmpty()) return getBodyCached(envname);
+        String version = updateVersion(envname, changesFiltered);
+        updateLastEtag(envname, newEtag);
+        String json = getBodyJson(envname, numRouters, newEtag, version);
+        persistToRedis(newEtag, envname, json);
+        LOGGER.info("New version created: " + version + " with new etag: " + newEtag);
+        return json;
+    }
+
+    private String updateVersion(String envname, Set<String> changesFiltered) {
+        String newVersion = String.valueOf(template.opsForHash().increment(getInfoKey(envname), FIELD_INFO_VERSION, 1));
+        changesFiltered.stream().forEach(ch -> {
+            template.opsForValue().set(ch, newVersion);
+        });
+        return newVersion;
+    }
+
+    private Set<String> emptyChanges(Set<String> changes) {
+        Set<String> changesFiltered = new HashSet<>();
+        changes.stream().forEach(ch -> {
+            if ("".equals(template.opsForValue().get(ch))) {
+                changesFiltered.add(ch);
+            }
+        });
+        return changesFiltered;
+    }
+
+    private void updateLastEtag(String envname, String etagChanges) {
+        template.opsForHash().put(getInfoKey(envname), FIELD_INFO_ETAG, etagChanges);
+    }
+
+    private boolean isAllEtagEquals(String etagChanges, String lastETag, String routerEtag) {
+        return etagChanges.equals(lastETag) && etagChanges.equals(routerEtag);
     }
 
     private Set<String> changes(String envname) {
-        final Set<String> result = template.keys(PREFIX_HAS_CHANGE + ":" + envname + ":*");
+        final Set<String> result = template.keys(PREFIX_HAS_CHANGE + envname + ":*");
         return (result != null) ? result : Collections.emptySet();
     }
 
-    private void expireChanges(Set<String> changes) {
-        changes.forEach(this::expire);
-    }
-
-    private void expire(String key) {
-        if (template.hasKey(key)) {
-            template.expire(key, 100, TimeUnit.MILLISECONDS);
-        }
-    }
-
-    private void expireLastEtag(String envname) {
-        template.keys(getLastEtagKey(envname, true)).forEach(this::expire);
-    }
-
-    private void expireCache(String envname) {
-        template.keys(getEtagKey("*", envname)).forEach(this::expire);
-    }
-
     private void persistToRedis(String etag, String envname, String body) {
-        expireLastEtag(envname);
-        expireCache(envname);
-        template.opsForValue().set(getLastEtagKey(envname, false), etag, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
-        template.opsForValue().set(getEtagKey(etag, envname), body, Integer.parseInt(CACHE_TTL), TimeUnit.MINUTES);
+        Map<String, String> mapValues = new HashMap<String, String>() {{
+            put(FIELD_INFO_CACHE, body);
+            put(FIELD_INFO_ETAG, etag);
+        }};
+        template.opsForHash().putAll(getInfoKey(envname), mapValues);
     }
 
     private String getLastEtag(String envname) {
-        Set<String> lastKey = template.keys(getLastEtagKey(envname, true));
-        if (lastKey != null && lastKey.size() > 0) {
-            String lastEtagKey = lastKey.stream().findAny().orElse("");
-            if (!"".equals(lastEtagKey)) {
-                return Optional.ofNullable(template.opsForValue().get(lastEtagKey)).orElse("");
-            }
+        String valueETag = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_ETAG);
+        return valueETag != null ? valueETag : RandomStringUtils.random(10);
+    }
+
+    private String getBodyCached(String envname) {
+        String cache = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_CACHE);
+        return Optional.ofNullable(cache).orElse("");
+    }
+
+    private String getInfoKey(String envname) {
+        return PREFIX_INFO + envname;
+    }
+
+    public String getBodyJson(String envname, int numRouters, String etag, String version) throws Exception {
+        String fullEtag = etag + ":" + version;
+        List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters, fullEtag);
+        if (virtualHosts == null || virtualHosts.isEmpty()) {
+            return "";
         }
-        return "";
-    }
-
-    private String getLastEtagKey(String envname, boolean all) {
-        return PREFIX_LAST_ETAG + ":" + envname + ":" + (all ? "*" : System.currentTimeMillis());
-    }
-
-    private String getBodyCached(String etag, String envname) {
-        if (template.hasKey(getEtagKey(etag, envname))) {
-            return Optional.ofNullable(template.opsForValue().get(getEtagKey(etag, envname))).orElse("");
-        }
-        return "";
-    }
-
-    private String getEtagKey(String etag, String envname) {
-        return PREFIX_ETAG + ":" + envname + ":" + etag;
-    }
-
-    private String newEtag(String envname, int numRouters) {
-        try {
-            List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters);
-            if (virtualHosts == null || virtualHosts.isEmpty()) {
-                return "";
-            }
-            String key = virtualHosts.stream().map(this::getFullHash)
-                    .sorted()
-                    .distinct()
-                    .collect(Collectors.joining());
-            String etag = key == null || "".equals(key) ? "" : sha256().hashString(key, Charsets.UTF_8).toString();
-            virtualHosts = virtualHosts.stream()
-                    .map(v -> {
-                        v.getEnvironment().getProperties().put(PROP_FULLHASH, etag);
-                        return v;
-                    })
-                    .collect(Collectors.toList());
-            persistToDb(envname, etag);
-            persistToRedis(etag, envname, gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class));
-            return etag;
-        } catch (Exception e) {
-            ErrorLogger.logError(e, this.getClass());
-        }
-        return "";
-    }
-
-    @Transactional
-    private void persistToDb(String envname, String etag) throws Exception {
-        Authentication currentUser = CurrentUser.getCurrentAuth();
-        SystemUserService.runAs();
-        updateEtag(envFindByName(envname), etag);
-        SystemUserService.runAs(currentUser);
-    }
-
-    public String getFullHash(VirtualHost v) {
-        return Optional.ofNullable(v.getProperties().get(PROP_FULLHASH)).orElse("");
-    }
-
-    public void updateEtag(final Environment environment, String etag) throws Exception {
-        environment.getProperties().put(PROP_FULLHASH, etag);
-        try {
-            environmentRepository.saveAndFlush(environment);
-            LOGGER.warn("Environment " + environment.getName() + ": updated fullhash to " + etag);
-        } catch (Exception e) {
-            LOGGER.error("Environment " + environment.getName() + ": FAIL to update fullhash to " + etag);
-            throw e;
-        } finally {
-            environmentRepository.flush();
-        }
-    }
-
-    public Environment envFindByName(String envname) {
-        final Page<Environment> envPage = environmentRepository.findByName(envname, new PageRequest(0, 1));
-        Environment environment = null;
-        if (envPage.hasContent()) {
-            environment = envPage.iterator().next();
-        }
-        return environment;
+        return gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class);
     }
 
     private class Virtualhosts implements Serializable {

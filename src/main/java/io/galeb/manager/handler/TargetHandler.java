@@ -24,10 +24,10 @@ import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Project;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.repository.PoolRepository;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
@@ -44,8 +44,7 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
@@ -120,6 +119,23 @@ public class TargetHandler extends AbstractHandler<Target> {
     @HandleAfterDelete
     public void afterDelete(Target target) throws Exception {
         afterDelete(target, LOGGER);
+        waitSync(target);
+    }
+
+    private void waitSync(Target target) throws InterruptedException {
+        if (routerState.isEmpty(target.getEnvName())) return;
+        Runnable task = () -> {
+            while (!routerState.state(target).equals(RouterState.State.SYNC)) {
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } catch (InterruptedException e) {
+                    LOGGER.error(e);
+                }
+            }
+        };
+        task.run();
+        Thread thread = new Thread(task);
+        TimeUnit.SECONDS.timedJoin(thread, 15);
     }
 
     private void setProject(Target target) throws Exception {
@@ -176,7 +192,7 @@ public class TargetHandler extends AbstractHandler<Target> {
     }
 
     @Override
-    protected StringRedisTemplate template() {
-        return template;
+    protected boolean canRegisterChanges() {
+        return true;
     }
 }

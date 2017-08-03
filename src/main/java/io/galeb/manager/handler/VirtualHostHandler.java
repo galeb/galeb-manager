@@ -159,7 +159,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     }
 
     @Override
-    protected StringRedisTemplate template() {
-        return template;
+    protected boolean canRegisterChanges() {
+        return true;
     }
+
 }

@@ -31,10 +31,12 @@ public abstract class AbstractEntitySyncronizable {
 
     private static final Log LOGGER = LogFactory.getLog(AbstractEntitySyncronizable.class);
 
-    public static final String PREFIX_HAS_CHANGE = "haschange";
-    public static final String PREFIX_LAST_ETAG  = "last_etag";
-    public static final String PREFIX_ETAG       = "etag";
-    public static final String PROP_FULLHASH     = "fullhash";
+    public static final String PREFIX_HAS_CHANGE  = "haschange:";
+    public static final String PREFIX_INFO        = "info:";
+    public static final String FIELD_INFO_ETAG    = "etag";
+    public static final String FIELD_INFO_CACHE   = "cache";
+    public static final String FIELD_INFO_VERSION = "version";
+    public static final String PROP_FULLHASH      = "fullhash";
 
     private static DistMap distMap;
     private static RouterState routerState;
@@ -58,7 +60,7 @@ public abstract class AbstractEntitySyncronizable {
 
     protected AbstractEntity.EntityStatus getDynamicStatus() {
         try {
-            final RouterState.State routerMapState = getRouterState().state(getEnvName());
+            final RouterState.State routerMapState = getRouterState().state((AbstractEntity<?>)this);
             boolean resultG4 = routerMapState != RouterState.State.NOSYNC;
             if (farmEnabled()) {
                 final String valueFromDistMap = getValueDistMap();

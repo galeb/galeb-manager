@@ -29,7 +29,7 @@ public class RouterMap {
 
     private static final RouterMap INSTANCE = new RouterMap();
 
-    private static final String ROUTER_PREFIX = "routers:";
+    public static final String ROUTER_PREFIX = "routers:";
     private static final int    REGISTER_TTL  = 30000; // ms
     public RouterState routerState;
 
@@ -60,7 +60,7 @@ public class RouterMap {
             Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
 
             redisTemplate.opsForValue().set(keyFull, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
-            routerState.updateRouterState(keyPrefixEnv, envname);
+            routerState.updateRouterState(envname);
         } catch (Exception e) {
             ErrorLogger.logError(e, this.getClass());
         }
