@@ -116,7 +116,8 @@ public class PoolHandler extends AbstractHandler<Pool> {
     }
 
     @Override
-    protected StringRedisTemplate template() {
-        return template;
+    protected boolean canRegisterChanges() {
+        return true;
     }
+
 }

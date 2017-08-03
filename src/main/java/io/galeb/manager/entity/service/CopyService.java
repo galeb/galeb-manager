@@ -74,11 +74,11 @@ public class CopyService {
 
     @SuppressWarnings("WeakerAccess")
     @Transactional
-    public List<VirtualHost> getVirtualHosts(String envname, int numRouters) throws Exception {
+    public List<VirtualHost> getVirtualHosts(String envname, int numRouters, String fullEtag) throws Exception {
         Authentication currentUser = CurrentUser.getCurrentAuth();
         SystemUserService.runAs();
         final Stream<VirtualHost> virtualHostStream = virtualHostRepository.findByEnvironmentName(envname).stream();
-        List<VirtualHost> virtualhosts = virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters))
+        List<VirtualHost> virtualhosts = virtualHostStream.map(virtualHost -> copyVirtualHost(virtualHost, numRouters, fullEtag))
                                             .filter(Objects::nonNull)
                                             .collect(Collectors.toList());
         SystemUserService.runAs(currentUser);
@@ -86,13 +86,14 @@ public class CopyService {
     }
 
     @Cacheable("virtualhosts")
-    public VirtualHost copyVirtualHost(final VirtualHost virtualHost, int numRouters) {
+    public VirtualHost copyVirtualHost(final VirtualHost virtualHost, int numRouters, String fullEtag) {
         final Environment enviroment = getEnvironment(virtualHost);
         if (enviroment == null) return null;
         final Project project = getProject(virtualHost);
         final Rule virtualHostRuleDefault = virtualHost.getRuleDefault();
         final VirtualHost virtualHostCopy = gson.fromJson(gson.toJson(virtualHost), VirtualHost.class);
         virtualHostCopy.setEnvironment(enviroment);
+        virtualHostCopy.getEnvironment().getProperties().put(PROP_FULLHASH, fullEtag);
         virtualHostCopy.setProject(project);
         if (virtualHostRuleDefault != null) {
             final Pool poolDefault = copyPool(virtualHostRuleDefault.getPool(), numRouters);
@@ -189,6 +190,8 @@ public class CopyService {
         if (ruleDefault != null) {
             keys.add(ruleDefault.getLastModifiedAt().toString());
             keys.add(ruleDefault.getPool().getLastModifiedAt().toString());
+            ruleDefault.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
+                    .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
         }
         virtualHost.getRules().stream().sorted(Comparator.comparing(AbstractEntity::getName)).forEach(rule -> {
             keys.add(rule.getLastModifiedAt().toString());

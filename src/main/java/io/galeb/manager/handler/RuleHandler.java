@@ -138,8 +138,8 @@ public class RuleHandler extends AbstractHandler<Rule> {
     }
 
     @Override
-    protected StringRedisTemplate template() {
-        return template;
+    protected boolean canRegisterChanges() {
+        return true;
     }
 
     private enum After {
