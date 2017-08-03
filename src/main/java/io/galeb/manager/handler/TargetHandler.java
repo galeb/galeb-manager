@@ -122,20 +122,24 @@ public class TargetHandler extends AbstractHandler<Target> {
         waitSync(target);
     }
 
-    private void waitSync(Target target) throws InterruptedException {
+    private void waitSync(Target target) {
         if (routerState.isEmpty(target.getEnvName())) return;
-        Runnable task = () -> {
-            while (!routerState.state(target).equals(RouterState.State.SYNC)) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(500);
-                } catch (InterruptedException e) {
-                    LOGGER.error(e);
+        try {
+            Runnable task = () -> {
+                while (!routerState.state(target).equals(RouterState.State.SYNC)) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(500);
+                    } catch (InterruptedException e) {
+                        LOGGER.error(e);
+                    }
                 }
-            }
-        };
-        task.run();
-        Thread thread = new Thread(task);
-        TimeUnit.SECONDS.timedJoin(thread, 15);
+            };
+            task.run();
+            Thread thread = new Thread(task);
+            TimeUnit.SECONDS.timedJoin(thread, 15);
+        } catch (InterruptedException e) {
+            LOGGER.info(e);
+        }
     }
 
     private void setProject(Target target) throws Exception {
