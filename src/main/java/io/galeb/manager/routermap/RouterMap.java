@@ -74,26 +74,28 @@ public class RouterMap {
         try {
             Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
 
-            final Map<String, Set<JsonSchema.Router>> routerMap = new HashMap<>();
             final Set<JsonSchema.Env> envs = new HashSet<>();
-            final Set<JsonSchema.GroupID> groupIDs = new HashSet<>();
             String key_envname = environmentName == null ? "*" : environmentName;
             redisTemplate.keys(ROUTER_PREFIX + key_envname + ":*").forEach(key -> {
                 String etag = redisTemplate.opsForValue().get(key);
                 long expire = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
                 String envGroupIdWithLocalIp = key.replaceAll(ROUTER_PREFIX, "");
-                String[] key_splited = envGroupIdWithLocalIp.split(":");
-                String env = key_splited[0];
-                String groupId = key_splited[1];
-                String localIp = key_splited[2];
+                String[] keySplited = envGroupIdWithLocalIp.split(":");
+                String env = keySplited[0];
+                String groupId = keySplited[1];
+                String localIp = keySplited[2];
 
-                Set<JsonSchema.Router> map = routerMap.computeIfAbsent(groupId, s -> new HashSet<>());
-                map.add(new JsonSchema.Router(localIp, etag, expire));
-                routerMap.put(groupId, map);
-
-                groupIDs.add(new JsonSchema.GroupID(groupId, map));
-
-                envs.add(new JsonSchema.Env(env, groupIDs));
+                JsonSchema.Env envSchema = envs.stream()
+                                                .filter(e -> e.getEnvName().equals(env))
+                                                .findAny()
+                                                .orElseGet(() -> new JsonSchema.Env(env, new HashSet<>()));
+                JsonSchema.GroupID groupIDSchema = envSchema.getGroupIDs().stream()
+                                                                            .filter(g -> g.getGroupID().equals(groupId))
+                                                                            .findAny()
+                                                                            .orElseGet(() -> new JsonSchema.GroupID(groupId, new HashSet<>()));
+                groupIDSchema.getRouters().add(new JsonSchema.Router(localIp, etag, expire));
+                envSchema.getGroupIDs().add(groupIDSchema);
+                envs.add(envSchema);
             });
             return envs;
         } catch (Exception e) {
