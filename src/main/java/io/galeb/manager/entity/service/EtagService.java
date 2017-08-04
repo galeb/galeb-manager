@@ -93,20 +93,12 @@ public class EtagService {
 
     private String updateVersion(String envname, Set<String> changesFiltered) {
         String newVersion = String.valueOf(template.opsForHash().increment(getInfoKey(envname), FIELD_INFO_VERSION, 1));
-        changesFiltered.stream().forEach(ch -> {
-            template.opsForValue().set(ch, newVersion);
-        });
+        changesFiltered.stream().forEach(ch -> template.opsForValue().set(ch, newVersion));
         return newVersion;
     }
 
     private Set<String> emptyChanges(Set<String> changes) {
-        Set<String> changesFiltered = new HashSet<>();
-        changes.stream().forEach(ch -> {
-            if ("".equals(template.opsForValue().get(ch))) {
-                changesFiltered.add(ch);
-            }
-        });
-        return changesFiltered;
+        return changes.stream().filter(ch -> "".equals(template.opsForValue().get(ch))).collect(Collectors.toSet());
     }
 
     private void updateLastEtag(String envname, String etagChanges) {
