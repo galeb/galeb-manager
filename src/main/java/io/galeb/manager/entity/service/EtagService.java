@@ -21,7 +21,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.routermap.RouterMap;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +44,7 @@ public class EtagService {
     private final StringRedisTemplate template;
     private final CopyService copyService;
     private final RouterMap routerMap;
+    private static final String EMPTY = "EMPTY";
 
     @Autowired
     public EtagService(final StringRedisTemplate template,
@@ -60,24 +60,29 @@ public class EtagService {
         Set<String> changes = changes(envname);
         String lastETag = getLastEtag(envname);
         String routerEtagParsed = routerEtag.split(":")[0];
+        String eTagChanges = getEtagChanges(changes, numRouters);
 
-        if (changes.isEmpty() || isAllEtagEquals(getEtagChanges(changes), lastETag, routerEtagParsed)) {
+        if (isAllEtagEquals(eTagChanges, lastETag, routerEtagParsed)) {
             return HttpStatus.NOT_MODIFIED.name();
         }
 
-        String etagChanges = getEtagChanges(changes);
-        String body = getBody(envname, etagChanges, changes, numRouters);
+        String body;
+        Set<String> changesFiltered = emptyChanges(changes);
+        boolean fromCache = eTagChanges.equals(lastETag) && changesFiltered.isEmpty();
+        if (fromCache) {
+            body = getBodyCached(envname);
+        } else {
+            body = getBody(envname, eTagChanges, changesFiltered, numRouters);
+        }
         return "".equals(body) ? HttpStatus.NOT_FOUND.name() : body;
     }
 
-    private String getEtagChanges(Set<String> changes) {
-        String key = changes.stream().sorted().collect(Collectors.joining());
+    private String getEtagChanges(Set<String> changes, int numRouters) {
+        String key = changes.stream().sorted().collect(Collectors.joining()).concat(String.valueOf(numRouters));
         return sha256().hashString(key, Charsets.UTF_8).toString();
     }
 
-    private String getBody(String envname, String newEtag, Set<String> changes, int numRouters) throws Exception {
-        Set<String> changesFiltered = emptyChanges(changes);
-        if (changesFiltered.isEmpty()) return getBodyCached(envname);
+    private String getBody(String envname, String newEtag, Set<String> changesFiltered, int numRouters) throws Exception {
         String version = updateVersion(envname, changesFiltered);
         updateLastEtag(envname, newEtag);
         String json = getBodyJson(envname, numRouters, newEtag, version);
@@ -127,7 +132,7 @@ public class EtagService {
 
     private String getLastEtag(String envname) {
         String valueETag = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_ETAG);
-        return valueETag != null ? valueETag : RandomStringUtils.random(10);
+        return valueETag != null ? valueETag : EMPTY;
     }
 
     private String getBodyCached(String envname) {
