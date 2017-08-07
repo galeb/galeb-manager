@@ -87,7 +87,7 @@ public class EtagService {
         updateLastEtag(envname, newEtag);
         String json = getBodyJson(envname, numRouters, newEtag, version);
         persistToRedis(newEtag, envname, json);
-        LOGGER.info("New version created: " + version + " with new etag: " + newEtag);
+        LOGGER.info("New version created: " + version + " with new etag: " + newEtag + " with changes: " + changesFiltered.stream().collect(Collectors.joining(",")));
         return json;
     }
 
