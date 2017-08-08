@@ -30,7 +30,7 @@ public class RouterMap {
     private static final RouterMap INSTANCE = new RouterMap();
 
     public static final String ROUTER_PREFIX = "routers:";
-    private static final int    REGISTER_TTL  = 30000; // ms
+    public static final long    REGISTER_TTL  = 30000; // ms
     public RouterState routerState;
 
     private StringRedisTemplate redisTemplate;
@@ -58,7 +58,9 @@ public class RouterMap {
         String keyFull = keyPrefixEnv + ":" + groupId + ":" + localIp;
         try {
             Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-
+            if (!redisTemplate.hasKey(keyFull)) {
+                routerState.incrementVersion(envname);
+            }
             redisTemplate.opsForValue().set(keyFull, etag, REGISTER_TTL, TimeUnit.MILLISECONDS);
             routerState.updateRouterState(envname);
         } catch (Exception e) {

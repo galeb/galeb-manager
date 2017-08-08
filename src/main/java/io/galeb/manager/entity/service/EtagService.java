@@ -16,7 +16,6 @@
 
 package io.galeb.manager.entity.service;
 
-import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.galeb.manager.entity.VirtualHost;
@@ -30,9 +29,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
-import static com.google.common.hash.Hashing.sha256;
 import static io.galeb.manager.entity.AbstractEntitySyncronizable.*;
 
 @Service
@@ -44,7 +42,6 @@ public class EtagService {
     private final StringRedisTemplate template;
     private final CopyService copyService;
     private final RouterMap routerMap;
-    private static final String EMPTY = "EMPTY";
 
     @Autowired
     public EtagService(final StringRedisTemplate template,
@@ -56,85 +53,43 @@ public class EtagService {
     }
 
     public String responseBody(String envname, String groupId, String routerEtag) throws Exception {
+        String actualVersion = getActualVersion(envname);
+        if (actualVersion.equals(routerEtag)) return HttpStatus.NOT_MODIFIED.name();
+
         int numRouters = getNumRouters(envname, groupId);
-        Set<String> changes = changes(envname);
-        Set<String> changesFiltered = emptyChanges(changes);
-        String lastETag = getLastEtag(envname);
-        String routerEtagParsed = routerEtag.split(":")[0];
+        String body = getBody(envname, actualVersion, numRouters);
 
-        if (lastETag.equals(routerEtagParsed) && changesFiltered.isEmpty()) {
-            return HttpStatus.NOT_MODIFIED.name();
-        }
-
-        String body;
-        boolean fromCache = changesFiltered.isEmpty();
-        if (fromCache) {
-            body = getBodyCached(envname);
-        } else {
-            String eTagChanges = getEtagChanges(changes, numRouters);
-            body = getBody(envname, eTagChanges, changesFiltered, numRouters);
-        }
         return "".equals(body) ? HttpStatus.NOT_FOUND.name() : body;
     }
 
-    private String getEtagChanges(Set<String> changes, int numRouters) {
-        String key = changes.stream().sorted().collect(Collectors.joining()).concat(String.valueOf(numRouters));
-        return sha256().hashString(key, Charsets.UTF_8).toString();
+    private String getBody(String envname, String actualVersion, int numRouters) throws Exception {
+        String body = template.opsForValue().get(getCacheKeyWithVersion(envname, actualVersion));
+        if (body == null) {
+            body = getBodyJson(envname, numRouters, actualVersion);
+            template.opsForValue().set(getCacheKeyWithVersion(envname, actualVersion), body, 5, TimeUnit.MINUTES);
+            LOGGER.info("Created cache body for " + envname + " with version " + actualVersion);
+        }
+        return body;
     }
 
-    private String getBody(String envname, String newEtag, Set<String> changesFiltered, int numRouters) throws Exception {
-        String version = updateVersion(envname, changesFiltered);
-        String json = getBodyJson(envname, numRouters, newEtag, version);
-        persistToRedis(newEtag, envname, json);
-        LOGGER.info("New version created: " + version + " with new etag: " + newEtag + " with changes: " + changesFiltered.stream().collect(Collectors.joining(",")));
-        return json;
+    private String getCacheKeyWithVersion(String envname, String actualVersion) {
+        return PREFIX_CACHE + envname + ":" + actualVersion;
     }
 
-    private String updateVersion(String envname, Set<String> changesFiltered) {
-        String newVersion = String.valueOf(template.opsForHash().increment(getInfoKey(envname), FIELD_INFO_VERSION, 1));
-        changesFiltered.stream().forEach(ch -> template.opsForValue().set(ch, newVersion));
-        return newVersion;
-    }
-
-    private Set<String> emptyChanges(Set<String> changes) {
-        return changes.stream().filter(ch -> "".equals(template.opsForValue().get(ch))).collect(Collectors.toSet());
-    }
-
-    private Set<String> changes(String envname) {
-        final Set<String> result = template.keys(PREFIX_HAS_CHANGE + envname + ":*");
-        return (result != null) ? result : Collections.emptySet();
-    }
-
-    private void persistToRedis(String etag, String envname, String body) {
-        Map<String, String> mapValues = new HashMap<String, String>() {{
-            put(FIELD_INFO_CACHE, body);
-            put(FIELD_INFO_ETAG, etag);
-        }};
-        template.opsForHash().putAll(getInfoKey(envname), mapValues);
-    }
-
-    private String getLastEtag(String envname) {
-        String valueETag = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_ETAG);
-        return valueETag != null ? valueETag : UUID.randomUUID().toString();
-    }
-
-    private String getBodyCached(String envname) {
-        String cache = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_CACHE);
-        LOGGER.info("Body cached returned for " + envname);
-        return Optional.ofNullable(cache).orElse("");
-    }
-
-    private String getInfoKey(String envname) {
-        return PREFIX_INFO + envname;
-    }
-
-    public String getBodyJson(String envname, int numRouters, String etag, String version) throws Exception {
-        String fullEtag = etag + ":" + version;
-        List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters, fullEtag);
+    public String getBodyJson(String envname, int numRouters, String etag) throws Exception {
+        List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters, etag);
         if (virtualHosts == null || virtualHosts.isEmpty()) {
             return "";
         }
         return gson.toJson(new Virtualhosts(virtualHosts.toArray(new VirtualHost[]{})), Virtualhosts.class);
+    }
+
+    public String getActualVersion(String env) {
+        String version = template.opsForValue().get(PREFIX_VERSION + env);
+        if (version == null) {
+            version = String.valueOf(template.opsForValue().increment(PREFIX_VERSION + env, 1));
+        }
+        return version;
     }
 
     private class Virtualhosts implements Serializable {
