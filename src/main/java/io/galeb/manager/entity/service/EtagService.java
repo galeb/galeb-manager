@@ -60,9 +60,8 @@ public class EtagService {
         Set<String> changes = changes(envname);
         Set<String> changesFiltered = emptyChanges(changes);
         String lastETag = getLastEtag(envname);
-        String routerEtagParsed = routerEtag.split(":")[0];
 
-        if (lastETag.equals(routerEtagParsed) && changesFiltered.isEmpty()) {
+        if (lastETag.equals(routerEtag) && changesFiltered.isEmpty()) {
             return HttpStatus.NOT_MODIFIED.name();
         }
 
@@ -84,8 +83,9 @@ public class EtagService {
 
     private String getBody(String envname, String newEtag, Set<String> changesFiltered, int numRouters) throws Exception {
         String version = updateVersion(envname, changesFiltered);
-        String json = getBodyJson(envname, numRouters, newEtag, version);
-        persistToRedis(newEtag, envname, json);
+        String fullEtag = newEtag + ":" + version;
+        String json = getBodyJson(envname, numRouters, fullEtag);
+        persistToRedis(fullEtag, envname, json);
         LOGGER.info("New version created: " + version + " with new etag: " + newEtag + " with changes: " + changesFiltered.stream().collect(Collectors.joining(",")));
         return json;
     }
@@ -128,8 +128,7 @@ public class EtagService {
         return PREFIX_INFO + envname;
     }
 
-    public String getBodyJson(String envname, int numRouters, String etag, String version) throws Exception {
-        String fullEtag = etag + ":" + version;
+    public String getBodyJson(String envname, int numRouters, String fullEtag) throws Exception {
         List<VirtualHost> virtualHosts = copyService.getVirtualHosts(envname, numRouters, fullEtag);
         if (virtualHosts == null || virtualHosts.isEmpty()) {
             return "";
