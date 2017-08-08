@@ -58,20 +58,20 @@ public class EtagService {
     public String responseBody(String envname, String groupId, String routerEtag) throws Exception {
         int numRouters = getNumRouters(envname, groupId);
         Set<String> changes = changes(envname);
+        Set<String> changesFiltered = emptyChanges(changes);
         String lastETag = getLastEtag(envname);
         String routerEtagParsed = routerEtag.split(":")[0];
-        String eTagChanges = getEtagChanges(changes, numRouters);
 
-        if (isAllEtagEquals(eTagChanges, lastETag, routerEtagParsed)) {
+        if (lastETag.equals(routerEtagParsed) && changesFiltered.isEmpty()) {
             return HttpStatus.NOT_MODIFIED.name();
         }
 
         String body;
-        Set<String> changesFiltered = emptyChanges(changes);
-        boolean fromCache = eTagChanges.equals(lastETag) && changesFiltered.isEmpty();
+        boolean fromCache = changesFiltered.isEmpty();
         if (fromCache) {
             body = getBodyCached(envname);
         } else {
+            String eTagChanges = getEtagChanges(changes, numRouters);
             body = getBody(envname, eTagChanges, changesFiltered, numRouters);
         }
         return "".equals(body) ? HttpStatus.NOT_FOUND.name() : body;
@@ -84,7 +84,6 @@ public class EtagService {
 
     private String getBody(String envname, String newEtag, Set<String> changesFiltered, int numRouters) throws Exception {
         String version = updateVersion(envname, changesFiltered);
-        updateLastEtag(envname, newEtag);
         String json = getBodyJson(envname, numRouters, newEtag, version);
         persistToRedis(newEtag, envname, json);
         LOGGER.info("New version created: " + version + " with new etag: " + newEtag + " with changes: " + changesFiltered.stream().collect(Collectors.joining(",")));
@@ -99,14 +98,6 @@ public class EtagService {
 
     private Set<String> emptyChanges(Set<String> changes) {
         return changes.stream().filter(ch -> "".equals(template.opsForValue().get(ch))).collect(Collectors.toSet());
-    }
-
-    private void updateLastEtag(String envname, String etagChanges) {
-        template.opsForHash().put(getInfoKey(envname), FIELD_INFO_ETAG, etagChanges);
-    }
-
-    private boolean isAllEtagEquals(String etagChanges, String lastETag, String routerEtag) {
-        return etagChanges.equals(lastETag) && etagChanges.equals(routerEtag);
     }
 
     private Set<String> changes(String envname) {
@@ -124,11 +115,12 @@ public class EtagService {
 
     private String getLastEtag(String envname) {
         String valueETag = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_ETAG);
-        return valueETag != null ? valueETag : EMPTY;
+        return valueETag != null ? valueETag : UUID.randomUUID().toString();
     }
 
     private String getBodyCached(String envname) {
         String cache = (String)template.opsForHash().get(getInfoKey(envname), FIELD_INFO_CACHE);
+        LOGGER.info("Body cached returned for " + envname);
         return Optional.ofNullable(cache).orElse("");
     }
 
