@@ -127,7 +127,7 @@ public class TargetHandler extends AbstractHandler<Target> {
         try {
             Runnable task = () -> {
                 long time = System.currentTimeMillis();
-                while (routerState.state(target).equals(RouterState.State.SYNC)) {
+                while (!routerState.state(target).equals(RouterState.State.SYNC)) {
                     try {
                         long timeout = System.currentTimeMillis() - time;
                         if (timeout > TimeUnit.SECONDS.toMillis(15)) {
