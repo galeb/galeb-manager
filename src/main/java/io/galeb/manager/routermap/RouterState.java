@@ -18,15 +18,19 @@ package io.galeb.manager.routermap;
 
 import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.util.Assert;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static io.galeb.manager.entity.AbstractEntitySyncronizable.PREFIX_HAS_CHANGE;
+import static io.galeb.manager.entity.AbstractEntitySyncronizable.PREFIX_VERSION;
+import static io.galeb.manager.routermap.RouterMap.REGISTER_TTL;
 import static io.galeb.manager.routermap.RouterMap.ROUTER_PREFIX;
 
 public class RouterState {
@@ -36,6 +40,8 @@ public class RouterState {
         SYNC,
         NOSYNC
     }
+
+    private static final Log LOGGER = LogFactory.getLog(RouterState.class);
 
     public static final RouterState INSTANCE = new RouterState();
 
@@ -48,18 +54,23 @@ public class RouterState {
 
     public void updateRouterState(String envname) {
         Assert.notNull(redisTemplate, StringRedisTemplate.class.getSimpleName() + " IS NULL");
-        Set<Long> versionRouters = new HashSet<>();
-        Set<String> eTagRouters = new HashSet<>();
+        Set<Long> eTagRouters = new HashSet<>();
         redisTemplate.keys(ROUTER_PREFIX + envname + ":*").stream().forEach(key -> {
-            String[] value = redisTemplate.opsForValue().get(key).split(":");
-            eTagRouters.add(value[0]);
-            versionRouters.add(Long.valueOf(value[1]));
+            try {
+                eTagRouters.add(Long.valueOf(redisTemplate.opsForValue().get(key)));
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Version is not a number. Verify the environment " + envname);
+            }
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
+            if (ttl == null || ttl < (REGISTER_TTL/2)) {
+                redisTemplate.delete(key);
+                incrementVersion(envname);
+            }
         });
-        if (eTagRouters.isEmpty()) return;
-        Long versionRouter = versionRouters.stream().mapToLong(i -> i).min().getAsLong();
+        Long versionRouter = eTagRouters.stream().mapToLong(i -> i).min().orElse(-1L);
         redisTemplate.keys(PREFIX_HAS_CHANGE + envname + ":*").forEach(key -> {
             String versionKey = redisTemplate.opsForValue().get(key);
-            if (!StringUtils.isEmpty(versionKey) && versionRouter >= Long.valueOf(versionKey)) {
+            if (versionRouter >= Long.valueOf(versionKey)) {
                 redisTemplate.delete(key);
             }
         });
@@ -90,12 +101,16 @@ public class RouterState {
         return result != null && !result.isEmpty();
     }
 
+    public Long incrementVersion(String envname) {
+        return redisTemplate.opsForValue().increment(PREFIX_VERSION + envname, 1);
+    }
+
     public <T extends AbstractEntity<?>> void registerChanges(T entity) {
+        Long newVersion = incrementVersion(entity.getEnvName());
         String env = entity.getEnvName();
         String suffix = entity.getClass().getSimpleName().toLowerCase() + ":" + entity.getId() + ":" + entity.getLastModifiedAt().getTime();
         final ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + env + ":" + suffix, "");
+        valueOperations.setIfAbsent(PREFIX_HAS_CHANGE + env + ":" + suffix, String.valueOf(newVersion));
     }
-
 
 }

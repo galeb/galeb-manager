@@ -44,7 +44,7 @@ import io.galeb.manager.repository.TargetRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @RepositoryEventHandler(Target.class)
 public class TargetHandler extends AbstractHandler<Target> {
@@ -126,17 +126,23 @@ public class TargetHandler extends AbstractHandler<Target> {
         if (routerState.isEmpty(target.getEnvName())) return;
         try {
             Runnable task = () -> {
-                while (!routerState.state(target).equals(RouterState.State.SYNC)) {
+                long time = System.currentTimeMillis();
+                while (routerState.state(target).equals(RouterState.State.SYNC)) {
                     try {
+                        long timeout = System.currentTimeMillis() - time;
+                        if (timeout > TimeUnit.SECONDS.toMillis(15)) {
+                            break;
+                        }
                         TimeUnit.MILLISECONDS.sleep(500);
                     } catch (InterruptedException e) {
                         LOGGER.error(e);
+                        break;
                     }
                 }
             };
-            task.run();
             Thread thread = new Thread(task);
-            TimeUnit.SECONDS.timedJoin(thread, 15);
+            thread.start();
+            TimeUnit.SECONDS.timedJoin(thread, 30);
         } catch (InterruptedException e) {
             LOGGER.info(e);
         }

@@ -21,7 +21,6 @@ import com.google.common.base.Enums;
 import io.galeb.core.json.JsonObject;
 import io.galeb.core.model.Entity;
 import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.routermap.RouterMap;
 import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -32,10 +31,8 @@ public abstract class AbstractEntitySyncronizable {
     private static final Log LOGGER = LogFactory.getLog(AbstractEntitySyncronizable.class);
 
     public static final String PREFIX_HAS_CHANGE  = "haschange:";
-    public static final String PREFIX_INFO        = "info:";
-    public static final String FIELD_INFO_ETAG    = "etag";
-    public static final String FIELD_INFO_CACHE   = "cache";
-    public static final String FIELD_INFO_VERSION = "version";
+    public static final String PREFIX_CACHE       = "cache:";
+    public static final String PREFIX_VERSION     = "version:";
     public static final String PROP_FULLHASH      = "fullhash";
 
     private static DistMap distMap;
