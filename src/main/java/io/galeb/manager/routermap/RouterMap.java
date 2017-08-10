@@ -30,7 +30,7 @@ public class RouterMap {
     private static final RouterMap INSTANCE = new RouterMap();
 
     public static final String ROUTER_PREFIX = "routers:";
-    public static final long    REGISTER_TTL  = 30000; // ms
+    public static final long REGISTER_TTL  = Long.valueOf(Optional.ofNullable(System.getenv("REGISTER_ROUTER_TTL")).orElse("30000")); // ms
     public RouterState routerState;
 
     private StringRedisTemplate redisTemplate;
