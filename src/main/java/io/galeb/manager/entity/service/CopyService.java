@@ -44,11 +44,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,6 +56,7 @@ public class CopyService {
 
     private static final String PROP_DISCOVERED_MEMBERS_SIZE = "discoveredMembersSize";
     private static final String PROP_HEALTHY  = "healthy";
+    private static final boolean DISABLE_DISCOVERED_MEMBERS_SIZE = Boolean.valueOf(System.getenv("DISABLE_DISCOVERED_MEMBERS_SIZE"));
     private final VirtualHostRepository virtualHostRepository;
     private final Gson gson = new GsonBuilder()
             .serializeNulls()
@@ -177,8 +174,10 @@ public class CopyService {
                 poolCopy.setBalancePolicy(balancePolicy);
             }
         }
-        poolCopy.setProperties(pool.getProperties());
-        poolCopy.getProperties().put(PROP_DISCOVERED_MEMBERS_SIZE, String.valueOf(numRouters));
+        if (!DISABLE_DISCOVERED_MEMBERS_SIZE) {
+            poolCopy.setProperties(pool.getProperties());
+            poolCopy.getProperties().put(PROP_DISCOVERED_MEMBERS_SIZE, String.valueOf(numRouters));
+        }
         poolCopy.setTargets(copyTargets(pool));
         return poolCopy;
     }
