@@ -109,7 +109,7 @@ public class CopyService {
 
         final Set<Rule> rules = copyRules(virtualHost, numRouters);
         virtualHostCopy.setRules(rules);
-        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy, numRouters));
+        virtualHostCopy.getProperties().put(PROP_FULLHASH, buildFullHash(virtualHostCopy));
         return virtualHostCopy;
     }
 
@@ -183,7 +183,7 @@ public class CopyService {
         return poolCopy;
     }
 
-    private String buildFullHash(final VirtualHost virtualHost, int numRouters) {
+    private String buildFullHash(final VirtualHost virtualHost) {
         final List<String> keys = new ArrayList<>();
         keys.add(virtualHost.getLastModifiedAt().toString());
         Rule ruleDefault = virtualHost.getRuleDefault();
@@ -199,7 +199,7 @@ public class CopyService {
             rule.getPool().getTargets().stream().sorted(Comparator.comparing(AbstractEntity::getName))
                     .forEach(target -> keys.add(target.getLastModifiedAt().toString()));
         });
-        String key = String.join("", keys) + numRouters;
+        String key = String.join("", keys);
         return sha256().hashString(key, Charsets.UTF_8).toString();
     }
 
