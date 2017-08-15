@@ -20,6 +20,7 @@ package io.galeb.manager.handler;
 
 import com.google.common.collect.Sets;
 import io.galeb.manager.cache.DistMap;
+import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
@@ -113,20 +114,28 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     }
 
     public void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
+        final long farmId = virtualHost.getFarmId();
+        if (farmId == -1L) return;
+        final Set<String> allNames = getVirtualHostRepository().getAllNames(farmId);
+        checkVirtualhostNameDupWithAliases(virtualHost, allNames);
         final Set<String> changes = aliasesChanges(virtualHost);
         if (!changes.isEmpty() && virtualHost.getAliases().containsAll(changes)) {
-            final long farmId = virtualHost.getFarmId();
-            if (farmId == -1L) return;
             final Set<String> aliases = virtualHost.getAliases();
             boolean dup = aliases.contains(virtualHost.getName());
             if (!dup) {
-                final Set<String> allNames = getVirtualHostRepository().getAllNames(farmId);
                 final int sizeAllNames = allNames.size();
                 allNames.addAll(changes);
                 dup = allNames.size() != sizeAllNames + changes.size();
             }
             if (dup) throw new BadRequestException("Name already exists");
         }
+    }
+
+    private void checkVirtualhostNameDupWithAliases(final VirtualHost virtualHost, final Set<String> allNames) {
+        final Set<String> onlyAliases = new HashSet<>(allNames);
+        final Set<String> allVirtualhostNames = getVirtualHostRepository().findAll().stream().map(AbstractEntity::getName).collect(Collectors.toSet());
+        onlyAliases.removeAll(allVirtualhostNames);
+        if (onlyAliases.contains(virtualHost.getName())) throw new BadRequestException("Name already exists");
     }
 
     protected VirtualHostRepository getVirtualHostRepository() {

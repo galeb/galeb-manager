@@ -78,6 +78,7 @@ public class VirtualHostHandlerTest {
         Set<String> allNames = virtualhosts.stream().map(AbstractEntity::getName).collect(Collectors.toSet());
         allNames.addAll(virtualhosts.stream().flatMap(v -> v.getAliases().stream()).collect(Collectors.toSet()));
         when(virtualHostRepository.getAllNames(anyLong())).thenReturn(allNames);
+        when(virtualHostRepository.findAll()).thenReturn(virtualhosts);
     }
 
     @Before
@@ -106,7 +107,6 @@ public class VirtualHostHandlerTest {
         Assert.assertFalse(virtualHostHandler.aliasesChanges(virtualhostNotPersisted).isEmpty());
     }
 
-
     @Test
     public void aliasRemoved() {
         when(virtualHostRepository.findByName(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
@@ -120,6 +120,17 @@ public class VirtualHostHandlerTest {
         when(virtualHostRepository.findByName(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
         VirtualHost virtualhostNotPersisted = newVirtualhost(Collections.emptySet());
         Assert.assertFalse(virtualHostHandler.aliasesChanges(virtualhostNotPersisted).isEmpty());
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void hasDupVirtualhostNameAlias() throws Exception {
+        Set<String> aliases = Sets.newHashSet("a", "b", "other");
+        VirtualHost virtualHost1 = newVirtualhost(aliases);
+        virtualhosts.add(virtualHost1);
+        when(virtualHostRepository.findByName(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
+        VirtualHost virtualHost2 = newVirtualhost("other", aliases);
+        extractAllNames();
+        virtualHostHandler.checkDupOnAliases(virtualHost2);
     }
 
     @Test(expected = BadRequestException.class)
