@@ -135,7 +135,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         final Set<String> onlyAliases = new HashSet<>(allNames);
         final Set<String> allVirtualhostNames = getVirtualHostRepository().findAll().stream().map(AbstractEntity::getName).collect(Collectors.toSet());
         onlyAliases.removeAll(allVirtualhostNames);
-        if (onlyAliases.contains(virtualHost.getName())) throw new BadRequestException("Name already exists");
+        if (onlyAliases.contains(virtualHost.getName())|| virtualHost.getAliases().stream().anyMatch(allVirtualhostNames::contains))
+            throw new BadRequestException("Name already exists");
     }
 
     protected VirtualHostRepository getVirtualHostRepository() {
