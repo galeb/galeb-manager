@@ -170,6 +170,7 @@ public class CopyService {
             if (balancePolicyTypeOriginal != null) {
                 final BalancePolicyType balancePolicyType = gson.fromJson(gson.toJson(balancePolicyTypeOriginal), BalancePolicyType.class);
                 BalancePolicy balancePolicy = gson.fromJson(gson.toJson(poolBalancePolicy), BalancePolicy.class);
+                balancePolicy.setName(balancePolicyType.getName());
                 balancePolicy.setBalancePolicyType(balancePolicyType);
                 poolCopy.setBalancePolicy(balancePolicy);
             }
