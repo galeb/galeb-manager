@@ -63,5 +63,4 @@ public class Team extends AbstractEntity<Team> {
         }
         return this;
     }
-
 }

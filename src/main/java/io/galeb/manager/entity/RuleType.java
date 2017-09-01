@@ -54,5 +54,4 @@ public class RuleType extends AbstractEntity<RuleType> {
         }
         return this;
     }
-
 }

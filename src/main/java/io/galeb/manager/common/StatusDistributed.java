@@ -34,14 +34,14 @@ import java.util.stream.StreamSupport;
 @Service
 public final class StatusDistributed implements Serializable {
 
-    private static final DistMap distMap = new DistMap();
+    private static final DistMap DIST_MAP = DistMap.getInstance();
 
     private static final LockerManager lockerManager = new LockerManager();
 
     public List<LockStatus> getLockStatus(String farmIdName) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
         List<LockStatus> values = new ArrayList<>();
-        Cache<String, String> cacheValues = distMap.getAll(cacheName);
+        Cache<String, String> cacheValues = DIST_MAP.getAll(cacheName);
         StreamSupport.stream(cacheValues.spliterator(), true).forEach(entry -> {
             values.add((LockStatus) JsonObject.fromJson(entry.getValue(), LockStatus.class));
         });
@@ -57,16 +57,16 @@ public final class StatusDistributed implements Serializable {
     public void updateNewStatus(String farmIdName, boolean hasLock) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
         String value = JsonObject.toJsonString(LockStatus.create(lockerManager.name(), new Date(), hasLock));
-        distMap.put(cacheName, lockerManager.name(), value);
+        DIST_MAP.put(cacheName, lockerManager.name(), value);
     }
 
     public void updateCountDownLatch(String farmIdName, Map<String, Integer> countDownLatchOfApis) {
         String cacheName = LockStatus.class.getSimpleName() + farmIdName;
-        String cacheValue = distMap.get(cacheName, lockerManager.name());
+        String cacheValue = DIST_MAP.get(cacheName, lockerManager.name());
         if (cacheValue != null && !countDownLatchOfApis.isEmpty()) {
             LockStatus lockOfDistMap = (LockStatus) JsonObject.fromJson(cacheValue, LockStatus.class);
             lockOfDistMap.setCounterDownLatch(countDownLatchOfApis);
-            distMap.put(cacheName, lockerManager.name(), JsonObject.toJsonString(lockOfDistMap));
+            DIST_MAP.put(cacheName, lockerManager.name(), JsonObject.toJsonString(lockOfDistMap));
         }
     }
 }

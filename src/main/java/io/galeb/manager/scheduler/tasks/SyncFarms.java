@@ -21,7 +21,6 @@
 package io.galeb.manager.scheduler.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.collect.Maps;
 import io.galeb.manager.common.CommandCountDown;
 import io.galeb.manager.common.StatusDistributed;
 import io.galeb.manager.engine.service.LockerManager;
@@ -137,7 +136,7 @@ public class SyncFarms {
         switch (comm) {
             case SEND_TO_QUEUE:
                 if (farm.isAutoReload() && !disableQueue) {
-                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm);
+                    farmQueue.sendToQueue(FarmQueue.QUEUE_SYNC, farm, "ID:farm-" + farm.getId() + "-" + System.currentTimeMillis());
                 } else {
                     LOGGER.warn(farmStatusMsgPrefix + "Check & Sync DISABLED (QUEUE_SYNC or Auto Reload is FALSE): " + farm.getName());
                 }

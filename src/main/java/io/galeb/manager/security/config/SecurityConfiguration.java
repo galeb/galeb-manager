@@ -39,6 +39,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpMethod;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -155,6 +156,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
+        http.authorizeRequests().antMatchers(HttpMethod.GET, "/healthcheck","/virtualhostscached/*", "/routers").permitAll();
+        http.authorizeRequests().antMatchers(HttpMethod.POST, "/routers").permitAll();
         http.authorizeRequests().anyRequest().fullyAuthenticated()
             .and()
             .logout().deleteCookies("JSESSIONID","SPRING_SECURITY_REMEMBER_ME_COOKIE")

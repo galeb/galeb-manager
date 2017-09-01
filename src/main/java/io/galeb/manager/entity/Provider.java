@@ -73,5 +73,4 @@ public class Provider extends AbstractEntity<Provider> {
         this.provisioning = provisioning;
         return this;
     }
-
 }

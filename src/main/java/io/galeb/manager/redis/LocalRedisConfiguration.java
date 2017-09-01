@@ -11,6 +11,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisNode;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Arrays;
@@ -28,6 +29,11 @@ public class LocalRedisConfiguration {
 
     @Autowired
     private Environment env;
+
+    @Bean(name = "redisTemplate")
+    public StringRedisTemplate redisTemplate(RedisConnectionFactory connectionFactory) {
+        return new StringRedisTemplate(connectionFactory);
+    }
 
     @Bean
     public RedisConnectionFactory connectionFactory() {

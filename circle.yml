@@ -2,6 +2,7 @@ general:
   branches:
     only:
       - master
+      - develop
       - /feature/.*
 
 machine:
@@ -9,13 +10,22 @@ machine:
     version: oraclejdk8
   services:
     - redis
+    - docker
 
-  environment:
-    LOGLEVEL: WARN
-    GALEB_DISABLE_SCHED: true
-    GALEB_DB_USER: ubuntu
-    GALEB_DB_URL: jdbc:mysql://localhost/circle_test
-    GALEB_DB_SHOWSQL: false
-    GALEB_DB_DRIVER: com.mysql.jdbc.Driver
-    GALEB_DB_DIALECT: org.hibernate.dialect.MySQL5Dialect
-    GALEB_DB_DDL_AUTO: validate
+environment:
+  LOGLEVEL: WARN
+  GALEB_DISABLE_SCHED: true
+  GALEB_DB_USER: ubuntu
+  GALEB_DB_URL: jdbc:mysql://localhost/circle_test
+  GALEB_DB_SHOWSQL: false
+  GALEB_DB_DRIVER: com.mysql.jdbc.Driver
+  GALEB_DB_DIALECT: org.hibernate.dialect.MySQL5Dialect
+  GALEB_DB_DDL_AUTO: validate
+
+test:
+  override:
+    - docker info
+    - docker run -d -p 61616:61616 -e ARTEMIS_USERNAME=guest -e ARTEMIS_PASSWORD=guest -e ARTEMIS_MIN_MEMORY=512M -e ARTEMIS_MAX_MEMORY=1024M -e ARTEMIS_PERF_JOURNAL=AUTO --name myartemis vromero/activemq-artemis:1.5.4
+    - docker ps -a
+    - docker inspect myartemis
+    - mvn test
