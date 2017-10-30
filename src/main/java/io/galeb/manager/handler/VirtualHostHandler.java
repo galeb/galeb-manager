@@ -45,12 +45,9 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -133,7 +130,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
 
     private void checkVirtualhostNameDupWithAliases(final VirtualHost virtualHost, final Set<String> allNames) {
         final Set<String> onlyAliases = new HashSet<>(allNames);
-        final Set<String> allVirtualhostNames = getVirtualHostRepository().findAll().stream().map(AbstractEntity::getName).collect(Collectors.toSet());
+        Spliterator<VirtualHost> allVirtualhostNamesSpliterator = getVirtualHostRepository().findByFarmId(virtualHost.getFarmId(), new PageRequest(0, 99999)).spliterator();
+        Set<String> allVirtualhostNames = StreamSupport.stream(allVirtualhostNamesSpliterator, false).map(AbstractEntity::getName).collect(Collectors.toSet());
         onlyAliases.removeAll(allVirtualhostNames);
         if (onlyAliases.contains(virtualHost.getName())|| virtualHost.getAliases().stream().anyMatch(allVirtualhostNames::contains))
             throw new BadRequestException("Name already exists");

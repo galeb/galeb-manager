@@ -66,7 +66,7 @@ public class VirtualHostHandlerTest {
         allNames.addAll(virtualhosts.stream().flatMap(v -> v.getAliases().stream()).collect(Collectors.toSet()));
         when(virtualHostRepository.findByName(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
         when(virtualHostRepository.getAllNames(anyLong())).thenReturn(allNames);
-        when(virtualHostRepository.findAll()).thenReturn(virtualhosts);
+        when(virtualHostRepository.findByFarmId(anyLong(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
     }
 
     @After
