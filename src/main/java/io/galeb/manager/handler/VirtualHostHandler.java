@@ -18,9 +18,7 @@
 
 package io.galeb.manager.handler;
 
-import com.google.common.collect.Sets;
 import io.galeb.manager.cache.DistMap;
-import io.galeb.manager.entity.AbstractEntity;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
@@ -29,7 +27,6 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
@@ -47,7 +44,6 @@ import io.galeb.manager.security.services.SystemUserService;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @RepositoryEventHandler(VirtualHost.class)
 public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
@@ -110,31 +106,13 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
-    public void checkDupOnAliases(final VirtualHost virtualHost) throws Exception {
+    public void checkDupOnAliases(final VirtualHost virtualHost) {
         final long farmId = virtualHost.getFarmId();
         if (farmId == -1L) return;
-        final Set<String> allNames = getVirtualHostRepository().getAllNames(farmId);
-        checkVirtualhostNameDupWithAliases(virtualHost, allNames);
-        final Set<String> changes = aliasesChanges(virtualHost);
-        if (!changes.isEmpty() && virtualHost.getAliases().containsAll(changes)) {
-            final Set<String> aliases = virtualHost.getAliases();
-            boolean dup = aliases.contains(virtualHost.getName());
-            if (!dup) {
-                final int sizeAllNames = allNames.size();
-                allNames.addAll(changes);
-                dup = allNames.size() != sizeAllNames + changes.size();
-            }
-            if (dup) throw new BadRequestException("Name already exists");
-        }
-    }
-
-    private void checkVirtualhostNameDupWithAliases(final VirtualHost virtualHost, final Set<String> allNames) {
-        final Set<String> onlyAliases = new HashSet<>(allNames);
-        Spliterator<VirtualHost> allVirtualhostNamesSpliterator = getVirtualHostRepository().findByFarmId(virtualHost.getFarmId(), new PageRequest(0, 99999)).spliterator();
-        Set<String> allVirtualhostNames = StreamSupport.stream(allVirtualhostNamesSpliterator, false).map(AbstractEntity::getName).collect(Collectors.toSet());
-        onlyAliases.removeAll(allVirtualhostNames);
-        if (onlyAliases.contains(virtualHost.getName())|| virtualHost.getAliases().stream().anyMatch(allVirtualhostNames::contains))
+        final Set<String> allNames = getVirtualHostRepository().getAllNamesExcept(virtualHost);
+        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) || allNames.contains(virtualHost.getName())) {
             throw new BadRequestException("Name already exists");
+        }
     }
 
     protected VirtualHostRepository getVirtualHostRepository() {
@@ -156,14 +134,6 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
                 virtualhost.getRulesOrdered().add(new RuleOrder(ruleId, Integer.MAX_VALUE));
             });
         }
-    }
-
-    public Set<String> aliasesChanges(final VirtualHost virtualHost) {
-        Set<String> aliases = virtualHost.getAliases();
-        List<VirtualHost> resultVirtualhosts = getVirtualHostRepository().findByName(virtualHost.getName(), new PageRequest(0, 1)).getContent();
-        Optional<VirtualHost> virtualHostPersisted = resultVirtualhosts != null && !resultVirtualhosts.isEmpty() ? resultVirtualhosts.stream().findAny() : Optional.empty();
-        Set<String> aliasesPersisted = virtualHostPersisted.map(VirtualHost::getAliases).orElseGet(Collections::emptySet);
-        return Sets.symmetricDifference(aliasesPersisted, aliases);
     }
 
     @Override

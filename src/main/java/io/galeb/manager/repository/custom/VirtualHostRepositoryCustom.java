@@ -21,6 +21,7 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
 
 import java.util.List;
 import java.util.Set;
@@ -30,5 +31,7 @@ public interface VirtualHostRepositoryCustom {
     List<Rule> getRulesFromVirtualHostName(String name);
 
     Set<String> getAllNames(long farmId);
+
+    Set<String> getAllNamesExcept(VirtualHost virtualHost);
 
 }
