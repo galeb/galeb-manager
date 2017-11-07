@@ -24,6 +24,7 @@ import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.exceptions.ConflictException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,8 +110,14 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     public void checkDupOnAliases(final VirtualHost virtualHost) {
         final long farmId = virtualHost.getFarmId();
         if (farmId == -1L) return;
+        VirtualHost virtualHostExistent = getVirtualHostRepository().findOne(virtualHost.getId());
+        if (virtualHostExistent != null) {
+            throw new ConflictException("Virtual Host already exists");
+        }
         final Set<String> allNames = getVirtualHostRepository().getAllNamesExcept(virtualHost);
-        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) || allNames.contains(virtualHost.getName())) {
+        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) ||
+            allNames.contains(virtualHost.getName()) ||
+            virtualHost.getAliases().contains(virtualHost.getName())) {
             throw new BadRequestException("Name already exists");
         }
     }
