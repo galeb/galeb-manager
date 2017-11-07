@@ -64,7 +64,7 @@ Feature: VirtualHost Support
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
-        Then the response status is 400
+        Then the response status is 409
 
     Scenario: Create duplicated alias name (1)
         Given a REST client authenticated as accountOne
