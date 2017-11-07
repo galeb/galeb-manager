@@ -18,13 +18,18 @@
 
 package io.galeb.manager.engine.listeners;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.galeb.core.model.Backend;
+import io.galeb.manager.common.JsonMapper;
+import io.galeb.manager.common.Properties;
+import io.galeb.manager.engine.driver.Driver;
 import io.galeb.manager.engine.listeners.services.QueueLocator;
 import io.galeb.manager.entity.Farm;
 import io.galeb.manager.entity.Pool;
 import io.galeb.manager.entity.Target;
 import io.galeb.manager.queue.FarmQueue;
 import io.galeb.manager.queue.TargetQueue;
+import io.galeb.manager.repository.FarmRepository;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,13 +38,8 @@ import org.springframework.jms.annotation.JmsListener;
 import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import io.galeb.manager.common.JsonMapper;
-import io.galeb.manager.common.Properties;
-import io.galeb.manager.engine.driver.Driver;
-import io.galeb.manager.repository.FarmRepository;
-
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Map;
 
 @Component
@@ -51,6 +51,9 @@ public class TargetEngine extends AbstractEngine<Target> {
     protected Log getLogger() {
         return LOGGER;
     }
+
+    @PersistenceContext
+    private EntityManager em;
 
     private FarmRepository farmRepository;
     private QueueLocator queueLocator;

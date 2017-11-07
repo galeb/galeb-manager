@@ -53,7 +53,7 @@ public class DistMapTest {
     @Test
     public void putAndGetValues() {
 
-        DistMap mapDistributed = new DistMap();
+        DistMap mapDistributed = DistMap.getInstance();
 
         Entity entity = getEntityDefault();
         VirtualHost virtualHost = getVirtualHostDefault();
@@ -62,15 +62,12 @@ public class DistMapTest {
 
         String returnValue = mapDistributed.get(virtualHost);
         Assert.notNull(returnValue);
-
-        AbstractEntity.EntityStatus status = virtualHost.getStatus();
-        Assert.isTrue(status.equals(AbstractEntity.EntityStatus.OK));
     }
 
     @Test
     public void removeAllKeysByFarm() {
 
-        DistMap mapDistributed = new DistMap();
+        DistMap mapDistributed = DistMap.getInstance();
 
         Entity entity = getEntityDefault();
         mapDistributed.put(entity, JsonObject.toJsonString(entity));

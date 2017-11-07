@@ -131,7 +131,7 @@ createAccount() {
 createProvider() {
   local TOKEN=$1
   local NAME=$2
-  local DRIVER_NAME='GalebV3'
+  local DRIVER_NAME='GalebV32'
 
   curl -k -v -XPOST -H ${HEADER} \
        -d '{

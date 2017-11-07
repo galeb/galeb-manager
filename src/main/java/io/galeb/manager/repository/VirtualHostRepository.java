@@ -1,19 +1,17 @@
 /*
- *   Galeb - Load Balance as a Service Plataform
+ * Copyright (c) 2014-2017 Globo.com - ATeam
+ * All rights reserved.
  *
- *   Copyright (C) 2014-2015 Globo.com
+ * This source is subject to the Apache License, Version 2.0.
+ * Please see the LICENSE file for more information.
  *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
+ * Authors: See AUTHORS file
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package io.galeb.manager.repository;
@@ -32,6 +30,7 @@ import io.galeb.manager.entity.VirtualHost;
 import org.springframework.transaction.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 import static io.galeb.manager.repository.CommonJpaFilters.*;
 
@@ -80,9 +79,21 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Iterable<VirtualHost> findByNameContainingWithSize(@Param("name") String name, @Param("size") int size);
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    List<VirtualHost> findByEnvironmentName(@Param("name") String name);
+
     @Modifying
     @Override
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     List<Rule> getRulesFromVirtualHostName(@Param("name") String name);
+
+    @Modifying
+    @Override
+    Set<String> getAllNames(long farmId);
+
+    @Modifying
+    @Override
+    Set<String> getAllNamesExcept(VirtualHost virtualHost);
 
 }

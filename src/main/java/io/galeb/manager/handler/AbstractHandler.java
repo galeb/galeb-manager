@@ -20,14 +20,28 @@ package io.galeb.manager.handler;
 
 import io.galeb.manager.entity.WithFarmID;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.routermap.RouterState;
 import org.apache.commons.logging.Log;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.PagingAndSortingRepository;
-
 import io.galeb.manager.entity.AbstractEntity;
 
 public abstract class AbstractHandler<T extends AbstractEntity<?>> {
 
     protected abstract void setBestFarm(T entity) throws Exception;
+
+    @Autowired
+    protected RouterState routerState;
+
+    protected boolean canRegisterChanges() {
+        return false;
+    }
+
+    private void registerHasChange(T entity) {
+        if (canRegisterChanges()) {
+            routerState.registerChanges(entity);
+        }
+    }
 
     public void beforeCreate(T entity, Log logger) throws Exception {
         logger.info(entity.getClass().getSimpleName()+": HandleBeforeCreate");
@@ -38,6 +52,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterCreate(T entity, Log logger) throws Exception {
+        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterCreate");
     }
 
@@ -55,6 +70,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterSave(T entity, Log logger) throws Exception {
+        registerHasChange(entity);
         String entityTypeName = entity.getClass().getSimpleName();
         logger.info(entityTypeName+": HandleAfterSave");
         if (entity.isSaveOnly()) {
@@ -68,6 +84,7 @@ public abstract class AbstractHandler<T extends AbstractEntity<?>> {
     }
 
     public void afterDelete(T entity, Log logger) throws Exception {
+        registerHasChange(entity);
         logger.info(entity.getClass().getSimpleName()+": HandleAfterDelete");
     }
 

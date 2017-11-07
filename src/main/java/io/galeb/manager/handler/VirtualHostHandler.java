@@ -27,6 +27,7 @@ import io.galeb.manager.exceptions.BadRequestException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
 import org.springframework.data.rest.core.annotation.HandleAfterSave;
@@ -41,8 +42,7 @@ import io.galeb.manager.repository.VirtualHostRepository;
 import io.galeb.manager.security.user.CurrentUser;
 import io.galeb.manager.security.services.SystemUserService;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RepositoryEventHandler(VirtualHost.class)
@@ -53,6 +53,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     @Autowired private FarmRepository farmRepository;
     @Autowired private VirtualHostRepository virtualHostRepository;
     @Autowired private DistMap distMap;
+    @SuppressWarnings("SpringJavaAutowiringInspection")
+    @Autowired private StringRedisTemplate template;
 
     @Override
     protected void setBestFarm(final VirtualHost virtualhost) {
@@ -72,6 +74,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         virtualhost.setFarmId(-1L);
         updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterCreate
@@ -83,7 +86,8 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
     public void beforeSave(VirtualHost virtualhost) throws Exception {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
-        beforeSave(virtualhost, virtualHostRepository, LOGGER);
+        beforeSave(virtualhost, getVirtualHostRepository(), LOGGER);
+        checkDupOnAliases(virtualhost);
     }
 
     @HandleAfterSave
@@ -102,6 +106,19 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
+    public void checkDupOnAliases(final VirtualHost virtualHost) {
+        final long farmId = virtualHost.getFarmId();
+        if (farmId == -1L) return;
+        final Set<String> allNames = getVirtualHostRepository().getAllNamesExcept(virtualHost);
+        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) || allNames.contains(virtualHost.getName())) {
+            throw new BadRequestException("Name already exists");
+        }
+    }
+
+    protected VirtualHostRepository getVirtualHostRepository() {
+        return virtualHostRepository;
+    }
+
     private void updateRuleOrder(VirtualHost virtualhost) {
         if (!virtualhost.getRules().isEmpty()) {
             final Set<Long> ruleIds = new HashSet<>(virtualhost.getRules().stream().map(Rule::getId).collect(Collectors.toSet()));
@@ -118,4 +135,10 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
             });
         }
     }
+
+    @Override
+    protected boolean canRegisterChanges() {
+        return true;
+    }
+
 }
