@@ -90,7 +90,10 @@ public interface VirtualHostRepository extends JpaRepositoryWithFindByName<Virtu
 
     @Modifying
     @Override
-    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     Set<String> getAllNames(long farmId);
+
+    @Modifying
+    @Override
+    Set<String> getAllNamesExcept(VirtualHost virtualHost);
 
 }

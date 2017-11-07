@@ -21,6 +21,7 @@
 package io.galeb.manager.repository.custom;
 
 import io.galeb.manager.entity.Rule;
+import io.galeb.manager.entity.VirtualHost;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -71,6 +72,18 @@ public class VirtualHostRepositoryImpl implements VirtualHostRepositoryCustom {
         try {
             allnames.addAll(em.createNativeQuery(QUERY_NAMES).setParameter("farm_id", farmId).getResultList());
             allnames.addAll(em.createNativeQuery(QUERY_ALIASES_NAMES).setParameter("farm_id", farmId).getResultList());
+        } catch (Exception e) {
+            LOGGER.error(ExceptionUtils.getStackTrace(e));
+        }
+        return allnames;
+    }
+
+    @Override
+    public Set<String> getAllNamesExcept(VirtualHost virtualHost) {
+        Set<String> allnames = new HashSet<>();
+        try {
+            allnames.addAll(em.createNativeQuery(QUERY_NAMES + " and v.id != :id_vh").setParameter("farm_id", virtualHost.getFarmId()).setParameter("id_vh", virtualHost.getId()).getResultList());
+            allnames.addAll(em.createNativeQuery(QUERY_ALIASES_NAMES + " and v.id != :id_vh").setParameter("farm_id", virtualHost.getFarmId()).setParameter("id_vh", virtualHost.getId()).getResultList());
         } catch (Exception e) {
             LOGGER.error(ExceptionUtils.getStackTrace(e));
         }
