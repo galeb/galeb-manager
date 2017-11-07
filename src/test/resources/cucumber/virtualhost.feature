@@ -84,7 +84,7 @@ Feature: VirtualHost Support
             | environment | Environment=envOne |
             | project     | Project=projOne    |
         And send POST /virtualhost
-        Then the response status is 201
+        Then the response status is 400
 
     Scenario: Get VirtualHost
         Given a REST client authenticated as accountOne

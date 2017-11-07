@@ -75,7 +75,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         virtualhost.setFarmId(-1L);
         updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
-        checkDupOnAliases(virtualhost);
+        checkDupOnAliases(virtualhost, true);
     }
 
     @HandleAfterCreate
@@ -88,7 +88,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, getVirtualHostRepository(), LOGGER);
-        checkDupOnAliases(virtualhost);
+        checkDupOnAliases(virtualhost, false);
     }
 
     @HandleAfterSave
@@ -107,11 +107,11 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
-    public void checkDupOnAliases(final VirtualHost virtualHost) {
+    public void checkDupOnAliases(final VirtualHost virtualHost, final boolean isCreation) {
         final long farmId = virtualHost.getFarmId();
         if (farmId == -1L) return;
         VirtualHost virtualHostExistent = getVirtualHostRepository().findOne(virtualHost.getId());
-        if (virtualHostExistent != null) {
+        if (isCreation && virtualHostExistent != null) {
             throw new ConflictException("Virtual Host already exists");
         }
         final Set<String> allNames = getVirtualHostRepository().getAllNamesExcept(virtualHost);
