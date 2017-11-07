@@ -26,15 +26,12 @@ import io.galeb.manager.handler.VirtualHostHandler;
 import io.galeb.manager.repository.VirtualHostRepository;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.mockito.Matchers.any;
@@ -60,13 +57,22 @@ public class VirtualHostHandlerTest {
         return virtualhostNotPersisted;
     }
 
-    private void saveMocked(final VirtualHost virtualHost) {
-        virtualhosts.add(virtualHost);
+    private void saveMocked(final VirtualHost virtualHost, boolean isExcept) {
+        if (!isExcept) {
+            virtualhosts.add(virtualHost);
+        }
         Set<String> allNames = virtualhosts.stream().map(AbstractEntity::getName).collect(Collectors.toSet());
         allNames.addAll(virtualhosts.stream().flatMap(v -> v.getAliases().stream()).collect(Collectors.toSet()));
-        when(virtualHostRepository.findByName(anyString(), any(Pageable.class))).thenReturn(new PageImpl<>(virtualhosts));
-        when(virtualHostRepository.getAllNames(anyLong())).thenReturn(allNames);
-        when(virtualHostRepository.findAll()).thenReturn(virtualhosts);
+        when(virtualHostRepository.getAllNamesExcept(any(VirtualHost.class))).thenReturn(allNames);
+    }
+    private void saveMocked(final VirtualHost virtualHost) {
+        saveMocked(virtualHost, false);
+    }
+
+    @Before
+    public void loadData() {
+        VirtualHost vh = newVirtualhost("InitialVH", Sets.newHashSet("initialAlias"));
+        virtualhosts.add(vh);
     }
 
     @After
@@ -75,48 +81,48 @@ public class VirtualHostHandlerTest {
     }
 
     @Test
-    public void aliasesNotChanged() {
+    public void aliasesNotChanged() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        Assert.assertTrue(virtualHostHandler.aliasesChanges(sameVirtualhost).isEmpty());
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
 
     @Test
-    public void aliasAdded() {
+    public void aliasAdded() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c", "d"));
-        Assert.assertFalse(virtualHostHandler.aliasesChanges(sameVirtualhost).isEmpty());
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
 
     @Test
-    public void aliasRemoved() {
+    public void aliasRemoved() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b"));
-        Assert.assertFalse(virtualHostHandler.aliasesChanges(sameVirtualhost).isEmpty());
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
 
     @Test
-    public void aliasCleaned() {
+    public void aliasCleaned() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Collections.emptySet());
-        Assert.assertFalse(virtualHostHandler.aliasesChanges(sameVirtualhost).isEmpty());
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
 
     @Test
-    public void aliasPostDefined() {
+    public void aliasPostDefined() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Collections.emptySet());
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        Assert.assertFalse(virtualHostHandler.aliasesChanges(sameVirtualhost).isEmpty());
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
 
     @Test(expected = BadRequestException.class)
@@ -150,16 +156,26 @@ public class VirtualHostHandlerTest {
     public void hasNotDupEqual() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void hasDupAliasesNameInManyVirtualHosts() throws Exception {
+        String vname1 = UUID.randomUUID().toString();
+        String vname2 = UUID.randomUUID().toString();
+        VirtualHost virtualhost = newVirtualhost(vname1, Sets.newHashSet("a"));
+        saveMocked(virtualhost);
+        VirtualHost otherVirtualhost = newVirtualhost(vname2, Sets.newHashSet("a"));
+        virtualHostHandler.checkDupOnAliases(otherVirtualhost);
     }
 
     @Test
     public void hasNotDupAdd() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c", "d"));
         virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
@@ -168,8 +184,10 @@ public class VirtualHostHandlerTest {
     public void hasNotDupRemove() throws Exception {
         String vname = UUID.randomUUID().toString();
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        saveMocked(virtualhost);
+        saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b"));
         virtualHostHandler.checkDupOnAliases(sameVirtualhost);
     }
+
+
 }
