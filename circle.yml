@@ -4,6 +4,7 @@ general:
       - master
       - develop
       - /feature/.*
+      - bugfix.*
 
 machine:
   java:

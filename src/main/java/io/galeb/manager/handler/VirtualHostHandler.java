@@ -24,9 +24,12 @@ import io.galeb.manager.entity.Rule;
 import io.galeb.manager.entity.RuleOrder;
 import io.galeb.manager.entity.VirtualHost;
 import io.galeb.manager.exceptions.BadRequestException;
+import io.galeb.manager.exceptions.ConflictException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.rest.core.annotation.HandleAfterCreate;
 import org.springframework.data.rest.core.annotation.HandleAfterDelete;
@@ -74,7 +77,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         virtualhost.setFarmId(-1L);
         updateRuleOrder(virtualhost);
         beforeCreate(virtualhost, LOGGER);
-        checkDupOnAliases(virtualhost);
+        checkDupOnAliases(virtualhost, true);
     }
 
     @HandleAfterCreate
@@ -87,7 +90,7 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         distMap.remove(virtualhost);
         updateRuleOrder(virtualhost);
         beforeSave(virtualhost, getVirtualHostRepository(), LOGGER);
-        checkDupOnAliases(virtualhost);
+        checkDupOnAliases(virtualhost, false);
     }
 
     @HandleAfterSave
@@ -106,11 +109,17 @@ public class VirtualHostHandler extends AbstractHandler<VirtualHost> {
         afterDelete(virtualhost, LOGGER);
     }
 
-    public void checkDupOnAliases(final VirtualHost virtualHost) {
+    public void checkDupOnAliases(final VirtualHost virtualHost, final boolean isCreation) {
         final long farmId = virtualHost.getFarmId();
         if (farmId == -1L) return;
+        Page<VirtualHost> pageable = getVirtualHostRepository().findByName(virtualHost.getName(), new PageRequest(0, 1));
+        if (isCreation && (pageable != null && pageable.getTotalElements() > 0)) {
+            throw new ConflictException("Virtual Host already exists");
+        }
         final Set<String> allNames = getVirtualHostRepository().getAllNamesExcept(virtualHost);
-        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) || allNames.contains(virtualHost.getName())) {
+        if (virtualHost.getAliases().stream().anyMatch(allNames::contains) ||
+            allNames.contains(virtualHost.getName()) ||
+            virtualHost.getAliases().contains(virtualHost.getName())) {
             throw new BadRequestException("Name already exists");
         }
     }

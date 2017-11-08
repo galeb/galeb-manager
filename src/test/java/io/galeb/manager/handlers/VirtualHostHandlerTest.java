@@ -86,7 +86,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c", "d"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -113,7 +113,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Collections.emptySet());
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -122,7 +122,16 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Collections.emptySet());
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void hasVirtualhostNameSameAlias() throws Exception {
+        String vname = UUID.randomUUID().toString();
+        VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a"));
+        saveMocked(virtualhost, true);
+        VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet(vname));
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test(expected = BadRequestException.class)
@@ -131,7 +140,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost);
         VirtualHost otherVirtualhost = newVirtualhost(UUID.randomUUID().toString(), Sets.newHashSet("d", "e", vname));
-        virtualHostHandler.checkDupOnAliases(otherVirtualhost);
+        virtualHostHandler.checkDupOnAliases(otherVirtualhost, true);
     }
 
     @Test(expected = BadRequestException.class)
@@ -140,7 +149,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(UUID.randomUUID().toString(), Sets.newHashSet("a", "b", "c", vname));
         saveMocked(virtualhost);
         VirtualHost otherVirtualhost = newVirtualhost(vname, Sets.newHashSet("d", "e", "f"));
-        virtualHostHandler.checkDupOnAliases(otherVirtualhost);
+        virtualHostHandler.checkDupOnAliases(otherVirtualhost, true);
     }
 
     @Test(expected = BadRequestException.class)
@@ -149,7 +158,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Collections.emptySet());
         saveMocked(virtualhost);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet(vname));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -158,7 +167,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test(expected = BadRequestException.class)
@@ -168,7 +177,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname1, Sets.newHashSet("a"));
         saveMocked(virtualhost);
         VirtualHost otherVirtualhost = newVirtualhost(vname2, Sets.newHashSet("a"));
-        virtualHostHandler.checkDupOnAliases(otherVirtualhost);
+        virtualHostHandler.checkDupOnAliases(otherVirtualhost, true);
     }
 
     @Test
@@ -177,7 +186,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c", "d"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
     @Test
@@ -186,7 +195,7 @@ public class VirtualHostHandlerTest {
         VirtualHost virtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b", "c"));
         saveMocked(virtualhost, true);
         VirtualHost sameVirtualhost = newVirtualhost(vname, Sets.newHashSet("a", "b"));
-        virtualHostHandler.checkDupOnAliases(sameVirtualhost);
+        virtualHostHandler.checkDupOnAliases(sameVirtualhost, false);
     }
 
 
