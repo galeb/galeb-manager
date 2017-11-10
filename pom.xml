@@ -179,15 +179,19 @@
             <version>${jackson-module-jsonSchema.version}</version>
         </dependency>
         <dependency>
-<<<<<<< HEAD
             <groupId>org.graylog2.log4j2</groupId>
             <artifactId>log4j2-gelf</artifactId>
             <version>${log4j2-gelf.version}</version>
-=======
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
->>>>>>> develop
+        </dependency>
+	    <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
         <!--  tests -->
         <dependency>
