@@ -151,7 +151,7 @@ public class CopyService {
         // Send only Targets OK (property "healthy":"OK")
         return pool.getTargets().stream().filter(target -> {
             final String targetHealthy = target.getProperties().get(PROP_HEALTHY);
-            return "OK".equals(targetHealthy);
+            return !"FAIL".equals(targetHealthy);
         }).map(target -> {
             Target targetCopy = gson.fromJson(gson.toJson(target), Target.class);
             targetCopy.setId(target.getId());
