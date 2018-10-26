@@ -142,7 +142,7 @@ public class TargetHandler extends AbstractHandler<Target> {
             };
             Thread thread = new Thread(task);
             thread.start();
-            TimeUnit.SECONDS.timedJoin(thread, 30);
+            TimeUnit.SECONDS.timedJoin(thread, 50);
         } catch (InterruptedException e) {
             LOGGER.info(e);
         }
